@@ -12,6 +12,7 @@ import { Returns } from './pages/returns';
 import { AuthProvider } from './contexts/AuthContext';
 import { PermissionsProvider } from './contexts/PermissionsContext';
 import { Login } from './pages/auth/login';
+import { SignUp } from './pages/auth/signup';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { NewTransaction } from './pages/transactions/NewTransaction';
 
@@ -26,6 +27,7 @@ function App() {
             <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<SignUp />} />
 
             {/* Protected Routes - any authenticated user for main pages */}
             <Route element={<ProtectedRoute />}>

@@ -4,22 +4,9 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { FaUser, FaLock } from 'react-icons/fa';
 import { collection, getDocs, query, where, limit, doc, updateDoc, addDoc } from 'firebase/firestore';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 
-import { db } from '../../lib/firebase';
-import bcrypt from 'bcryptjs';
-
-async function hashPassword(raw: string): Promise<string> {
-  const normalized = raw.trim();
-  if (!normalized) return '';
-
-  try {
-    const saltRounds = 10;
-    return await bcrypt.hash(normalized, saltRounds);
-  } catch (err) {
-    // Fallback: avoid breaking login flows if hashing fails for any reason.
-    return normalized;
-  }
-}
+import { db, auth } from '../../lib/firebase';
 
 export function Login() {
   const { login } = useAuth();
@@ -50,28 +37,92 @@ export function Login() {
 
     setIsSubmitting(true);
     try {
-      const q = query(
-        collection(db, 'users'),
-        where('username', '==', username),
-        limit(1)
-      );
-      const snapshot = await getDocs(q);
+      const identifier = username.trim();
+      const normalizedPassword = password.trim();
 
-      if (snapshot.empty) {
-        setModalState({
-          type: 'error',
-          title: 'Login Failed',
-          message: 'Invalid credentials.',
-        });
-        setIsSubmitting(false);
-        return;
+      // Determine the email to use with Firebase Auth.
+      // If the user typed an email, use it directly.
+      // If they typed a username, look up the corresponding email in Firestore.
+      let loginEmail = identifier;
+      let profileDoc: any | null = null;
+      let profileData: any | null = null;
+
+      if (!identifier.includes('@')) {
+        // Treat identifier as username; look up its email.
+        const userQuery = query(
+          collection(db, 'users'),
+          where('username', '==', identifier),
+          limit(1),
+        );
+        const userSnapshot = await getDocs(userQuery);
+
+        if (userSnapshot.empty) {
+          setModalState({
+            type: 'error',
+            title: 'Login Failed',
+            message: 'Invalid credentials.',
+          });
+          setIsSubmitting(false);
+          return;
+        }
+
+        profileDoc = userSnapshot.docs[0];
+        profileData = profileDoc.data() as any;
+
+        const emailFromProfile = (profileData.email ?? '').toString().trim();
+        if (!emailFromProfile) {
+          setModalState({
+            type: 'error',
+            title: 'Login Failed',
+            message: 'This user does not have an email configured. Please contact an administrator.',
+          });
+          setIsSubmitting(false);
+          return;
+        }
+
+        loginEmail = emailFromProfile;
       }
 
-      const matchedDoc = snapshot.docs[0];
-      const data = matchedDoc.data() as any;
+      // Sign in with Firebase Auth using the resolved email.
+      const credential = await signInWithEmailAndPassword(auth, loginEmail, normalizedPassword);
+      const uid = credential.user.uid;
+
+      // If we didn't already load a profile (email login), fetch it by authUid.
+      if (!profileDoc) {
+        const profileQuery = query(
+          collection(db, 'users'),
+          where('authUid', '==', uid),
+          limit(1),
+        );
+        const profileSnapshot = await getDocs(profileQuery);
+
+        if (profileSnapshot.empty) {
+          setModalState({
+            type: 'error',
+            title: 'Login Failed',
+            message: 'No user profile found for this account. Please contact an administrator.',
+          });
+          setIsSubmitting(false);
+          return;
+        }
+
+        profileDoc = profileSnapshot.docs[0];
+        profileData = profileDoc.data() as any;
+      } else {
+        // If profile exists and does not yet have authUid, backfill it.
+        const existingAuthUid = (profileData.authUid ?? '').toString();
+        if (!existingAuthUid) {
+          try {
+            const userRef = doc(db, 'users', profileDoc.id);
+            await updateDoc(userRef, { authUid: uid });
+          } catch (err) {
+            console.error('Failed to backfill authUid on user profile', err);
+          }
+        }
+      }
 
       // Normalize status so minor casing/spacing differences don't break login
-      const rawStatus = (data.status ?? '').toString();
+      const rawStatus = (profileData?.status ?? '').toString();
       const normalizedStatus = rawStatus.trim().toLowerCase();
 
       if (normalizedStatus && normalizedStatus !== 'active') {
@@ -84,69 +135,9 @@ export function Login() {
         return;
       }
 
-      // Password check: prefer bcrypt hash when present, fall back to legacy fields
-      const normalizedEntered = password.trim();
-      const storedHash = (data.passwordHash ?? '').toString();
-      const storedPassword = (data.password ?? '').toString().trim();
-
-      let passwordOk = false;
-
-      if (storedHash) {
-        // If this looks like a bcrypt hash, use bcrypt.compare
-        if (storedHash.startsWith('$2a$') || storedHash.startsWith('$2b$') || storedHash.startsWith('$2y$')) {
-          try {
-            passwordOk = await bcrypt.compare(normalizedEntered, storedHash);
-          } catch {
-            passwordOk = false;
-          }
-        } else {
-          // Legacy hash/plain: fall back to simple equality
-          if (normalizedEntered && normalizedEntered === storedHash) {
-            passwordOk = true;
-
-            // Backfill passwordHash with a proper bcrypt hash
-            try {
-              const userRef = doc(db, 'users', matchedDoc.id);
-              const newHash = await hashPassword(normalizedEntered);
-              if (newHash) {
-                await updateDoc(userRef, { passwordHash: newHash });
-              }
-            } catch (err) {
-              console.error('Failed to backfill passwordHash from legacy hash/plain', err);
-            }
-          }
-        }
-      } else {
-        // Legacy plain-text comparison
-        if (storedPassword && storedPassword === normalizedEntered) {
-          passwordOk = true;
-
-          // Best-effort: backfill passwordHash with bcrypt but keep existing password field
-          try {
-            const userRef = doc(db, 'users', matchedDoc.id);
-            const newHash = await hashPassword(normalizedEntered);
-            if (newHash) {
-              await updateDoc(userRef, { passwordHash: newHash });
-            }
-          } catch (err) {
-            console.error('Failed to backfill passwordHash', err);
-          }
-        }
-      }
-
-      if (!passwordOk) {
-        setModalState({
-          type: 'error',
-          title: 'Login Failed',
-          message: 'Invalid credentials.',
-        });
-        setIsSubmitting(false);
-        return;
-      }
-
       // Record last login timestamp for this user document
       try {
-        const userRef = doc(db, 'users', matchedDoc.id);
+        const userRef = doc(db, 'users', profileDoc.id);
         await updateDoc(userRef, {
           lastLogin: new Date().toISOString(),
         });
@@ -155,9 +146,9 @@ export function Login() {
       }
 
       login({
-        id: matchedDoc.id,
-        name: data.fullName || data.username || username,
-        role: data.role || 'employee',
+        id: profileDoc.id,
+        name: profileData?.fullName || profileData?.username || identifier,
+        role: profileData?.role || 'employee',
       });
 
       navigate('/');
@@ -370,13 +361,22 @@ export function Login() {
             fontSize: '0.9rem'
           }}>
             Don't have an account?{' '}
-            <a href="#" style={{
-              color: '#1e88e5',
-              textDecoration: 'none',
-              fontWeight: '500'
-            }}>
+            <button
+              type="button"
+              onClick={() => navigate('/signup')}
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                margin: 0,
+                color: '#1e88e5',
+                textDecoration: 'none',
+                fontWeight: '500',
+                cursor: 'pointer',
+              }}
+            >
               Sign up
-            </a>
+            </button>
           </div>
         </form>
       </div>

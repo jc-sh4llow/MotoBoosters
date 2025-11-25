@@ -4,7 +4,8 @@ import { FaHome, FaGripLinesVertical, FaBars, FaWarehouse, FaTag, FaWrench, FaFi
 
 import { useNavigate } from 'react-router-dom';
 import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
+import { db, auth } from '../../lib/firebase';
+
 import { useAuth } from '../../contexts/AuthContext';
 import { can } from '../../config/permissions';
 
@@ -349,7 +350,6 @@ export function Users() {
           userId,
           username,
           fullName,
-          email,
           contactNumber,
           status: status === 'active' ? 'Active' : 'Inactive',
           role,
@@ -371,7 +371,6 @@ export function Users() {
           userId,
           username,
           fullName,
-          email,
           contactNumber,
           // Preserve original role and status
           role: existing.role,
@@ -402,7 +401,6 @@ export function Users() {
         userId,
         username,
         fullName,
-        email,
         contactNumber,
         status: status === 'active' ? 'Active' : 'Inactive',
         role,
@@ -1119,71 +1117,20 @@ export function Users() {
                         type="email"
                         name="email"
                         value={formData.email}
-                        onChange={handleInputChange}
-                        disabled={!canEditUserDetails}
+                        disabled
                         style={{
                           width: '100%',
                           padding: '0.5rem 0.75rem',
                           borderRadius: '0.375rem',
                           border: '1px solid #d1d5db',
-                          backgroundColor: '#fff',
-                          color: '#111827'
+                          backgroundColor: '#f9fafb',
+                          color: '#6b7280'
                         }}
                       />
                     </div>
 
-                    {/* Row: Password / Reset Password */}
-                    {isOtherUserRowForAdmin ? (
-                      <>
-                        <div>
-                          <label style={{
-                            display: 'block',
-                            marginBottom: '0.5rem',
-                            fontSize: '0.875rem',
-                            color: '#4b5563',
-                            fontWeight: 500,
-                          }}>
-                            Reset Password
-                          </label>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const resetTo = formData.username || selectedUserRow?.username || '';
-                              if (!resetTo) {
-                                setUsersAlert({
-                                  title: 'Cannot Reset Password',
-                                  message: 'Cannot reset password because the username is empty.',
-                                });
-                                return;
-                              }
-                              setFormData(prev => ({
-                                ...prev,
-                                password: resetTo,
-                                confirmPassword: resetTo,
-                              }));
-                              setUsersAlert({
-                                title: 'Password Will Be Reset',
-                                message: 'Password will be reset to match the username when you click Save User.',
-                              });
-                            }}
-                            style={{
-                              width: '100%',
-                              padding: '0.6rem 0.75rem',
-                              borderRadius: '0.375rem',
-                              border: '1px solid #b91c1c',
-                              backgroundColor: '#ef4444',
-                              color: 'white',
-                              fontWeight: 600,
-                              fontSize: '0.9rem',
-                              cursor: 'pointer',
-                            }}
-                          >
-                            Reset Password to Username
-                          </button>
-                        </div>
-                        <div />
-                      </>
-                    ) : canSeePasswords ? (
+                    {/* Row: Password fields */}
+                    {canSeePasswords && !isOtherUserRowForAdmin ? (
                       <>
                         <div>
                           <label style={{

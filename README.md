@@ -1,0 +1,1 @@
+echo "# Moto Booster Management System" > README.md

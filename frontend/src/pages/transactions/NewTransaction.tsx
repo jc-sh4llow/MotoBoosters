@@ -33,13 +33,19 @@ type CartItem = {
   id: string;
   name: string;
   type: 'product' | 'service';
-  price: number; // effective price actually charged
+  price: number; // base effective price per unit for this transaction (after any default inventory discount)
   quantity: number;
   subtotal: number;
   // Optional metadata for products, used for inventory/discount display
   inventoryDocId?: string;
-  basePrice?: number;       // original sellingPrice
-  discountAmount?: number;  // defaultDiscount applied
+  basePrice?: number;       // original SRP from inventory
+  discountAmount?: number;  // defaultDiscount applied from inventory
+
+  // Per-transaction adjustments
+  specialUnits?: number;    // how many units (0..quantity) get a special price
+  adjustmentType?: 'none' | 'discount' | 'markup';
+  adjustmentPerUnit?: number; // positive peso amount per affected unit
+  adjustmentReason?: string;
 };
 
 export function NewTransaction() {
@@ -328,6 +334,8 @@ export function NewTransaction() {
   const [showAllProducts, setShowAllProducts] = useState(false);
   const [showAllServices, setShowAllServices] = useState(false);
 
+  const [expandedCartItemId, setExpandedCartItemId] = useState<string | null>(null);
+
   const MAX_VISIBLE_ROWS = 4;
 
   const normalizeOptionalField = (value: string) => {
@@ -412,17 +420,57 @@ export function NewTransaction() {
     return true;
   };
 
+  // Compute subtotal for a single cart item, including any per-item adjustment
+  const computeItemSubtotal = (item: CartItem): number => {
+    const unitPrice = item.price || 0;
+    const quantity = item.quantity || 0;
+
+    const adjustmentType = item.adjustmentType ?? 'none';
+    const rawSpecialUnits = item.specialUnits ?? 0;
+    const adjustmentPerUnit = item.adjustmentPerUnit ?? 0;
+
+    if (adjustmentType === 'none' || adjustmentPerUnit <= 0 || rawSpecialUnits <= 0) {
+      return quantity * unitPrice;
+    }
+
+    const specialUnits = Math.min(Math.max(rawSpecialUnits, 0), quantity);
+    const normalUnits = Math.max(quantity - specialUnits, 0);
+
+    let specialPrice = unitPrice;
+    if (adjustmentType === 'discount') {
+      specialPrice = Math.max(unitPrice - adjustmentPerUnit, 0);
+    } else if (adjustmentType === 'markup') {
+      specialPrice = unitPrice + adjustmentPerUnit;
+    }
+
+    return normalUnits * unitPrice + specialUnits * specialPrice;
+  };
+
   const handleAddToCart = (item: { id: string; name: string; price: number; type: 'product' | 'service' }) => {
     setCart(prev => {
       const existing = prev.find(i => i.id === item.id);
       if (existing) {
-        return prev.map(i =>
-          i.id === item.id
-            ? { ...i, quantity: i.quantity + 1, subtotal: (i.quantity + 1) * i.price }
-            : i
-        );
+        const updatedQuantity = existing.quantity + 1;
+        const updated: CartItem = {
+          ...existing,
+          quantity: updatedQuantity,
+          // Ensure specialUnits never exceeds quantity
+          specialUnits: Math.min(existing.specialUnits ?? 0, updatedQuantity),
+        };
+        updated.subtotal = computeItemSubtotal(updated);
+        return prev.map(i => (i.id === item.id ? updated : i));
       }
-      return [...prev, { ...item, quantity: 1, subtotal: item.price }];
+
+      const initial: CartItem = {
+        ...item,
+        quantity: 1,
+        subtotal: 0,
+        adjustmentType: 'none',
+        specialUnits: 0,
+        adjustmentPerUnit: 0,
+      };
+      initial.subtotal = computeItemSubtotal(initial);
+      return [...prev, initial];
     });
   };
 
@@ -436,16 +484,20 @@ export function NewTransaction() {
         return prev.filter(i => i.id !== id);
       }
 
-      return prev.map(i =>
-        i.id === id
-          ? { ...i, quantity: newQuantity, subtotal: newQuantity * i.price }
-          : i
-      );
+      const updated: CartItem = {
+        ...item,
+        quantity: newQuantity,
+        // Clamp specialUnits to the new quantity
+        specialUnits: Math.min(item.specialUnits ?? 0, newQuantity),
+      };
+      updated.subtotal = computeItemSubtotal(updated);
+
+      return prev.map(i => (i.id === id ? updated : i));
     });
   };
 
   const calculateTotal = () => {
-    return cart.reduce((sum, item) => sum + item.subtotal, 0);
+    return cart.reduce((sum, item) => sum + computeItemSubtotal(item), 0);
   };
 
   const transactionType: 'Parts only' | 'Service only' | 'Parts & Service' | null = (() => {
@@ -598,6 +650,11 @@ export function NewTransaction() {
           totalAmount: item.subtotal,
           transactionType: transactionType ?? 'N/A',
           paymentType: payment.type,
+          // Per-item adjustment metadata (optional)
+          specialUnits: item.specialUnits ?? 0,
+          adjustmentType: item.adjustmentType ?? 'none',
+          adjustmentPerUnit: item.adjustmentPerUnit ?? 0,
+          adjustmentReason: item.adjustmentReason ?? '',
         };
 
         batch.set(itemDocRef, itemPayload);
@@ -1372,56 +1429,184 @@ export function NewTransaction() {
                       ) : (
                         <>
                           <div className="space-y-3 mb-4 overflow-y-auto pr-1">
-                            {cart.map(item => (
-                              <div
-                                key={item.id}
-                                className="flex items-start justify-between border-b border-gray-100 pb-2 last:border-b-0 last:pb-0"
-                              >
-                                <div>
-                                  <p className="font-medium text-gray-900">{item.name}</p>
-                                  <p className="text-xs text-gray-500 capitalize">{item.type}</p>
-                                  {item.type === 'product' && item.basePrice !== undefined && item.discountAmount && item.discountAmount > 0 ? (
-                                    <p className="text-sm text-gray-700 mt-1">
-                                      <span className="line-through text-gray-400 mr-1">
-                                        ₱{item.basePrice.toFixed(2)}
-                                      </span>
-                                      <span>₱{item.price.toFixed(2)} each</span>
-                                    </p>
-                                  ) : (
-                                    <p className="text-sm text-gray-700 mt-1">₱{item.price.toFixed(2)} each</p>
+                            {cart.map(item => {
+                              const isExpanded = expandedCartItemId === item.id;
+                              const specialUnits = item.specialUnits ?? 0;
+                              const adjustmentType = item.adjustmentType ?? 'none';
+                              const adjustmentPerUnit = item.adjustmentPerUnit ?? 0;
+
+                              const handleUpdateItem = (updater: (current: CartItem) => CartItem) => {
+                                setCart(prev => prev.map(ci => {
+                                  if (ci.id !== item.id) return ci;
+                                  const updated = updater(ci);
+                                  return { ...updated, subtotal: computeItemSubtotal(updated) };
+                                }));
+                              };
+
+                              return (
+                                <div
+                                  key={item.id}
+                                  className="border-b border-gray-100 pb-2 last:border-b-0 last:pb-0"
+                                >
+                                  <div className="flex items-start justify-between">
+                                    <div className="pr-2">
+                                      <p className="font-medium text-gray-900">{item.name}</p>
+                                      <p className="text-xs text-gray-500 capitalize">{item.type}</p>
+                                      {item.type === 'product' && item.basePrice !== undefined && item.discountAmount && item.discountAmount > 0 ? (
+                                        <p className="text-xs text-gray-700 mt-1">
+                                          <span className="line-through text-gray-400 mr-1">
+                                            ₱{item.basePrice.toFixed(2)}
+                                          </span>
+                                          <span>₱{item.price.toFixed(2)} each</span>
+                                        </p>
+                                      ) : (
+                                        <p className="text-xs text-gray-700 mt-1">₱{item.price.toFixed(2)} each</p>
+                                      )}
+                                      {adjustmentType !== 'none' && adjustmentPerUnit > 0 && specialUnits > 0 && (
+                                        <p className="mt-1 text-[11px] text-blue-700">
+                                          {specialUnits} unit{specialUnits !== 1 ? 's' : ''} with
+                                          {adjustmentType === 'discount' ? ' discount' : ' markup'} of ₱{adjustmentPerUnit.toFixed(2)} each
+                                        </p>
+                                      )}
+                                    </div>
+                                    <div className="flex flex-col items-end space-y-1">
+                                      <div className="flex items-center space-x-2">
+                                        <button
+                                          type="button"
+                                          onClick={() => updateQuantity(item.id, -1)}
+                                          className="p-1 text-gray-500 hover:text-gray-700 border border-gray-300 rounded"
+                                        >
+                                          <FaMinus size={10} />
+                                        </button>
+                                        <span className="text-sm font-medium text-gray-800 w-6 text-center">{item.quantity}</span>
+                                        <button
+                                          type="button"
+                                          onClick={() => updateQuantity(item.id, 1)}
+                                          className="p-1 text-gray-500 hover:text-gray-700 border border-gray-300 rounded"
+                                        >
+                                          <FaPlus size={10} />
+                                        </button>
+                                      </div>
+                                      <div className="text-sm font-semibold text-gray-900">
+                                        ₱{item.subtotal.toFixed(2)}
+                                      </div>
+                                      <button
+                                        type="button"
+                                        onClick={() => updateQuantity(item.id, -item.quantity)}
+                                        className="text-xs text-red-600 hover:text-red-700"
+                                      >
+                                        Remove
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => setExpandedCartItemId(isExpanded ? null : item.id)}
+                                        className="text-[11px] text-blue-600 hover:text-blue-800 mt-1 whitespace-nowrap"
+                                      >
+                                        {isExpanded ? 'Hide discount / markup ▲' : 'Discount / Markup ▼'}
+                                      </button>
+                                    </div>
+                                  </div>
+
+                                  {isExpanded && (
+                                    <div className="mt-2 rounded-md bg-gray-50 px-2 py-2 text-[11px] text-gray-800 space-y-2">
+                                      {/* Special units counter */}
+                                      <div className="flex items-center justify-between gap-2">
+                                        <span className="whitespace-nowrap">Units with special price</span>
+                                        <div className="flex items-center space-x-1">
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              handleUpdateItem(current => {
+                                                const qty = current.quantity || 0;
+                                                const next = Math.max(Math.min((current.specialUnits ?? 0) - 1, qty), 0);
+                                                return { ...current, specialUnits: next };
+                                              })
+                                            }
+                                            className="px-1 py-0.5 border border-gray-300 rounded text-gray-600 hover:text-gray-800"
+                                          >
+                                            -
+                                          </button>
+                                          <span className="w-6 text-center text-xs font-medium">
+                                            {specialUnits}
+                                          </span>
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              handleUpdateItem(current => {
+                                                const qty = current.quantity || 0;
+                                                const next = Math.min((current.specialUnits ?? 0) + 1, qty);
+                                                return { ...current, specialUnits: next };
+                                              })
+                                            }
+                                            className="px-1 py-0.5 border border-gray-300 rounded text-gray-600 hover:text-gray-800"
+                                          >
+                                            +
+                                          </button>
+                                          <span className="text-[10px] text-gray-500">/ {item.quantity}</span>
+                                        </div>
+                                      </div>
+
+                                      {/* Discount / Markup per unit */}
+                                      <div className="grid grid-cols-2 gap-2">
+                                        <div>
+                                          <label className="block mb-0.5 text-[10px] text-gray-600">Discount per unit (₱)</label>
+                                          <input
+                                            type="number"
+                                            min={0}
+                                            step={0.01}
+                                            value={adjustmentType === 'discount' ? adjustmentPerUnit || '' : ''}
+                                            onChange={e => {
+                                              const value = parseFloat(e.target.value || '0');
+                                              handleUpdateItem(current => ({
+                                                ...current,
+                                                adjustmentType: value > 0 ? 'discount' : 'none',
+                                                adjustmentPerUnit: value > 0 ? value : 0,
+                                              }));
+                                            }}
+                                            className="w-full border border-gray-300 rounded px-1 py-0.5 text-[11px] focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                                          />
+                                        </div>
+                                        <div>
+                                          <label className="block mb-0.5 text-[10px] text-gray-600">Markup per unit (₱)</label>
+                                          <input
+                                            type="number"
+                                            min={0}
+                                            step={0.01}
+                                            value={adjustmentType === 'markup' ? adjustmentPerUnit || '' : ''}
+                                            onChange={e => {
+                                              const value = parseFloat(e.target.value || '0');
+                                              handleUpdateItem(current => ({
+                                                ...current,
+                                                adjustmentType: value > 0 ? 'markup' : 'none',
+                                                adjustmentPerUnit: value > 0 ? value : 0,
+                                              }));
+                                            }}
+                                            className="w-full border border-gray-300 rounded px-1 py-0.5 text-[11px] focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                                          />
+                                        </div>
+                                      </div>
+
+                                      {/* Reason */}
+                                      <div>
+                                        <label className="block mb-0.5 text-[10px] text-gray-600">Reason</label>
+                                        <input
+                                          type="text"
+                                          value={item.adjustmentReason ?? ''}
+                                          onChange={e =>
+                                            handleUpdateItem(current => ({
+                                              ...current,
+                                              adjustmentReason: e.target.value,
+                                            }))
+                                          }
+                                          placeholder="e.g. Loyal customer discount"
+                                          className="w-full border border-gray-300 rounded px-1 py-0.5 text-[11px] focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                                        />
+                                      </div>
+                                    </div>
                                   )}
                                 </div>
-                                <div className="flex flex-col items-end space-y-1">
-                                  <div className="flex items-center space-x-2">
-                                    <button
-                                      type="button"
-                                      onClick={() => updateQuantity(item.id, -1)}
-                                      className="p-1 text-gray-500 hover:text-gray-700 border border-gray-300 rounded"
-                                    >
-                                      <FaMinus size={10} />
-                                    </button>
-                                    <span className="text-sm font-medium text-gray-800 w-6 text-center">{item.quantity}</span>
-                                    <button
-                                      type="button"
-                                      onClick={() => updateQuantity(item.id, 1)}
-                                      className="p-1 text-gray-500 hover:text-gray-700 border border-gray-300 rounded"
-                                    >
-                                      <FaPlus size={10} />
-                                    </button>
-                                  </div>
-                                  <div className="text-sm font-semibold text-gray-900">
-                                    ₱{item.subtotal.toFixed(2)}
-                                  </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => updateQuantity(item.id, -item.quantity)}
-                                    className="text-xs text-red-600 hover:text-red-700"
-                                  >
-                                    Remove
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
 
                           <div className="mt-auto pt-3 border-t border-gray-200">
@@ -1468,12 +1653,33 @@ export function NewTransaction() {
                   <div className="bg-gray-50 p-4 rounded-md">
                     <h3 className="font-medium text-gray-700 mb-3">Order Summary</h3>
                     <div className="space-y-2">
-                      {cart.map(item => (
-                        <div key={item.id} className="flex justify-between" style={{ color: '#111827' }}>
-                          <span>{item.quantity}x {item.name}</span>
-                          <span>₱{item.subtotal.toFixed(2)}</span>
-                        </div>
-                      ))}
+                      {cart.map(item => {
+                        const specialUnits = item.specialUnits ?? 0;
+                        const adjustmentType = item.adjustmentType ?? 'none';
+                        const adjustmentPerUnit = item.adjustmentPerUnit ?? 0;
+
+                        const hasAdjustment =
+                          adjustmentType !== 'none' &&
+                          adjustmentPerUnit > 0 &&
+                          specialUnits > 0;
+
+                        return (
+                          <div key={item.id} className="flex justify-between" style={{ color: '#111827' }}>
+                            <div className="mr-3">
+                              <div>
+                                {item.quantity}x {item.name}
+                              </div>
+                              {hasAdjustment && (
+                                <div className="text-xs text-blue-700 mt-0.5">
+                                  {specialUnits} unit{specialUnits !== 1 ? 's' : ''} with
+                                  {adjustmentType === 'discount' ? ' discount' : ' markup'} of ₱{adjustmentPerUnit.toFixed(2)} each
+                                </div>
+                              )}
+                            </div>
+                            <span>₱{item.subtotal.toFixed(2)}</span>
+                          </div>
+                        );
+                      })}
                       <div className="border-t border-gray-200 pt-2 mt-2 font-bold flex justify-between">
                         <span style={{ color: '#111827' }}>Total:</span>
                         <span style={{ color: '#111827' }}>₱{calculateTotal().toFixed(2)}</span>

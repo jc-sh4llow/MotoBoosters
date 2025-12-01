@@ -1,4 +1,4 @@
-import { FaHome, FaGripLinesVertical, FaBars, FaWarehouse, FaTag, FaWrench, FaFileInvoice, FaPlus, FaUser, FaSearch, FaTimes, FaChevronDown, FaFilter, FaUndoAlt, FaCog } from 'react-icons/fa';
+import { FaHome, FaGripLinesVertical, FaBars, FaWarehouse, FaTag, FaWrench, FaFileInvoice, FaPlus, FaUser, FaSearch, FaTimes, FaChevronDown, FaFilter, FaUndoAlt, FaCog, FaFileExcel } from 'react-icons/fa';
 
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
@@ -11,7 +11,7 @@ import { can } from '../../config/permissions';
 
 export function Inventory() {
   // Sample data - replace with actual data from your backend
-  const inventoryItems = [];
+  const inventoryItems: any[] = [];
 
   const getRemainingStock = (item: any) => item.availableStock;
 
@@ -146,7 +146,6 @@ export function Inventory() {
       const width = window.innerWidth;
       const mobile = width < 768;
 
-
       setIsMobile(mobile);
       setIsCompactTable(width < 1200);
     };
@@ -156,7 +155,6 @@ export function Inventory() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-
 
   const menuItems = [
     { title: 'Sales Records', path: '/sales', icon: <FaTag /> },
@@ -220,13 +218,108 @@ export function Inventory() {
   // Item Details mode: false = view, true = edit
   const [isEditMode, setIsEditMode] = useState(false);
 
+  // Generated Item ID preview (e.g. OIL-HON-001)
+  const [generatedItemId, setGeneratedItemId] = useState('');
+
   // Inline table-only fields (not saved to Firestore): remarks & discount per itemId
   const [tableRemarks, setTableRemarks] = useState<Record<string, string>>({});
   const [tableDiscounts, setTableDiscounts] = useState<Record<string, string>>({});
   const [tableDiscountErrors, setTableDiscountErrors] = useState<Record<string, string>>({});
 
-  // Generated Item ID preview (e.g. OIL-HON-001)
-  const [generatedItemId, setGeneratedItemId] = useState('');
+  // Bulk Add Stock modal state
+  const [isBulkAddStockOpen, setIsBulkAddStockOpen] = useState(false);
+  const [bulkAddRows, setBulkAddRows] = useState<{
+    inventoryDocId: string;
+    quantity: string;
+  }[]>([
+    { inventoryDocId: '', quantity: '' },
+  ]);
+
+  const openBulkAddStock = () => {
+    setBulkAddRows([{ inventoryDocId: '', quantity: '' }]);
+    setIsBulkAddStockOpen(true);
+  };
+
+  const closeBulkAddStock = () => {
+    setIsBulkAddStockOpen(false);
+  };
+
+  const handleBulkRowChange = (index: number, field: 'inventoryDocId' | 'quantity', value: string) => {
+    setBulkAddRows(prev => {
+      const next = [...prev];
+      next[index] = { ...next[index], [field]: value };
+      return next;
+    });
+  };
+
+  const handleBulkAddRow = () => {
+    setBulkAddRows(prev => [...prev, { inventoryDocId: '', quantity: '' }]);
+  };
+
+  const handleBulkRemoveRow = (index: number) => {
+    setBulkAddRows(prev => {
+      if (prev.length === 1) return prev;
+      return prev.filter((_, i) => i !== index);
+    });
+  };
+
+  const handleSubmitBulkAddStock = async () => {
+    if (!canEditInventory) return;
+
+    const effectiveRows = bulkAddRows
+      .map(row => ({
+        inventoryDocId: row.inventoryDocId.trim(),
+        quantity: Number(row.quantity) || 0,
+      }))
+      .filter(row => row.inventoryDocId && row.quantity > 0);
+
+    if (effectiveRows.length === 0) {
+      setModalState({
+        open: true,
+        title: 'No Stock Changes',
+        message: 'Please select at least one item and enter a quantity greater than 0.',
+        variant: 'info',
+      });
+      return;
+    }
+
+    try {
+      for (const row of effectiveRows) {
+        const item = (firestoreItems || []).find(x => x.docId === row.inventoryDocId);
+        if (!item) continue;
+
+        const currentAvailable = Number(item.availableStock ?? 0) || 0;
+        const restockLevel = Number(item.restockLevel ?? 0) || 0;
+        const newAvailable = currentAvailable + row.quantity;
+        const nextStatus = computeStatusFromStock(newAvailable, restockLevel);
+
+        const ref = doc(inventoryCollection, row.inventoryDocId);
+        await updateDoc(ref, {
+          availableStock: newAvailable,
+          status: nextStatus,
+          updatedAt: new Date().toISOString(),
+        });
+      }
+
+      await loadInventory();
+
+      closeBulkAddStock();
+      setModalState({
+        open: true,
+        title: 'Stock Updated',
+        message: 'Stock levels have been updated for the selected items.',
+        variant: 'info',
+      });
+    } catch (err) {
+      console.error('Error applying bulk stock updates', err);
+      setModalState({
+        open: true,
+        title: 'Update Failed',
+        message: 'There was an error updating stock. Please try again.',
+        variant: 'error',
+      });
+    }
+  };
 
   const computeItemIdPreview = (type: string, brand: string, increment: number = 1) => {
     const normalize = (value: string) =>
@@ -367,7 +460,7 @@ export function Inventory() {
         setModalState({
           open: true,
           title: 'Missing Required Field',
-          message: 'Selling Price is required for new items.',
+          message: 'SRP is required for new items.',
           variant: 'error',
         });
         return;
@@ -583,6 +676,131 @@ export function Inventory() {
     });
   };
 
+  const handleExportInventoryCsv = async () => {
+    const baseSource = (firestoreItems.length ? firestoreItems : inventoryItems) as any[];
+    if (!baseSource.length) return;
+
+    const today = new Date().toISOString().split('T')[0];
+
+    const soldTodayByItem: Record<string, number> = {};
+    try {
+      const txItemsRef = collection(db, 'transactionItems');
+      const qItems = query(txItemsRef, where('date', '==', today));
+      const snap = await getDocs(qItems);
+
+      snap.forEach(docSnap => {
+        const data = docSnap.data() as any;
+        const code = (data.itemCode ?? '').toString();
+        const qty = Number(data.quantity ?? 0) || 0;
+        if (!code || !qty) return;
+        soldTodayByItem[code] = (soldTodayByItem[code] || 0) + qty;
+      });
+    } catch (err) {
+      console.error('Error aggregating today\'s transaction items for inventory export', err);
+    }
+
+    const headers = [
+      'Brand',
+      'Item Name',
+      'Total Available Stock',
+      'Total Quantity Sold',
+      'Sold Today',
+    ];
+
+    const escapeCell = (value: unknown): string => {
+      const str = (value ?? '').toString();
+      if (str.includes('"') || str.includes(',') || str.includes('\n') || str.includes('\r')) {
+        return '"' + str.replace(/"/g, '""') + '"';
+      }
+      return str;
+    };
+
+    const filtered = baseSource.filter((raw: any) => {
+      const brand = (raw.brand ?? '').toString();
+      const itemName = (raw.itemName ?? '').toString();
+      const type = (raw.type ?? raw.itemType ?? '').toString();
+      const selling = Number(raw.sellingPrice ?? 0) || 0;
+
+      const matchesSearch = !searchTerm
+        || brand.toLowerCase().includes(searchTerm.toLowerCase())
+        || itemName.toLowerCase().includes(searchTerm.toLowerCase());
+
+      const matchesMinPrice = !filters.minPrice || selling >= Number(filters.minPrice);
+      const matchesMaxPrice = !filters.maxPrice || selling <= Number(filters.maxPrice);
+
+      const matchesBrand = !filters.brand || brand === filters.brand;
+      const matchesType = !filters.type || type === filters.type;
+
+      let matchesStatus = true;
+      if (filters.status) {
+        const available = Number(raw.availableStock ?? 0) || 0;
+        const restockLevel = Number(raw.restockLevel ?? 0) || 0;
+        const statusLabel = computeStatusFromStock(available, restockLevel).toLowerCase();
+        if (filters.status === 'in-stock') {
+          matchesStatus = statusLabel === 'in stock';
+        } else if (filters.status === 'restock') {
+          matchesStatus = statusLabel === 'restock';
+        } else if (filters.status === 'out-of-stock') {
+          matchesStatus = statusLabel === 'out of stock';
+        }
+      }
+
+      return (
+        matchesSearch &&
+        matchesMinPrice &&
+        matchesMaxPrice &&
+        matchesBrand &&
+        matchesType &&
+        matchesStatus
+      );
+    });
+
+    const sorted = [...filtered];
+    if (filters.sortBy === 'price-asc') {
+      sorted.sort((a, b) => (Number(a.sellingPrice ?? 0) || 0) - (Number(b.sellingPrice ?? 0) || 0));
+    } else if (filters.sortBy === 'price-desc') {
+      sorted.sort((a, b) => (Number(b.sellingPrice ?? 0) || 0) - (Number(a.sellingPrice ?? 0) || 0));
+    }
+
+    if (!sorted.length) return;
+
+    const extractionLine = [
+      escapeCell('Extraction as of'),
+      escapeCell(today),
+    ].join(',');
+
+    const headerLine = headers.map(escapeCell).join(',');
+
+    const dataLines = sorted.map((item: any) => {
+      const available = Number(item.availableStock ?? 0) || 0;
+
+      const key = (item.itemId ?? item.id ?? '').toString();
+      const soldToday = key ? (soldTodayByItem[key] || 0) : 0;
+
+      const cells = [
+        (item.brand ?? '').toString(),
+        (item.itemName ?? '').toString(),
+        available.toString(),
+        Number(item.sold ?? 0).toString(),
+        soldToday.toString(),
+      ];
+
+      return cells.map(escapeCell).join(',');
+    });
+
+    const csv = [extractionLine, headerLine, ...dataLines].join('\r\n');
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `inventory_${today}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   // Derived profit margin for display
   const purchasePriceNum = Number(formItem.purchasePrice) || 0;
   const sellingPriceNum = Number(formItem.sellingPrice) || 0;
@@ -726,6 +944,190 @@ export function Inventory() {
         backgroundSize: 'cover',
         backgroundAttachment: 'fixed',
       }} />
+
+      {/* Bulk Add Stock Modal */}
+      {isBulkAddStockOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.45)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 2100,
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: 'white',
+              borderRadius: '0.75rem',
+              padding: '1.5rem 1.75rem',
+              maxWidth: '560px',
+              width: '100%',
+              boxShadow: '0 10px 40px rgba(15, 23, 42, 0.25)',
+              border: '1px solid #e5e7eb',
+            }}
+          >
+            <h2
+              style={{
+                fontSize: '1.1rem',
+                fontWeight: 600,
+                margin: 0,
+                marginBottom: '0.75rem',
+                color: '#111827',
+              }}
+            >
+              Add Stock to Multiple Items
+            </h2>
+            <p
+              style={{
+                fontSize: '0.9rem',
+                color: '#4b5563',
+                marginBottom: '1rem',
+              }}
+            >
+              Select one or more items and specify how much stock to add for each.
+            </p>
+
+            <div
+              style={{
+                maxHeight: '320px',
+                overflowY: 'auto',
+                marginBottom: '1rem',
+              }}
+            >
+              {bulkAddRows.map((row, index) => (
+                <div
+                  key={index}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '2fr 1fr auto',
+                    gap: '0.5rem',
+                    marginBottom: '0.6rem',
+                    alignItems: 'center',
+                  }}
+                >
+                  <select
+                    value={row.inventoryDocId}
+                    onChange={(e) => handleBulkRowChange(index, 'inventoryDocId', e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '0.45rem 0.6rem',
+                      borderRadius: '0.375rem',
+                      border: '1px solid #d1d5db',
+                      backgroundColor: 'white',
+                      color: '#111827',
+                      fontSize: '0.9rem',
+                    }}
+                  >
+                    <option value="">Select Item</option>
+                    {firestoreItems.map((item) => (
+                      <option key={item.docId} value={item.docId}>
+                        {item.brand ? `${item.brand} - ${item.itemName}` : item.itemName}
+                      </option>
+                    ))}
+                  </select>
+
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="Added Stock"
+                    value={row.quantity}
+                    onChange={(e) => handleBulkRowChange(index, 'quantity', e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '0.45rem 0.6rem',
+                      borderRadius: '0.375rem',
+                      border: '1px solid #d1d5db',
+                      fontSize: '0.9rem',
+                    }}
+                  />
+
+                  <div style={{ display: 'flex', gap: '0.25rem' }}>
+                    {bulkAddRows.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => handleBulkRemoveRow(index)}
+                        style={{
+                          padding: '0.35rem 0.6rem',
+                          borderRadius: '0.375rem',
+                          border: '1px solid #fecaca',
+                          backgroundColor: '#fef2f2',
+                          color: '#b91c1c',
+                          fontSize: '0.8rem',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Remove
+                      </button>
+                    )}
+                    {index === bulkAddRows.length - 1 && (
+                      <button
+                        type="button"
+                        onClick={handleBulkAddRow}
+                        style={{
+                          padding: '0.35rem 0.6rem',
+                          borderRadius: '0.375rem',
+                          border: '1px solid #d1d5db',
+                          backgroundColor: '#f9fafb',
+                          color: '#111827',
+                          fontSize: '0.8rem',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        + Add
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                gap: '0.75rem',
+                marginTop: '0.5rem',
+              }}
+            >
+              <button
+                type="button"
+                onClick={closeBulkAddStock}
+                style={{
+                  padding: '0.4rem 0.9rem',
+                  borderRadius: '0.375rem',
+                  border: '1px solid #e5e7eb',
+                  backgroundColor: 'white',
+                  color: '#374151',
+                  fontSize: '0.875rem',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSubmitBulkAddStock}
+                style={{
+                  padding: '0.4rem 0.9rem',
+                  borderRadius: '0.375rem',
+                  border: 'none',
+                  backgroundColor: '#1d4ed8',
+                  color: 'white',
+                  fontSize: '0.875rem',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                }}
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div style={{
         maxWidth: '1600px',
@@ -1475,7 +1877,7 @@ export function Inventory() {
                         />
                       </div>
 
-                      {/* Selling Price */}
+                      {/* SRP */}
                       <div style={{ marginBottom: '1rem' }}>
                         <label style={{
                           display: 'block',
@@ -1484,7 +1886,7 @@ export function Inventory() {
                           fontWeight: '500',
                           color: '#4b5563'
                         }}>
-                          Selling Price (₱) *
+                          SRP (₱) *
                         </label>
                         <input
                           type="number"
@@ -1556,7 +1958,7 @@ export function Inventory() {
                             padding: '0.5rem 0.75rem',
                             borderRadius: '0.375rem',
                             border: '1px solid #d1d5db',
-                            backgroundColor: '#f9fafb',
+                            backgroundColor: 'white',
                             color: '#111827'
                           }}
                           disabled={!isEditMode || !canEditInventory}
@@ -1858,7 +2260,7 @@ export function Inventory() {
                         setFilters({
                           minPrice: '',
                           maxPrice: '',
-                          sortBy: '',
+                          sortBy: '', // 'price-asc', 'price-desc'
                           brand: '',
                           type: '',
                           status: ''
@@ -2014,6 +2416,71 @@ export function Inventory() {
                   )}
                 </div>
 
+                {/* Actions: Bulk Add Stock + Export */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                  {canEditInventory && (
+                    <button
+                      type="button"
+                      onClick={openBulkAddStock}
+                      style={{
+                        backgroundColor: '#1d4ed8',
+                        color: 'white',
+                        padding: '0.5rem 0.9rem',
+                        borderRadius: '0.375rem',
+                        border: '1px solid #1d4ed8',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.4rem',
+                        transition: 'background-color 0.2s, color 0.2s, border-color 0.2s',
+                        fontWeight: 500,
+                        fontSize: '0.875rem',
+                      }}
+                      onMouseOver={(e) => {
+                        e.currentTarget.style.backgroundColor = '#1e40af';
+                        e.currentTarget.style.borderColor = '#1e40af';
+                      }}
+                      onMouseOut={(e) => {
+                        e.currentTarget.style.backgroundColor = '#1d4ed8';
+                        e.currentTarget.style.borderColor = '#1d4ed8';
+                      }}
+                    >
+                      <FaPlus /> Add Stock
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={handleExportInventoryCsv}
+                    style={{
+                      backgroundColor: 'white',
+                      color: '#1f2937',
+                      padding: '0.5rem 0.9rem',
+                      borderRadius: '0.375rem',
+                      border: '1px solid #d1d5db',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.4rem',
+                      transition: 'background-color 0.2s, color 0.2s, border-color 0.2s',
+                      fontWeight: 500,
+                      fontSize: '0.875rem',
+                    }}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.backgroundColor = '#eff6ff';
+                      e.currentTarget.style.borderColor = '#3b82f6';
+                      e.currentTarget.style.color = '#1d4ed8';
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.backgroundColor = 'white';
+                      e.currentTarget.style.borderColor = '#d1d5db';
+                      e.currentTarget.style.color = '#1f2937';
+                    }}
+                  >
+                    <FaFileExcel /> Export
+                  </button>
+                </div>
+
                 {/* Your existing table component goes here */}
                 <div style={{ overflowX: 'auto' }}>
                   <div style={{
@@ -2034,7 +2501,7 @@ export function Inventory() {
                           {isCompactTable ? (
                             <tr style={{ backgroundColor: '#f3f4f6', borderBottom: '1px solid #e5e7eb', textAlign: 'left', fontSize: '0.875rem', fontWeight: 600, color: '#4b5563' }}>
                               <th style={{ padding: '0.75rem 1.5rem' }}>ITEM</th>
-                              <th style={{ padding: '0.75rem 1.5rem', textAlign: 'center' }}>SELLING PRICE</th>
+                              <th style={{ padding: '0.75rem 1.5rem', textAlign: 'center' }}>SRP</th>
                               <th style={{ padding: '0.75rem 1.5rem', textAlign: 'center' }}>STATUS</th>
                               <th style={{ padding: '0.75rem 1.5rem', textAlign: 'center' }}>DISCOUNT</th>
                               <th style={{ padding: '0.75rem 1.5rem' }}>REMARKS</th>
@@ -2045,7 +2512,7 @@ export function Inventory() {
                               <th style={{ padding: '0.75rem 1.5rem' }}>ITEM NAME</th>
                               <th style={{ padding: '0.75rem 1.5rem', textAlign: 'center' }}>TYPE</th>
                               <th style={{ padding: '0.75rem 1.5rem', textAlign: 'center' }}>PURCHASE PRICE</th>
-                              <th style={{ padding: '0.75rem 1.5rem', textAlign: 'center' }}>SELLING PRICE</th>
+                              <th style={{ padding: '0.75rem 1.5rem', textAlign: 'center' }}>SRP</th>
                               <th style={{ padding: '0.75rem 1.5rem', textAlign: 'center' }}>AVAILABLE STOCK</th>
                               <th style={{ padding: '0.75rem 1.5rem', textAlign: 'center' }}>NO. SOLD</th>
                               <th style={{ padding: '0.75rem 1.5rem', textAlign: 'center' }}>STATUS</th>
@@ -2134,7 +2601,7 @@ export function Inventory() {
                                       )}
                                     </td>
 
-                                    {/* SELLING PRICE + purchase subtext (RCAB) */}
+                                    {/* SRP + purchase subtext (RCAB) */}
                                     <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>
                                       <div>₱{Number(item.sellingPrice ?? 0).toFixed(2)}</div>
                                       {canEditInventory && (
@@ -2409,7 +2876,7 @@ export function Inventory() {
                 <span>Purchase Price</span>
               </label>
 
-              {/* Selling Price */}
+              {/* SRP */}
               <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#111827' }}>
                 <input
                   type="checkbox"
@@ -2422,7 +2889,7 @@ export function Inventory() {
                     border: '1px solid #d1d5db',
                   }}
                 />
-                <span>Selling Price</span>
+                <span>SRP</span>
               </label>
 
               {/* Added Stock */}

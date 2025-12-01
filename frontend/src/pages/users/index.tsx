@@ -124,6 +124,12 @@ export function Users() {
 
   const [statusChangeConfirmed, setStatusChangeConfirmed] = useState(false);
 
+  const [roleChangeConfirm, setRoleChangeConfirm] = useState<{
+    userId: string;
+    previousRole: string;
+    nextRole: string;
+  } | null>(null);
+
   const [usersAlert, setUsersAlert] = useState<{
     title: string;
     message: string;
@@ -225,6 +231,39 @@ export function Users() {
     setStatusChangeConfirmed(false);
   };
 
+  const handleRoleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const nextRole = e.target.value;
+
+    setFormData(prev => {
+      // Only trigger confirmation for existing users, when an admin-like user
+      // changes role while the account is currently inactive.
+      const isExisting = !!prev.docId && !!selectedUserRow;
+      const originalStatus = (selectedUserRow?.status || '').toString().trim().toLowerCase();
+      const currentStatus = (prev.status || '').toString().trim().toLowerCase();
+      const wasInactive = originalStatus === 'inactive' || currentStatus === 'inactive';
+
+      if (
+        isExisting &&
+        isAdminLike &&
+        wasInactive &&
+        selectedUserRow &&
+        nextRole !== (selectedUserRow.role || '')
+      ) {
+        setRoleChangeConfirm({
+          userId: prev.docId,
+          previousRole: selectedUserRow.role || '',
+          nextRole,
+        });
+        // Do not change role yet; wait for confirmation.
+        return prev;
+      }
+
+      const updated = { ...prev, role: nextRole };
+      updated.userId = generateUserId(updated.fullName, updated.role);
+      return updated;
+    });
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => {
@@ -239,12 +278,9 @@ export function Users() {
         }
       }
 
-      // Auto-generate userId when role or fullName changes
-      if (name === 'role' || name === 'fullName') {
-        next.userId = generateUserId(
-          name === 'fullName' ? value : next.fullName,
-          name === 'role' ? value : next.role,
-        );
+      // Auto-generate userId when fullName changes
+      if (name === 'fullName') {
+        next.userId = generateUserId(value, next.role);
       }
 
       return next;
@@ -1280,7 +1316,7 @@ export function Users() {
                       <select
                         name="role"
                         value={formData.role}
-                        onChange={handleInputChange}
+                        onChange={handleRoleSelectChange}
                         disabled={!can(currentRole, 'users.edit.any') || !canEditUserDetails}
                         style={{
                           width: '100%',
@@ -1915,6 +1951,91 @@ export function Users() {
                 }}
               >
                 {confirmState.type === 'save' ? 'Save' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Role change auto-activate confirmation modal */}
+      {roleChangeConfirm && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 2600,
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '0.75rem',
+            padding: '1.5rem 2rem',
+            maxWidth: '420px',
+            width: '100%',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.25)',
+          }}>
+            <h2 style={{
+              fontSize: '1.125rem',
+              fontWeight: 600,
+              margin: 0,
+              marginBottom: '0.75rem',
+              color: '#111827',
+            }}>
+              Activate user with new role?
+            </h2>
+            <p style={{
+              fontSize: '0.875rem',
+              color: '#4b5563',
+              marginBottom: '1rem',
+            }}>
+              This user is currently inactive. Changing their role to "{roleChangeConfirm.nextRole}" will also
+              set the account status to <span style={{ fontWeight: 600 }}>Active</span>.
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+              <button
+                type="button"
+                onClick={() => setRoleChangeConfirm(null)}
+                style={{
+                  padding: '0.4rem 1rem',
+                  backgroundColor: 'white',
+                  borderRadius: '0.375rem',
+                  border: '1px solid #d1d5db',
+                  color: '#374151',
+                  fontSize: '0.875rem',
+                  cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setFormData(prev => {
+                    const next = {
+                      ...prev,
+                      role: roleChangeConfirm.nextRole,
+                      status: 'active',
+                    };
+                    next.userId = generateUserId(next.fullName, next.role);
+                    return next;
+                  });
+                  setStatusChangeConfirmed(true);
+                  setRoleChangeConfirm(null);
+                }}
+                style={{
+                  padding: '0.4rem 1.1rem',
+                  backgroundColor: '#2563eb',
+                  borderRadius: '0.375rem',
+                  border: 'none',
+                  color: 'white',
+                  fontSize: '0.875rem',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                }}
+              >
+                Yes, change role & activate
               </button>
             </div>
           </div>

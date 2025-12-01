@@ -22,6 +22,9 @@ type TransactionRow = {
     price: number;
     subtotal: number;
     type?: string;
+    specialUnits?: number;
+    adjustmentType?: 'none' | 'discount' | 'markup';
+    adjustmentPerUnit?: number;
   }[];
   itemCount: number;
   grandTotal: number;
@@ -152,6 +155,9 @@ export function Transactions() {
           price: Number(item.price ?? 0) || 0,
           subtotal: Number(item.subtotal ?? 0) || 0,
           type: item.type,
+          specialUnits: Number(item.specialUnits ?? 0) || 0,
+          adjustmentType: (item.adjustmentType ?? 'none') as 'none' | 'discount' | 'markup',
+          adjustmentPerUnit: Number(item.adjustmentPerUnit ?? 0) || 0,
         }));
 
         const itemCount = mappedItems.reduce((sum: number, it: { quantity: number }) => sum + it.quantity, 0);
@@ -305,6 +311,77 @@ export function Transactions() {
     } finally {
       setIsPaymentReviewProcessing(false);
     }
+  };
+
+  const getFilteredTransactionsForTable = () => {
+    return transactions.filter(tx => {
+      const matchesSearch = searchTerm === '' ||
+        tx.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        tx.id.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesDate = (!startDate || tx.date >= startDate) &&
+        (!endDate || tx.date <= endDate);
+      const matchesType = !transactionType || tx.type === transactionType;
+      const matchesPrice = (!minPrice || tx.grandTotal >= Number(minPrice)) &&
+        (!maxPrice || tx.grandTotal <= Number(maxPrice));
+      const matchesStatus = !statusFilter || tx.status === statusFilter;
+
+      return matchesSearch && matchesDate && matchesType && matchesPrice && matchesStatus;
+    });
+  };
+
+  const handleExportCsv = () => {
+    const rows = getFilteredTransactionsForTable();
+    if (!rows.length) {
+      return;
+    }
+
+    const headers = [
+      'Transaction ID',
+      'Date',
+      'Customer',
+      'Type',
+      'Items',
+      'Grand Total',
+      'Payment Type',
+      'Status',
+    ];
+
+    const escapeCell = (value: unknown): string => {
+      const str = (value ?? '').toString();
+      if (str.includes('"') || str.includes(',') || str.includes('\n') || str.includes('\r')) {
+        return '"' + str.replace(/"/g, '""') + '"';
+      }
+      return str;
+    };
+
+    const dataLines = rows.map(tx => {
+      const displayDate = tx.date ? new Date(tx.date).toLocaleDateString() : '';
+      const cells = [
+        tx.transactionCode || tx.id,
+        displayDate,
+        tx.customer,
+        tx.type,
+        tx.itemCount.toString(),
+        tx.grandTotal.toFixed(2),
+        tx.paymentType,
+        tx.status,
+      ];
+      return cells.map(escapeCell).join(',');
+    });
+
+    const csv = [headers.join(','), ...dataLines].join('\r\n');
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = url;
+    const today = new Date().toISOString().split('T')[0];
+    link.download = `transactions_${today}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -974,35 +1051,66 @@ export function Transactions() {
                 }}>
                   Transaction Records
                 </h2>
-                <button
-                  onClick={() => {
-                    setSearchTerm('');
-                    setStartDate('');
-                    setEndDate('');
-                    setTransactionType('');
-                    setMinPrice('');
-                    setMaxPrice('');
-                    loadTransactions();
-                  }}
-                  style={{
-                    backgroundColor: '#3b82f6',
-                    color: 'white',
-                    padding: '0.5rem 1rem',
-                    borderRadius: '0.375rem',
-                    border: 'none',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    transition: 'background-color 0.2s',
-                    fontWeight: '500',
-                    fontSize: '0.875rem'
-                  }}
-                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
-                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#3b82f6'}
-                >
-                  <FaRedo /> Refresh
-                </button>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button
+                    onClick={handleExportCsv}
+                    style={{
+                      backgroundColor: 'white',
+                      color: '#1f2937',
+                      padding: '0.5rem 0.9rem',
+                      borderRadius: '0.375rem',
+                      border: '1px solid #d1d5db',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.4rem',
+                      transition: 'background-color 0.2s, color 0.2s, border-color 0.2s',
+                      fontWeight: '500',
+                      fontSize: '0.875rem',
+                    }}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.backgroundColor = '#eff6ff';
+                      e.currentTarget.style.borderColor = '#3b82f6';
+                      e.currentTarget.style.color = '#1d4ed8';
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.backgroundColor = 'white';
+                      e.currentTarget.style.borderColor = '#d1d5db';
+                      e.currentTarget.style.color = '#1f2937';
+                    }}
+                  >
+                    <FaFileExcel /> Export
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSearchTerm('');
+                      setStartDate('');
+                      setEndDate('');
+                      setTransactionType('');
+                      setMinPrice('');
+                      setMaxPrice('');
+                      loadTransactions();
+                    }}
+                    style={{
+                      backgroundColor: '#3b82f6',
+                      color: 'white',
+                      padding: '0.5rem 1rem',
+                      borderRadius: '0.375rem',
+                      border: 'none',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      transition: 'background-color 0.2s',
+                      fontWeight: '500',
+                      fontSize: '0.875rem'
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
+                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#3b82f6'}
+                  >
+                    <FaRedo /> Refresh
+                  </button>
+                </div>
               </div>
 
               <div style={{
@@ -1045,20 +1153,7 @@ export function Transactions() {
                     </tr>
                   </thead>
                   <tbody>
-                    {transactions
-                      .filter(tx => {
-                        const matchesSearch = searchTerm === '' ||
-                          tx.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          tx.id.toLowerCase().includes(searchTerm.toLowerCase());
-                        const matchesDate = (!startDate || tx.date >= startDate) &&
-                          (!endDate || tx.date <= endDate);
-                        const matchesType = !transactionType || tx.type === transactionType;
-                        const matchesPrice = (!minPrice || tx.grandTotal >= Number(minPrice)) &&
-                          (!maxPrice || tx.grandTotal <= Number(maxPrice));
-                        const matchesStatus = !statusFilter || tx.status === statusFilter;
-
-                        return matchesSearch && matchesDate && matchesType && matchesPrice && matchesStatus;
-                      })
+                    {getFilteredTransactionsForTable()
                       .map((tx, index) => (
                         <tr
                           key={tx.id}
@@ -1142,7 +1237,35 @@ export function Transactions() {
                             textAlign: 'right',
                             whiteSpace: 'nowrap'
                           }}>
-                            ₱{tx.grandTotal.toLocaleString()}
+                            <div>
+                              ₱{tx.grandTotal.toLocaleString()}
+                            </div>
+                            {(() => {
+                              const adjustments = (tx.items || []).filter(item =>
+                                (item.adjustmentType === 'discount' || item.adjustmentType === 'markup') &&
+                                (item.adjustmentPerUnit || 0) > 0 &&
+                                (item.specialUnits || 0) > 0,
+                              );
+
+                              if (adjustments.length === 0) return null;
+
+                              const totalAdjAmount = adjustments.reduce((sum, it) => {
+                                const qty = it.specialUnits || 0;
+                                const per = it.adjustmentPerUnit || 0;
+                                return sum + qty * per;
+                              }, 0);
+
+                              return (
+                                <div style={{
+                                  fontSize: '0.75rem',
+                                  fontWeight: 400,
+                                  color: '#2563eb',
+                                  marginTop: '0.15rem'
+                                }}>
+                                  Discount/Markup: ₱{totalAdjAmount.toFixed(2)}
+                                </div>
+                              );
+                            })()}
                           </td>
                           <td style={{
                             padding: '1rem 1.5rem',
@@ -1335,16 +1458,34 @@ export function Transactions() {
                               </tr>
                             </thead>
                             <tbody>
-                              {selectedTransaction.items.map((item, idx) => (
-                                <tr key={idx}>
-                                  <td style={{ padding: '0.5rem' }}>{item.name}</td>
-                                  <td style={{ padding: '0.5rem', textAlign: 'center' }}>{item.quantity}</td>
-                                  <td style={{ padding: '0.5rem', textAlign: 'right' }}>₱{item.price.toFixed(2)}</td>
-                                  <td style={{ padding: '0.5rem', textAlign: 'right' }}>
-                                    ₱{item.subtotal.toFixed(2)}
-                                  </td>
-                                </tr>
-                              ))}
+                              {selectedTransaction.items.map((item, idx) => {
+                                const specialUnits = item.specialUnits || 0;
+                                const adjustmentPerUnit = item.adjustmentPerUnit || 0;
+                                const adjustmentType = item.adjustmentType || 'none';
+                                const hasAdjustment =
+                                  (adjustmentType === 'discount' || adjustmentType === 'markup') &&
+                                  adjustmentPerUnit > 0 &&
+                                  specialUnits > 0;
+
+                                return (
+                                  <tr key={idx}>
+                                    <td style={{ padding: '0.5rem' }}>
+                                      <div>{item.name}</div>
+                                      {hasAdjustment && (
+                                        <div style={{ fontSize: '0.75rem', color: '#2563eb', marginTop: '0.1rem' }}>
+                                          {specialUnits} unit{specialUnits !== 1 ? 's' : ''} with
+                                          {adjustmentType === 'discount' ? ' discount' : ' markup'} of ₱{adjustmentPerUnit.toFixed(2)} each
+                                        </div>
+                                      )}
+                                    </td>
+                                    <td style={{ padding: '0.5rem', textAlign: 'center' }}>{item.quantity}</td>
+                                    <td style={{ padding: '0.5rem', textAlign: 'right' }}>₱{item.price.toFixed(2)}</td>
+                                    <td style={{ padding: '0.5rem', textAlign: 'right' }}>
+                                      ₱{item.subtotal.toFixed(2)}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
                             </tbody>
                           </table>
                         ) : (

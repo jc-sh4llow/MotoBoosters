@@ -177,6 +177,7 @@ export function NewTransaction() {
           inventoryDocId: string;
           basePrice: number;
           discountAmount: number;
+          netDiscountAmount: number;
         }[] = [];
 
         inventorySnap.forEach(docSnap => {
@@ -187,9 +188,12 @@ export function NewTransaction() {
             const itemName = (data.itemName ?? '').toString();
             const sellingPriceNum = Number(data.sellingPrice ?? 0);
             const defaultDiscountRaw = (data.defaultDiscount ?? '').toString().trim();
+            const defaultMarkupRaw = (data.defaultMarkup ?? '').toString().trim();
             const discountAmount = defaultDiscountRaw === '' ? 0 : Number(defaultDiscountRaw);
+            const markupAmount = defaultMarkupRaw === '' ? 0 : Number(defaultMarkupRaw);
             const basePrice = isNaN(sellingPriceNum) ? 0 : sellingPriceNum;
-            const effectivePrice = Math.max(basePrice - (isNaN(discountAmount) ? 0 : discountAmount), 0);
+            const effectivePrice = Math.max(basePrice - (isNaN(discountAmount) ? 0 : discountAmount) + (isNaN(markupAmount) ? 0 : markupAmount), 0);
+            const netDiscountAmount = Math.max(basePrice - effectivePrice, 0);
             const id = (data.itemId ?? docSnap.id).toString();
             const itemType = (data.itemType ?? data.type ?? '').toString();
             const availableStockNum = Number(data.availableStock ?? 0);
@@ -207,6 +211,7 @@ export function NewTransaction() {
                 inventoryDocId: docSnap.id,
                 basePrice,
                 discountAmount: isNaN(discountAmount) ? 0 : discountAmount,
+                netDiscountAmount: isNaN(netDiscountAmount) ? 0 : netDiscountAmount,
               });
             }
           }

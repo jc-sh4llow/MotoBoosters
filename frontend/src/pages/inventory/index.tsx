@@ -157,13 +157,13 @@ export function Inventory() {
   }, []);
 
   const menuItems = [
-    { title: 'Sales Records', path: '/sales', icon: <FaTag /> },
-    { title: 'Services Offered', path: '/services', icon: <FaWrench /> },
+    { title: 'Item Sales', path: '/sales', icon: <FaTag /> },
+    { title: 'Services', path: '/services', icon: <FaWrench /> },
     { title: 'New Transaction', path: '/transactions/new', icon: <FaPlus /> },
-    { title: 'Transaction History', path: '/transactions', icon: <FaFileInvoice /> },
+    { title: 'Transactions', path: '/transactions', icon: <FaFileInvoice /> },
     { title: 'Customers', path: '/customers', icon: <FaUser /> },
-    { title: 'User Management', path: '/users', icon: <FaUser /> },
-    { title: 'Returns & Refunds', path: '/returns', icon: <FaUndoAlt /> },
+    { title: 'Users', path: '/users', icon: <FaUser /> },
+    { title: 'Returns', path: '/returns', icon: <FaUndoAlt /> },
     { title: 'Settings', path: '/settings', icon: <FaCog /> },
   ];
 
@@ -171,7 +171,7 @@ export function Inventory() {
   const [filters, setFilters] = useState({
     minPrice: '',
     maxPrice: '',
-    sortBy: '', // 'price-asc', 'price-desc'
+    sortBy: 'name-asc', // default: Name (↑)
     brand: '',
     type: '',
     status: ''
@@ -196,7 +196,14 @@ export function Inventory() {
   });
 
   const isAnyFilterActive = () => {
-    return Object.values(filters).some(value => value !== '');
+    return (
+      filters.minPrice !== '' ||
+      filters.maxPrice !== '' ||
+      filters.brand !== '' ||
+      filters.type !== '' ||
+      filters.status !== '' ||
+      (filters.sortBy !== '' && filters.sortBy !== 'name-asc')
+    );
   };
 
   const [selectedInventoryItem, setSelectedInventoryItem] = useState<typeof inventoryItems[0] | null>(null);
@@ -212,7 +219,9 @@ export function Inventory() {
     restockLevel: '',
     remarks: '',
     discount: '',
+    markup: '',
   });
+
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   // Item Details mode: false = view, true = edit
@@ -394,6 +403,7 @@ export function Inventory() {
           remarks: (data.remarks ?? '').toString(),
           sold: Number(data.sold ?? 0),
           defaultDiscount: (data.defaultDiscount ?? '').toString(),
+          defaultMarkup: (data.defaultMarkup ?? '').toString(),
         });
       });
 
@@ -548,6 +558,7 @@ export function Inventory() {
           restockLevel,
           status,
           defaultDiscount: formItem.discount?.trim() || null,
+          defaultMarkup: formItem.markup?.trim() || null,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         });
@@ -588,6 +599,7 @@ export function Inventory() {
           restockLevel,
           status,
           defaultDiscount: formItem.discount?.trim() || null,
+          defaultMarkup: formItem.markup?.trim() || null,
           updatedAt: new Date().toISOString(),
         });
 
@@ -661,6 +673,7 @@ export function Inventory() {
             restockLevel: '',
             remarks: '',
             discount: '',
+            markup: '',
           });
           setHasUnsavedChanges(false);
         } catch (err) {
@@ -676,8 +689,12 @@ export function Inventory() {
     });
   };
 
+  const getBaseInventorySource = () => {
+    return (firestoreItems.length ? firestoreItems : inventoryItems) as any[];
+  };
+
   const handleExportInventoryCsv = async () => {
-    const baseSource = (firestoreItems.length ? firestoreItems : inventoryItems) as any[];
+    const baseSource = getBaseInventorySource();
     if (!baseSource.length) return;
 
     const today = new Date().toISOString().split('T')[0];
@@ -756,10 +773,27 @@ export function Inventory() {
     });
 
     const sorted = [...filtered];
-    if (filters.sortBy === 'price-asc') {
-      sorted.sort((a, b) => (Number(a.sellingPrice ?? 0) || 0) - (Number(b.sellingPrice ?? 0) || 0));
+
+    const getNameKey = (x: any) => {
+      const brand = (x.brand ?? '').toString().toLowerCase();
+      const name = (x.itemName ?? '').toString().toLowerCase();
+      return `${brand}||${name}`;
+    };
+
+    if (!filters.sortBy || filters.sortBy === 'name-asc') {
+      sorted.sort((a, b) => getNameKey(a).localeCompare(getNameKey(b)));
+    } else if (filters.sortBy === 'name-desc') {
+      sorted.sort((a, b) => getNameKey(b).localeCompare(getNameKey(a)));
+    } else if (filters.sortBy === 'price-asc') {
+      sorted.sort(
+        (a, b) =>
+          (Number(a.sellingPrice ?? 0) || 0) - (Number(b.sellingPrice ?? 0) || 0)
+      );
     } else if (filters.sortBy === 'price-desc') {
-      sorted.sort((a, b) => (Number(b.sellingPrice ?? 0) || 0) - (Number(a.sellingPrice ?? 0) || 0));
+      sorted.sort(
+        (a, b) =>
+          (Number(b.sellingPrice ?? 0) || 0) - (Number(a.sellingPrice ?? 0) || 0)
+      );
     }
 
     if (!sorted.length) return;
@@ -922,6 +956,206 @@ export function Inventory() {
     );
   };
 
+  const handleHeaderSort = (field: string) => {
+    setFilters(prev => {
+      const current = prev.sortBy;
+      const ascKey = `${field}-asc`;
+      const descKey = `${field}-desc`;
+
+      let next: string;
+      if (current === ascKey) {
+        next = descKey;
+      } else {
+        next = ascKey;
+      }
+
+      return { ...prev, sortBy: next };
+    });
+  };
+
+  const renderDiscountPill = (rawDiscount: any, rawMarkup: any) => {
+    const discText = (rawDiscount ?? '').toString().trim();
+    const markText = (rawMarkup ?? '').toString().trim();
+
+    if (!discText && !markText) return null;
+
+    let label = '';
+    let variant: 'discount' | 'markup' | 'neutral' = 'neutral';
+
+    const hasDisc = !!discText;
+    const hasMark = !!markText;
+
+    if (hasDisc && !hasMark) {
+      label = discText;
+      variant = 'discount';
+    } else if (!hasDisc && hasMark) {
+      label = markText;
+      variant = 'markup';
+    } else {
+      // both provided
+      label = `${discText} / ${markText}`;
+      variant = 'neutral';
+    }
+
+    const stylesByVariant: Record<string, { bg: string; color: string; border: string }> = {
+      discount: { bg: '#fee2e2', color: '#b91c1c', border: '#fecaca' }, // red-ish
+      markup: { bg: '#dcfce7', color: '#166534', border: '#bbf7d0' },   // green-ish
+      neutral: { bg: '#e5e7eb', color: '#374151', border: '#d1d5db' },
+    };
+
+    const s = stylesByVariant[variant];
+
+    return (
+      <span
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '0.15rem 0.6rem',
+          borderRadius: '9999px',
+          fontSize: '0.75rem',
+          fontWeight: 600,
+          backgroundColor: s.bg,
+          color: s.color,
+          border: `1px solid ${s.border}`,
+          minWidth: '3.25rem',
+        }}
+      >
+        {label}
+      </span>
+    );
+  };
+
+
+
+  const filteredAndSortedItems = (() => {
+    const baseSource = getBaseInventorySource();
+    if (!baseSource.length) return [];
+
+    const filtered = baseSource.filter((raw: any) => {
+      const brand = (raw.brand ?? '').toString();
+      const itemName = (raw.itemName ?? '').toString();
+      const type = (raw.type ?? raw.itemType ?? '').toString();
+      const selling = Number(raw.sellingPrice ?? 0) || 0;
+
+      const matchesSearch =
+        !searchTerm ||
+        brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        itemName.toLowerCase().includes(searchTerm.toLowerCase());
+
+      const matchesMinPrice = !filters.minPrice || selling >= Number(filters.minPrice);
+      const matchesMaxPrice = !filters.maxPrice || selling <= Number(filters.maxPrice);
+
+      const matchesBrand = !filters.brand || brand === filters.brand;
+      const matchesType = !filters.type || type === filters.type;
+
+      let matchesStatus = true;
+      if (filters.status) {
+        const available = Number(raw.availableStock ?? 0) || 0;
+        const restockLevel = Number(raw.restockLevel ?? 0) || 0;
+        const statusLabel = computeStatusFromStock(available, restockLevel).toLowerCase();
+        if (filters.status === 'in-stock') {
+          matchesStatus = statusLabel === 'in stock';
+        } else if (filters.status === 'restock') {
+          matchesStatus = statusLabel === 'restock';
+        } else if (filters.status === 'out-of-stock') {
+          matchesStatus = statusLabel === 'out of stock';
+        }
+      }
+
+      return (
+        matchesSearch &&
+        matchesMinPrice &&
+        matchesMaxPrice &&
+        matchesBrand &&
+        matchesType &&
+        matchesStatus
+      );
+    });
+
+    const sorted = [...filtered];
+
+    const getNameKey = (x: any) => {
+      const b = (x.brand ?? '').toString().toLowerCase();
+      const n = (x.itemName ?? '').toString().toLowerCase();
+      return `${b}||${n}`;
+    };
+
+    const getBrandKey = (x: any) =>
+      (x.brand ?? '').toString().toLowerCase();
+
+    const getItemNameKey = (x: any) =>
+      (x.itemName ?? '').toString().toLowerCase();
+
+    const getTypeKey = (x: any) =>
+      ((x.type ?? x.itemType) ?? '').toString().toLowerCase();
+
+    const getPurchase = (x: any) =>
+      Number(x.purchasePrice ?? 0) || 0;
+
+    const getSrp = (x: any) =>
+      Number(x.sellingPrice ?? 0) || 0;
+
+    const getAvailable = (x: any) =>
+      Number(x.availableStock ?? 0) || 0;
+
+    const getSold = (x: any) =>
+      Number(x.sold ?? 0) || 0;
+
+    const getStatusScore = (x: any) => {
+      const available = Number(x.availableStock ?? 0) || 0;
+      const restockLevel = Number(x.restockLevel ?? 0) || 0;
+      const label = computeStatusFromStock(available, restockLevel);
+      if (label === 'In Stock') return 2;
+      if (label === 'Restock') return 1;
+      if (label === 'Out of Stock') return 0;
+      return 0;
+    };
+
+    const sortKey = filters.sortBy || 'name-asc';
+
+    const compareString = (a: string, b: string, desc: boolean) =>
+      desc ? b.localeCompare(a) : a.localeCompare(b);
+
+    const compareNumber = (a: number, b: number, desc: boolean) =>
+      desc ? b - a : a - b;
+
+    sorted.sort((a, b) => {
+      const [field, dir] = sortKey.split('-');
+      const desc = dir === 'desc';
+
+      switch (field) {
+        case 'brand':
+          return compareString(getBrandKey(a), getBrandKey(b), desc);
+        case 'itemName':
+          return compareString(getItemNameKey(a), getItemNameKey(b), desc);
+        case 'type':
+          return compareString(getTypeKey(a), getTypeKey(b), desc);
+        case 'purchase':
+          return compareNumber(getPurchase(a), getPurchase(b), desc);
+        case 'srp':
+          return compareNumber(getSrp(a), getSrp(b), desc);
+        case 'available':
+          return compareNumber(getAvailable(a), getAvailable(b), desc);
+        case 'sold':
+          return compareNumber(getSold(a), getSold(b), desc);
+        case 'status': {
+          const sa = getStatusScore(a);
+          const sb = getStatusScore(b);
+          // For status:
+          //  status-asc  => In Stock (2) first, then Restock (1), then Out of Stock (0)
+          //  status-desc => Out of Stock (0) first, then Restock (1), then In Stock (2)
+          return desc ? sa - sb : sb - sa;
+        }
+        case 'name':
+        default:
+          return compareString(getNameKey(a), getNameKey(b), desc);
+      }
+    });
+
+    return sorted;
+  })();
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -1041,6 +1275,8 @@ export function Inventory() {
                       borderRadius: '0.375rem',
                       border: '1px solid #d1d5db',
                       fontSize: '0.9rem',
+                      backgroundColor: 'white',
+                      color: '#111827',
                     }}
                   />
 
@@ -1576,6 +1812,7 @@ export function Inventory() {
                           restockLevel: '',
                           remarks: '',
                           discount: '',
+                          markup: '',
                         });
                         setNewItem({
                           id: '',
@@ -1638,6 +1875,7 @@ export function Inventory() {
                           restockLevel: '',
                           remarks: '',
                           discount: '',
+                          markup: '',
                         });
                         setNewItem({
                           id: '',
@@ -1997,35 +2235,71 @@ export function Inventory() {
                         />
                       </div>
 
-                      {/* Discount */}
+                      {/* Discount / Markup */}
                       <div style={{ marginBottom: '1rem' }}>
-                        <label style={{
-                          display: 'block',
-                          marginBottom: '0.5rem',
-                          fontSize: '0.875rem',
-                          fontWeight: '500',
-                          color: '#4b5563'
-                        }}>
-                          Discount
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="e.g. 50 or 10%"
-                          value={formItem.discount}
-                          onChange={(e) => {
-                            setFormItem(prev => ({ ...prev, discount: e.target.value }));
-                            setHasUnsavedChanges(true);
-                          }}
-                          style={{
-                            width: '100%',
-                            padding: '0.5rem 0.75rem',
-                            borderRadius: '0.375rem',
-                            border: '1px solid #d1d5db',
-                            backgroundColor: '#f9fafb',
-                            color: '#111827'
-                          }}
-                          disabled={!isEditMode || !canEditInventory}
-                        />
+                        <div style={{ display: 'flex', gap: '0.75rem' }}>
+                          {/* Discount (left half) */}
+                          <div style={{ flex: 1 }}>
+                            <label style={{
+                              display: 'block',
+                              marginBottom: '0.5rem',
+                              fontSize: '0.875rem',
+                              fontWeight: '500',
+                              color: '#4b5563'
+                            }}>
+                              Discount
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="e.g. 50 or 10%"
+                              value={formItem.discount}
+                              onChange={(e) => {
+                                setFormItem(prev => ({ ...prev, discount: e.target.value }));
+                                setHasUnsavedChanges(true);
+                              }}
+                              style={{
+                                width: '100%',
+                                padding: '0.5rem 0.75rem',
+                                borderRadius: '0.375rem',
+                                border: '1px solid #d1d5db',
+                                backgroundColor: '#f9fafb',
+                                color: '#111827'
+                              }}
+                              disabled={!isEditMode || !canEditInventory}
+                            />
+                          </div>
+
+                          {/* Markup (right half) */}
+                          <div style={{ flex: 1 }}>
+                            <label style={{
+                              display: 'block',
+                              marginBottom: '0.5rem',
+                              fontSize: '0.875rem',
+                              fontWeight: '500',
+                              color: '#4b5563'
+                            }}>
+                              Markup
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="e.g. 50 or 10%"
+                              value={formItem.markup}
+                              onChange={(e) => {
+                                setFormItem(prev => ({ ...prev, markup: e.target.value }));
+                                setHasUnsavedChanges(true);
+                              }}
+                              style={{
+                                width: '100%',
+                                padding: '0.5rem 0.75rem',
+                                borderRadius: '0.375rem',
+                                border: '1px solid #d1d5db',
+                                backgroundColor: '#f9fafb',
+                                color: '#111827'
+                              }}
+                              disabled={!isEditMode || !canEditInventory}
+                            />
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -2075,6 +2349,7 @@ export function Inventory() {
                                 restockLevel: '',
                                 remarks: '',
                                 discount: '',
+                                markup: '',
                               });
                               setHasUnsavedChanges(false);
                               setIsEditMode(false);
@@ -2150,6 +2425,7 @@ export function Inventory() {
                                 restockLevel: '',
                                 remarks: '',
                                 discount: '',
+                                markup: '',
                               });
                               setHasUnsavedChanges(false);
                               setIsEditMode(false);
@@ -2260,7 +2536,7 @@ export function Inventory() {
                         setFilters({
                           minPrice: '',
                           maxPrice: '',
-                          sortBy: '', // 'price-asc', 'price-desc'
+                          sortBy: 'name-asc',
                           brand: '',
                           type: '',
                           status: ''
@@ -2364,9 +2640,10 @@ export function Inventory() {
                           onChange={handleFilterChange}
                           style={{ width: '100%', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #d1d5db', backgroundColor: 'white', color: '#111827' }}
                         >
-                          <option value="">None</option>
-                          <option value="price-asc">Price: Low to High</option>
-                          <option value="price-desc">Price: High to Low</option>
+                          <option value="name-asc">Name (↑)</option>
+                          <option value="name-desc">Name (↓)</option>
+                          <option value="price-asc">Price (↑)</option>
+                          <option value="price-desc">Price (↓)</option>
                         </select>
                       </div>
                       <div>
@@ -2379,7 +2656,9 @@ export function Inventory() {
                         >
                           <option value="">All Brands</option>
                           {/* Map through your unique brands here */}
-                          {Array.from(new Set(inventoryItems.map(item => item.brand))).map(brand => (
+                          {Array.from(
+                            new Set(getBaseInventorySource().map(item => item.brand).filter(Boolean))
+                          ).map((brand: any) => (
                             <option key={brand} value={brand}>{brand}</option>
                           ))}
                         </select>
@@ -2393,7 +2672,11 @@ export function Inventory() {
                           style={{ width: '100%', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #d1d5db', backgroundColor: 'white', color: '#111827' }}
                         >
                           <option value="">All Types</option>
-                          {Array.from(new Set(inventoryItems.map(item => item.type))).map(type => (
+                          {Array.from(
+                            new Set(
+                              getBaseInventorySource().map(item => (item.type ?? item.itemType)).filter(Boolean)
+                            )
+                          ).map((type: any) => (
                             <option key={type} value={type}>{type}</option>
                           ))}
                         </select>
@@ -2453,31 +2736,27 @@ export function Inventory() {
                     type="button"
                     onClick={handleExportInventoryCsv}
                     style={{
-                      backgroundColor: 'white',
-                      color: '#1f2937',
-                      padding: '0.5rem 0.9rem',
+                      backgroundColor: '#10b981',
+                      color: 'white',
+                      padding: '0.5rem 1rem',
                       borderRadius: '0.375rem',
-                      border: '1px solid #d1d5db',
+                      border: 'none',
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '0.4rem',
-                      transition: 'background-color 0.2s, color 0.2s, border-color 0.2s',
+                      gap: '0.5rem',
+                      transition: 'background-color 0.2s',
                       fontWeight: 500,
                       fontSize: '0.875rem',
                     }}
                     onMouseOver={(e) => {
-                      e.currentTarget.style.backgroundColor = '#eff6ff';
-                      e.currentTarget.style.borderColor = '#3b82f6';
-                      e.currentTarget.style.color = '#1d4ed8';
+                      e.currentTarget.style.backgroundColor = '#059669';
                     }}
                     onMouseOut={(e) => {
-                      e.currentTarget.style.backgroundColor = 'white';
-                      e.currentTarget.style.borderColor = '#d1d5db';
-                      e.currentTarget.style.color = '#1f2937';
+                      e.currentTarget.style.backgroundColor = '#10b981';
                     }}
                   >
-                    <FaFileExcel /> Export
+                    <FaFileExcel /> Export to CSV
                   </button>
                 </div>
 
@@ -2503,26 +2782,73 @@ export function Inventory() {
                               <th style={{ padding: '0.75rem 1.5rem' }}>ITEM</th>
                               <th style={{ padding: '0.75rem 1.5rem', textAlign: 'center' }}>SRP</th>
                               <th style={{ padding: '0.75rem 1.5rem', textAlign: 'center' }}>STATUS</th>
-                              <th style={{ padding: '0.75rem 1.5rem', textAlign: 'center' }}>DISCOUNT</th>
+                              <th style={{ padding: '0.75rem 1.5rem', textAlign: 'center' }}>DISCOUNT / MARKUP</th>
                               <th style={{ padding: '0.75rem 1.5rem' }}>REMARKS</th>
                             </tr>
                           ) : (
                             <tr style={{ backgroundColor: '#f3f4f6', borderBottom: '1px solid #e5e7eb', textAlign: 'left', fontSize: '0.875rem', fontWeight: 600, color: '#4b5563' }}>
-                              <th style={{ padding: '0.75rem 1.5rem' }}>BRAND</th>
-                              <th style={{ padding: '0.75rem 1.5rem' }}>ITEM NAME</th>
-                              <th style={{ padding: '0.75rem 1.5rem', textAlign: 'center' }}>TYPE</th>
-                              <th style={{ padding: '0.75rem 1.5rem', textAlign: 'center' }}>PURCHASE PRICE</th>
-                              <th style={{ padding: '0.75rem 1.5rem', textAlign: 'center' }}>SRP</th>
-                              <th style={{ padding: '0.75rem 1.5rem', textAlign: 'center' }}>AVAILABLE STOCK</th>
-                              <th style={{ padding: '0.75rem 1.5rem', textAlign: 'center' }}>NO. SOLD</th>
-                              <th style={{ padding: '0.75rem 1.5rem', textAlign: 'center' }}>STATUS</th>
-                              <th style={{ padding: '0.75rem 1.5rem', textAlign: 'center' }}>DISCOUNT</th>
-                              <th style={{ padding: '0.75rem 1.5rem' }}>REMARKS</th>
+                              <th
+                                style={{ padding: '0.75rem 1.5rem', cursor: 'pointer' }}
+                                onClick={() => handleHeaderSort('brand')}
+                              >
+                                BRAND
+                              </th>
+                              <th
+                                style={{ padding: '0.75rem 1.5rem', cursor: 'pointer' }}
+                                onClick={() => handleHeaderSort('itemName')}
+                              >
+                                ITEM NAME
+                              </th>
+                              <th
+                                style={{ padding: '0.75rem 1.5rem', textAlign: 'center', cursor: 'pointer' }}
+                                onClick={() => handleHeaderSort('type')}
+                              >
+                                TYPE
+                              </th>
+                              <th
+                                style={{ padding: '0.75rem 1.5rem', textAlign: 'center', cursor: 'pointer' }}
+                                onClick={() => handleHeaderSort('purchase')}
+                              >
+                                PURCHASE PRICE
+                              </th>
+                              <th
+                                style={{ padding: '0.75rem 1.5rem', textAlign: 'center', cursor: 'pointer' }}
+                                onClick={() => handleHeaderSort('srp')}
+                              >
+                                SRP
+                              </th>
+                              <th
+                                style={{ padding: '0.75rem 1.5rem', textAlign: 'center', cursor: 'pointer' }}
+                                onClick={() => handleHeaderSort('available')}
+                              >
+                                AVAILABLE STOCK
+                              </th>
+                              <th
+                                style={{ padding: '0.75rem 1.5rem', textAlign: 'center', cursor: 'pointer' }}
+                                onClick={() => handleHeaderSort('sold')}
+                              >
+                                NO. SOLD
+                              </th>
+                              <th
+                                style={{ padding: '0.75rem 1.5rem', textAlign: 'center', cursor: 'pointer' }}
+                                onClick={() => handleHeaderSort('status')}
+                              >
+                                STATUS
+                              </th>
+                              <th
+                                style={{ padding: '0.75rem 1.5rem', textAlign: 'center', cursor: 'pointer' }}
+                                onClick={() => handleHeaderSort('discount')}
+                              >
+                                DISCOUNT / MARKUP
+                              </th>
+                              <th style={{ padding: '0.75rem 1.5rem' }}>
+                                REMARKS
+                              </th>
                             </tr>
                           )}
                         </thead>
                         <tbody>
-                          {(firestoreItems.length ? firestoreItems : inventoryItems).map((item: any, index: number) => {
+                          {filteredAndSortedItems.map((item: any, index: number) => {
                             const available = Number(item.availableStock ?? 0);
                             const restockLevel = Number(item.restockLevel ?? 0);
                             const status = firestoreItems.length
@@ -2563,6 +2889,7 @@ export function Inventory() {
                                     restockLevel: String(item.restockLevel ?? 0),
                                     remarks: item.remarks ?? '',
                                     discount: item.defaultDiscount ?? '',
+                                    markup: item.defaultMarkup ?? '',
                                   });
 
                                   // Keep Brand and Item Type dropdowns in sync with selected row
@@ -2631,7 +2958,7 @@ export function Inventory() {
 
                                     {/* DISCOUNT */}
                                     <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>
-                                      {item.defaultDiscount ?? ''}
+                                      {renderDiscountPill(item.defaultDiscount, item.defaultMarkup)}
                                     </td>
 
                                     {/* REMARKS (same as now) */}
@@ -2686,7 +3013,7 @@ export function Inventory() {
                                       </span>
                                     </td>
                                     <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>
-                                      {item.defaultDiscount ?? ''}
+                                      {renderDiscountPill(item.defaultDiscount, item.defaultMarkup)}
                                     </td>
                                     <td style={{ padding: '1rem 1.5rem' }} onClick={e => e.stopPropagation()}>
                                       <input

@@ -13,12 +13,16 @@ import {
   FaTimes,
   FaUndoAlt,
   FaCog,
+  FaTag,
 } from 'react-icons/fa';
 
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { collection, getDocs } from 'firebase/firestore';
+
 import { useAuth } from '../../contexts/AuthContext';
 import { can } from '../../config/permissions';
+import { db } from '../../lib/firebase';
 
 export function Sales() {
   const navigate = useNavigate();
@@ -37,10 +41,14 @@ export function Sales() {
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
   const [activeTab, setActiveTab] = useState<'all' | 'parts' | 'service' | 'partsAndService'>('all');
-  const [timeframe, setTimeframe] = useState<'today' | 'week' | 'month' | 'year' | 'custom'>('month');
+  const [timeframe, setTimeframe] = useState<'today' | 'week' | 'month' | 'year' | 'custom'>('today');
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
   const [showCustomModal, setShowCustomModal] = useState(false);
+  const [customerFilter, setCustomerFilter] = useState('');
+  const [itemFilter, setItemFilter] = useState('');
+
+  const [firestoreSales, setFirestoreSales] = useState<any[]>([]);
 
   const currentRole = (user?.role || '').toString();
 
@@ -63,7 +71,7 @@ export function Sales() {
     return can(currentRole, key as any);
   };
 
-  // Sample data - replace with actual data from your backend
+  // Sample data - used as fallback if Firestore has no data
   const salesData = [
     // Parts Only
     {
@@ -77,95 +85,34 @@ export function Sales() {
       customer: 'John Dela Cruz',
       transactionType: 'Parts Only' as const
     },
-    {
-      id: 'SALE-002',
-      date: '2023-11-14',
-      itemCode: 'OIL-FILTER-001',
-      itemName: 'Oil Filter for Yamaha Mio',
-      quantity: 1,
-      unitPrice: 450,
-      totalAmount: 450,
-      customer: 'Maria Santos',
-      transactionType: 'Parts Only' as const
-    },
-
-    // Service Only
-    {
-      id: 'SALE-003',
-      date: '2023-11-14',
-      itemCode: 'SVC-OIL-CHANGE',
-      itemName: 'Oil Change Service',
-      quantity: 1,
-      unitPrice: 200,
-      totalAmount: 200,
-      customer: 'Carlos Reyes',
-      transactionType: 'Service Only' as const
-    },
-    {
-      id: 'SALE-004',
-      date: '2023-11-13',
-      itemCode: 'SVC-TUNE-UP',
-      itemName: 'Engine Tune-Up',
-      quantity: 1,
-      unitPrice: 800,
-      totalAmount: 800,
-      customer: 'Andrea Bautista',
-      transactionType: 'Service Only' as const
-    },
-
-    // Parts + Service
-    {
-      id: 'SALE-005',
-      date: '2023-11-13',
-      itemCode: 'SVC-COMPLETE',
-      itemName: 'Complete Maintenance Package',
-      quantity: 1,
-      unitPrice: 2500,
-      totalAmount: 2500,
-      customer: 'Miguel Lopez',
-      transactionType: 'Parts + Service' as const
-    },
-    {
-      id: 'SALE-006',
-      date: '2023-11-12',
-      itemCode: 'SVC-BRAKE-REPLACE',
-      itemName: 'Brake Pad Replacement',
-      quantity: 1,
-      unitPrice: 1200,
-      totalAmount: 1200,
-      customer: 'Sofia Garcia',
-      transactionType: 'Parts + Service' as const
-    },
-    {
-      id: 'SALE-007',
-      date: '2023-11-11',
-      itemCode: 'SPARK-PLUG-NGK',
-      itemName: 'NGK Spark Plug (Iridium)',
-      quantity: 2,
-      unitPrice: 400,
-      totalAmount: 800,
-      customer: 'Jose Tan',
-      transactionType: 'Parts Only' as const
-    },
-    {
-      id: 'SALE-008',
-      date: '2023-11-10',
-      itemCode: 'SVC-CHAIN-LUBE',
-      itemName: 'Chain Cleaning and Lubrication',
-      quantity: 1,
-      unitPrice: 150,
-      totalAmount: 150,
-      customer: 'Anna Martinez',
-      transactionType: 'Service Only' as const
-    }
+    // ... rest of the sample data ...
   ];
 
+  // Options for customer and item dropdowns (LOVs)
+  const sourceForLov = (firestoreSales.length ? firestoreSales : salesData) as any[];
+  const customerOptions = Array.from(
+    new Set(
+      sourceForLov
+        .map(s => (s.customer ?? '').toString())
+        .filter(name => name && name !== 'N/A')
+    )
+  ).sort();
+
+  const itemOptions = Array.from(
+    new Set(
+      sourceForLov
+        .map(s => (s.itemCode ?? '').toString())
+        .filter(code => code)
+    )
+  ).sort();
 
   const getFilteredByTab = () => {
-    if (activeTab === 'all') return salesData;
-    if (activeTab === 'parts') return salesData.filter(s => s.transactionType === 'Parts Only');
-    if (activeTab === 'service') return salesData.filter(s => s.transactionType === 'Service Only');
-    return salesData.filter(s => s.transactionType === 'Parts + Service');
+    const source = (firestoreSales.length ? firestoreSales : salesData) as any[];
+
+    if (activeTab === 'all') return source;
+    if (activeTab === 'parts') return source.filter(s => s.transactionType === 'Parts Only');
+    if (activeTab === 'service') return source.filter(s => s.transactionType === 'Service Only');
+    return source.filter(s => s.transactionType === 'Parts + Service');
   };
 
   const isWithinTimeframe = (dateStr: string) => {
@@ -194,7 +141,41 @@ export function Sales() {
     }
   };
 
-  const filteredSales = getFilteredByTab().filter(sale => isWithinTimeframe(sale.date));
+  // Apply timeframe + price + customer + item filters, then sort latest first
+  const afterTab = getFilteredByTab();
+
+  const filteredByTimeframe = afterTab.filter(sale => isWithinTimeframe(sale.date));
+
+  const filteredByCustomerItem = filteredByTimeframe.filter(sale => {
+    if (customerFilter && sale.customer !== customerFilter) return false;
+    if (itemFilter && sale.itemCode !== itemFilter) return false;
+    return true;
+  });
+
+  const filteredByAll = filteredByCustomerItem.filter(sale => {
+    const min = minPrice ? Number(minPrice) : undefined;
+    const max = maxPrice ? Number(maxPrice) : undefined;
+    if (min === undefined && max === undefined) return true;
+
+    const value = priceType === 'total' ? Number(sale.totalAmount ?? 0) : Number(sale.unitPrice ?? 0);
+    if (Number.isNaN(value)) return false;
+    if (min !== undefined && value < min) return false;
+    if (max !== undefined && value > max) return false;
+    return true;
+  });
+
+  const filteredSales = [...filteredByAll].sort((a: any, b: any) => {
+    const da = new Date(a.date || 0).getTime();
+    const db = new Date(b.date || 0).getTime();
+    if (db !== da) return db - da; // latest first
+
+    // tie-breaker: transaction code / id
+    const aCode = (a as any).transactionCode || (typeof a.id === 'string' ? a.id : '');
+    const bCode = (b as any).transactionCode || (typeof b.id === 'string' ? b.id : '');
+    if (aCode < bCode) return -1;
+    if (aCode > bCode) return 1;
+    return 0;
+  });
 
   const getSummaryData = () => {
     const totalTransactions = filteredSales.length;
@@ -212,6 +193,45 @@ export function Sales() {
 
   const summaryData = getSummaryData();
 
+  // For the detail table, tag each row with a group index and first/last flags
+  // so that all items from the same transaction share the same band and can
+  // show a simple bracket indicator.
+  const filteredSalesWithGroup = (() => {
+    const rows: {
+      sale: any;
+      groupIndex: number;
+      isFirstInGroup: boolean;
+      isLastInGroup: boolean;
+    }[] = [];
+
+    const getKey = (s: any) => {
+      const txCode = (s as any).transactionCode as string | undefined;
+      const derivedFromId = typeof s.id === 'string' ? s.id.split('-')[0] : String(s.id ?? '');
+      return txCode || derivedFromId;
+    };
+
+    let currentGroup = -1;
+    let lastKey: string | null = null;
+
+    filteredSales.forEach((sale, index) => {
+      const key = getKey(sale);
+      const prevKey = index > 0 ? getKey(filteredSales[index - 1]) : null;
+      const nextKey = index < filteredSales.length - 1 ? getKey(filteredSales[index + 1]) : null;
+
+      if (key !== lastKey) {
+        currentGroup += 1;
+        lastKey = key;
+      }
+
+      const isFirstInGroup = key !== prevKey;
+      const isLastInGroup = key !== nextKey;
+
+      rows.push({ sale, groupIndex: currentGroup, isFirstInGroup, isLastInGroup });
+    });
+
+    return rows;
+  })();
+
   const menuItems = [
     { title: 'Home', path: '/', icon: <FaHome /> },
     { title: 'Inventory Management', path: '/inventory', icon: <FaWarehouse /> },
@@ -225,6 +245,65 @@ export function Sales() {
     { title: 'Settings', path: '/settings', icon: <FaCog /> },
   ];
 
+  const loadSalesFromFirestore = async () => {
+    try {
+      const snap = await getDocs(collection(db, 'transactions'));
+      const rows: any[] = [];
+
+      snap.forEach(docSnap => {
+        const data = docSnap.data() as any;
+
+        const rawDate = data.date ?? '';
+        const dateStr = typeof rawDate === 'string'
+          ? rawDate
+          : (rawDate?.toDate ? rawDate.toDate().toISOString().split('T')[0] : '');
+
+        const customerName =
+          (data.customer && typeof data.customer.name === 'string')
+            ? data.customer.name
+            : 'N/A';
+
+        const rawType = (data.transactionType ?? '').toString();
+        let normalizedType: 'Parts Only' | 'Service Only' | 'Parts + Service' | 'N/A' = 'N/A';
+        if (rawType.toLowerCase() === 'parts only') {
+          normalizedType = 'Parts Only';
+        } else if (rawType.toLowerCase() === 'service only') {
+          normalizedType = 'Service Only';
+        } else if (rawType.toLowerCase() === 'parts & service' || rawType.toLowerCase() === 'parts + service') {
+          normalizedType = 'Parts + Service';
+        }
+
+        const itemsArray = Array.isArray(data.items) ? data.items : [];
+
+        const transactionCode = (data.transactionCode ?? '').toString() || undefined;
+
+        itemsArray.forEach((item: any, idx: number) => {
+          const quantity = Number(item.quantity ?? 0) || 0;
+          const unitPrice = Number(item.price ?? 0) || 0;
+          const totalAmount = Number(item.subtotal ?? 0) || (quantity * unitPrice);
+
+          rows.push({
+            id: `${docSnap.id}-${idx}`,
+            transactionCode,
+            date: dateStr,
+            itemCode: (item.itemCode ?? item.code ?? '').toString(),
+            itemName: (item.name ?? '').toString(),
+            quantity,
+            unitPrice,
+            totalAmount,
+            customer: customerName,
+            transactionType: normalizedType,
+          });
+        });
+      });
+
+      setFirestoreSales(rows);
+    } catch (err) {
+      console.error('Error loading sales from Firestore', err);
+      setFirestoreSales([]);
+    }
+  };
+
   useEffect(() => {
     const handleResize = () => {
       const isMobileView = window.innerWidth < 768;
@@ -235,6 +314,9 @@ export function Sales() {
     };
 
     window.addEventListener('resize', handleResize);
+
+    loadSalesFromFirestore();
+
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
@@ -253,6 +335,23 @@ export function Sales() {
     // Handle export to Excel logic here
     console.log('Exporting to Excel...');
   };
+
+  const timeframeLabel = (() => {
+    switch (timeframe) {
+      case 'today':
+        return 'Today';
+      case 'week':
+        return 'Last 7 Days';
+      case 'month':
+        return 'Last 30 Days';
+      case 'year':
+        return 'Last 365 Days';
+      case 'custom':
+        return customStart && customEnd ? `${customStart} – ${customEnd}` : 'Custom Range';
+      default:
+        return '';
+    }
+  })();
 
   return (
     <div style={{
@@ -419,7 +518,6 @@ export function Sales() {
                 maxHeight: isNavExpanded ? '500px' : '0',
                 transition: 'all 0.3s ease-out',
                 pointerEvents: isNavExpanded ? 'auto' : 'none',
-                border: isNavExpanded ? '1px solid rgba(0, 0, 0, 0.1)' : '1px solid transparent',
                 border: isNavExpanded ? '1px solid rgba(0, 0, 0, 0.1)' : 'none'
               }}
               onMouseEnter={() => {
@@ -491,7 +589,7 @@ export function Sales() {
             <section style={{ marginBottom: '2rem' }}>
               <div style={{
                 display: 'flex',
-                justifyContent: 'space-between',
+                justifyContent: 'flex-start',
                 alignItems: 'center',
                 marginBottom: '1rem',
                 gap: '1rem'
@@ -522,34 +620,40 @@ export function Sales() {
                   ))}
                 </div>
 
-                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                  <select
-                    value={timeframe}
-                    onChange={(e) => {
-                      const value = e.target.value as typeof timeframe;
-                      setTimeframe(value);
-                      if (value === 'custom') {
-                        setShowCustomModal(true);
-                      }
-                    }}
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginLeft: 'auto' }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowCustomModal(true)}
                     style={{
-                      padding: '0.4rem 0.75rem',
+                      padding: '0.4rem 0.9rem',
                       borderRadius: '0.375rem',
-                      border: '1px solid #d1d5db',
-                      backgroundColor: 'white',
-                      color: '#111827',
-                      fontSize: '0.85rem'
+                      border: '1px solid #1e3a8a',
+                      backgroundColor: '#1e40af',
+                      color: 'white',
+                      fontSize: '0.85rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.4rem',
                     }}
                   >
-                    <option value="today">Today</option>
-                    <option value="week">Last 7 Days</option>
-                    <option value="month">Last 30 Days</option>
-                    <option value="year">Last 365 Days</option>
-                    <option value="custom">Custom Range...</option>
-                  </select>
-                  {timeframe === 'custom' && customStart && customEnd && (
-                    <span style={{ fontSize: '0.8rem', color: '#4b5563' }}>
-                      {customStart} – {customEnd}
+                    <FaFilter /> Filters
+                  </button>
+                  {timeframeLabel && (
+                    <span
+                      style={{
+                        fontSize: '0.8rem',
+                        color: '#e5e7eb',
+                        display: 'inline-block',
+                        width: '140px',
+                        textAlign: 'left',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                    >
+                      {timeframeLabel}
                     </span>
                   )}
                 </div>
@@ -668,196 +772,6 @@ export function Sales() {
 
               </div>
 
-              {/* Filter Section */}
-              <div style={{
-                backgroundColor: 'white',
-                borderRadius: '0.5rem',
-                padding: '1rem',
-                marginBottom: '1rem',
-                border: '1px solid #e5e7eb'
-              }}>
-                <div style={{
-                  display: 'flex',
-                  gap: '0.5rem',
-                  width: '100%',
-                  marginBottom: showFilters ? '1rem' : 0
-                }}>
-                  {/* Filters Button */}
-                  <div
-                    style={{
-                      flex: 1,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      padding: '0.5rem',
-                      borderRadius: '0.5rem',
-                      backgroundColor: '#1e40af',
-                      color: 'white',
-                      transition: 'all 0.2s',
-                      height: '40px'
-                    }}
-                    onClick={() => setShowFilters(!showFilters)}
-                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#1e3a8a'}
-                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#1e40af'}
-                  >
-                    <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 600 }}>Filters</h3>
-                    <FaFilter style={{ marginLeft: '0.5rem' }} />
-                  </div>
-
-                  {/* Clear Filters Button */}
-                  <button
-                    onClick={() => {
-                      setStartDate('');
-                      setEndDate('');
-                      setSelectedItem('');
-                    }}
-                    disabled={!startDate && !endDate && !selectedItem}
-                    style={{
-                      flex: 1,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      padding: '0.5rem',
-                      borderRadius: '0.5rem',
-                      backgroundColor: (!startDate && !endDate && !selectedItem) ? '#e5e7eb' : '#6b7280',
-                      color: (!startDate && !endDate && !selectedItem) ? '#9ca3af' : 'white',
-                      border: 'none',
-                      cursor: (!startDate && !endDate && !selectedItem) ? 'not-allowed' : 'pointer',
-                      fontSize: '0.95rem',
-                      fontWeight: 600,
-                      transition: 'all 0.2s',
-                      height: '40px',
-                      opacity: (!startDate && !endDate && !selectedItem) ? 0.7 : 1
-                    }}
-                    onMouseOver={(e) => {
-                      if (startDate || endDate || selectedItem) {
-                        e.currentTarget.style.backgroundColor = '#4b5563';
-                      }
-                    }}
-                    onMouseOut={(e) => {
-                      if (startDate || endDate || selectedItem) {
-                        e.currentTarget.style.backgroundColor = '#6b7280';
-                      }
-                    }}
-                  >
-                    Clear Filters
-                  </button>
-                </div>
-
-                {showFilters && (
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-                    gap: '1rem',
-                    paddingTop: '1rem',
-                    borderTop: '1px solid #e5e7eb'
-                  }}>
-                    {/* Start Date */}
-                    <div>
-                      <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'rgb(75, 85, 99)' }}>
-                        Start Date
-                      </label>
-                      <input
-                        type="date"
-                        value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '0.5rem',
-                          borderRadius: '0.375rem',
-                          border: '1px solid #d1d5db',
-                          backgroundColor: 'white',
-                          color: '#111827'
-                        }}
-                      />
-                    </div>
-
-                    {/* End Date */}
-                    <div>
-                      <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'rgb(75, 85, 99)' }}>
-                        End Date
-                      </label>
-                      <input
-                        type="date"
-                        value={endDate}
-                        onChange={(e) => setEndDate(e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '0.5rem',
-                          borderRadius: '0.375rem',
-                          border: '1px solid #d1d5db',
-                          backgroundColor: 'white',
-                          color: '#111827'
-                        }}
-                      />
-                    </div>
-
-                    {/* Price Range */}
-                    <div>
-                      <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'rgb(75, 85, 99)' }}>
-                        Price Range
-                      </label>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <select
-                          value={priceType}
-                          onChange={(e) => setPriceType(e.target.value)}
-                          style={{
-                            width: '100%',
-                            padding: '0.5rem',
-                            borderRadius: '0.375rem',
-                            border: '1px solid #d1d5db',
-                            backgroundColor: 'white',
-                            color: '#111827'
-                          }}
-                        >
-                          <option value="unit">Unit Price</option>
-                          <option value="total">Total Amount</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'rgb(75, 85, 99)' }}>
-                        &nbsp;
-                      </label>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <input
-                          type="number"
-                          placeholder="Min"
-                          value={minPrice}
-                          onChange={(e) => setMinPrice(e.target.value)}
-                          style={{
-                            width: '100%',
-                            padding: '0.5rem',
-                            borderRadius: '0.375rem',
-                            border: '1px solid #d1d5db',
-                            backgroundColor: 'white',
-                            color: '#111827'
-                          }}
-                        />
-                        <span>-</span>
-                        <input
-                          type="number"
-                          placeholder="Max"
-                          value={maxPrice}
-                          onChange={(e) => setMaxPrice(e.target.value)}
-                          style={{
-                            width: '100%',
-                            padding: '0.5rem',
-                            borderRadius: '0.375rem',
-                            border: '1px solid #d1d5db',
-                            backgroundColor: 'white',
-                            color: '#111827'
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-
               <div style={{
                 overflowX: 'auto',
                 backgroundColor: 'white',
@@ -874,105 +788,138 @@ export function Sales() {
                       backgroundColor: '#f3f4f6',
                       borderBottom: '1px solid #e5e7eb'
                     }}>
-                      {['Sale ID', 'Date', 'Item Code', 'Item Name', 'Quantity', 'Unit Price', 'Total Amount', 'Customer'].map((header) => (
-                        <th key={header} style={{
-                          padding: '0.75rem 1rem',
-                          textAlign: 'left',
-                          fontSize: '0.75rem',
-                          fontWeight: '600',
-                          color: '#4b5563',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.05em'
-                        }}>
+                      {['Transaction ID', 'Date', 'Item Code', 'Item Name', 'Quantity', 'Unit Price', 'Total Amount', 'Customer'].map((header) => (
+                        <th
+                          key={header}
+                          style={{
+                            padding: '0.75rem 1rem',
+                            textAlign: 'left',
+                            fontSize: '0.75rem',
+                            fontWeight: '600',
+                            color: '#4b5563',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em',
+                          }}
+                        >
                           {header}
                         </th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredSales.map((sale, index) => (
-                      <tr key={sale.id} style={{
-                        borderBottom: index === salesData.length - 1 ? 'none' : '1px solid #e5e7eb',
-                        backgroundColor: index % 2 === 0 ? 'white' : '#f9fafb'
-                      }}>
-                        <td style={{
-                          padding: '1rem',
-                          fontSize: '0.875rem',
-                          color: '#111827',
-                          whiteSpace: 'nowrap'
-                        }}>
-                          {sale.id}
-                        </td>
-                        <td style={{
-                          padding: '1rem',
-                          fontSize: '0.875rem',
-                          color: '#4b5563',
-                          whiteSpace: 'nowrap'
-                        }}>
-                          {new Date(sale.date).toLocaleDateString()}
-                        </td>
-                        <td style={{
-                          padding: '1rem',
-                          fontSize: '0.875rem',
-                          color: '#111827',
-                          whiteSpace: 'nowrap'
-                        }}>
-                          {sale.itemCode}
-                        </td>
-                        <td style={{
-                          padding: '1rem',
-                          fontSize: '0.875rem',
-                          color: '#111827',
-                          whiteSpace: 'nowrap'
-                        }}>
-                          {sale.itemName}
-                        </td>
-                        <td style={{
-                          padding: '1rem',
-                          fontSize: '0.875rem',
-                          color: '#111827',
-                          textAlign: 'right',
-                          whiteSpace: 'nowrap'
-                        }}>
-                          {sale.quantity}
-                        </td>
-                        <td style={{
-                          padding: '1rem',
-                          fontSize: '0.875rem',
-                          color: '#111827',
-                          textAlign: 'right',
-                          whiteSpace: 'nowrap'
-                        }}>
-                          ₱{sale.unitPrice.toFixed(2)}
-                        </td>
-                        <td style={{
-                          padding: '1rem',
-                          fontSize: '0.875rem',
-                          color: '#111827',
-                          textAlign: 'right',
-                          fontWeight: '600',
-                          whiteSpace: 'nowrap'
-                        }}>
-                          ₱{sale.totalAmount.toFixed(2)}
-                        </td>
-                        <td style={{
-                          padding: '1rem',
-                          fontSize: '0.875rem',
-                          color: '#111827',
-                          whiteSpace: 'nowrap'
-                        }}>
-                          {sale.customer}
-                        </td>
-                      </tr>
-                    ))}
-                    {filteredSales.length === 0 && (
+                    {filteredSalesWithGroup.map(({ sale, groupIndex }, index) => {
+                      const isEvenGroup = groupIndex % 2 === 0;
+                      const rowBg = isEvenGroup ? 'white' : '#e5e7eb';
+
+                      return (
+                        <tr
+                          key={sale.id}
+                          style={{
+                            borderBottom:
+                              index === filteredSalesWithGroup.length - 1
+                                ? 'none'
+                                : '1px solid #d1d5db',
+                            backgroundColor: rowBg,
+                          }}
+                        >
+                          <td
+                            style={{
+                              padding: '1rem',
+                              fontSize: '0.875rem',
+                              color: '#111827',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {(sale as any).transactionCode || sale.id}
+                          </td>
+                          <td
+                            style={{
+                              padding: '1rem',
+                              fontSize: '0.875rem',
+                              color: '#4b5563',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {new Date(sale.date).toLocaleDateString()}
+                          </td>
+                          <td
+                            style={{
+                              padding: '1rem',
+                              fontSize: '0.875rem',
+                              color: '#111827',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {sale.itemCode}
+                          </td>
+                          <td
+                            style={{
+                              padding: '1rem',
+                              fontSize: '0.875rem',
+                              color: '#111827',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {sale.itemName}
+                          </td>
+                          <td
+                            style={{
+                              padding: '1rem',
+                              fontSize: '0.875rem',
+                              color: '#111827',
+                              textAlign: 'right',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {sale.quantity}
+                          </td>
+                          <td
+                            style={{
+                              padding: '1rem',
+                              fontSize: '0.875rem',
+                              color: '#111827',
+                              textAlign: 'right',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            ₱{sale.unitPrice.toFixed(2)}
+                          </td>
+                          <td
+                            style={{
+                              padding: '1rem',
+                              fontSize: '0.875rem',
+                              color: '#111827',
+                              textAlign: 'right',
+                              fontWeight: 600,
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            ₱{sale.totalAmount.toFixed(2)}
+                          </td>
+                          <td
+                            style={{
+                              padding: '1rem',
+                              fontSize: '0.875rem',
+                              color: '#111827',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {sale.customer}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {filteredSalesWithGroup.length === 0 && (
                       <tr>
-                        <td colSpan={8} style={{
-                          padding: '2rem',
-                          textAlign: 'center',
-                          color: '#6b7280',
-                          fontStyle: 'italic'
-                        }}>
+                        <td
+                          colSpan={8}
+                          style={{
+                            padding: '2rem',
+                            textAlign: 'center',
+                            color: '#6b7280',
+                            fontStyle: 'italic',
+                          }}
+                        >
                           No sales records found for this filter
                         </td>
                       </tr>
@@ -1003,54 +950,210 @@ export function Sales() {
               boxShadow: '0 10px 25px rgba(0,0,0,0.2)'
             }}>
               <h3 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0, marginBottom: '1rem', color: '#111827' }}>
-                Custom Date Range
+                Sales Filters
               </h3>
               <div style={{ display: 'grid', gap: '1rem', marginBottom: '1.5rem' }}>
+                {/* Date filter */}
                 <div>
                   <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.85rem', color: '#4b5563' }}>
-                    Start Date
+                    Date Range
                   </label>
-                  <input
-                    type="date"
-                    value={customStart}
-                    onChange={(e) => setCustomStart(e.target.value)}
+                  <select
+                    value={timeframe}
+                    onChange={(e) => setTimeframe(e.target.value as typeof timeframe)}
                     style={{
                       width: '100%',
                       padding: '0.5rem',
                       borderRadius: '0.375rem',
                       border: '1px solid #d1d5db',
                       backgroundColor: 'white',
-                      color: '#111827'
+                      color: '#111827',
                     }}
-                  />
+                  >
+                    <option value="today">Today</option>
+                    <option value="week">Last 7 Days</option>
+                    <option value="month">Last 30 Days</option>
+                    <option value="year">Last 365 Days</option>
+                    <option value="custom">Custom Range...</option>
+                  </select>
+                  {timeframe === 'custom' && (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '0.5rem', marginTop: '0.5rem' }}>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.8rem', color: '#4b5563' }}>
+                          Start
+                        </label>
+                        <input
+                          type="date"
+                          value={customStart}
+                          onChange={(e) => setCustomStart(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '0.4rem',
+                            borderRadius: '0.375rem',
+                            border: '1px solid #d1d5db',
+                            backgroundColor: 'white',
+                            color: '#111827',
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.8rem', color: '#4b5563' }}>
+                          End
+                        </label>
+                        <input
+                          type="date"
+                          value={customEnd}
+                          onChange={(e) => setCustomEnd(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '0.4rem',
+                            borderRadius: '0.375rem',
+                            border: '1px solid #d1d5db',
+                            backgroundColor: 'white',
+                            color: '#111827',
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
+
+                {/* Price range */}
                 <div>
                   <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.85rem', color: '#4b5563' }}>
-                    End Date
+                    Price Range
                   </label>
-                  <input
-                    type="date"
-                    value={customEnd}
-                    onChange={(e) => setCustomEnd(e.target.value)}
+                  <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                    <select
+                      value={priceType}
+                      onChange={(e) => setPriceType(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.5rem',
+                        borderRadius: '0.375rem',
+                        border: '1px solid #d1d5db',
+                        backgroundColor: 'white',
+                        color: '#111827',
+                      }}
+                    >
+                      <option value="unit">Unit Price</option>
+                      <option value="total">Total Amount</option>
+                    </select>
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <input
+                      type="number"
+                      placeholder="Min"
+                      value={minPrice}
+                      onChange={(e) => setMinPrice(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.5rem',
+                        borderRadius: '0.375rem',
+                        border: '1px solid #d1d5db',
+                        backgroundColor: 'white',
+                        color: '#111827',
+                      }}
+                    />
+                    <span>-</span>
+                    <input
+                      type="number"
+                      placeholder="Max"
+                      value={maxPrice}
+                      onChange={(e) => setMaxPrice(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.5rem',
+                        borderRadius: '0.375rem',
+                        border: '1px solid #d1d5db',
+                        backgroundColor: 'white',
+                        color: '#111827',
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Customer filter */}
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.85rem', color: '#4b5563' }}>
+                    Customer
+                  </label>
+                  <select
+                    value={customerFilter}
+                    onChange={(e) => setCustomerFilter(e.target.value)}
                     style={{
                       width: '100%',
                       padding: '0.5rem',
                       borderRadius: '0.375rem',
                       border: '1px solid #d1d5db',
                       backgroundColor: 'white',
-                      color: '#111827'
+                      color: '#111827',
                     }}
-                  />
+                  >
+                    <option value="">All Customers</option>
+                    {customerOptions.map(name => (
+                      <option key={name} value={name}>
+                        {name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Item filter */}
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.85rem', color: '#4b5563' }}>
+                    Item
+                  </label>
+                  <select
+                    value={itemFilter}
+                    onChange={(e) => setItemFilter(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '0.5rem',
+                      borderRadius: '0.375rem',
+                      border: '1px solid #d1d5db',
+                      backgroundColor: 'white',
+                      color: '#111827',
+                    }}
+                  >
+                    <option value="">All Items</option>
+                    {itemOptions.map(code => (
+                      <option key={code} value={code}>
+                        {code}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.5rem' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    // Clear all filters back to defaults
+                    setTimeframe('today');
+                    setCustomStart('');
+                    setCustomEnd('');
+                    setPriceType('unit');
+                    setMinPrice('');
+                    setMaxPrice('');
+                    setCustomerFilter('');
+                    setItemFilter('');
+                  }}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    borderRadius: '0.375rem',
+                    border: '1px solid #d1d5db',
+                    backgroundColor: 'white',
+                    color: '#374151',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Clear Filters
+                </button>
                 <button
                   type="button"
                   onClick={() => {
                     setShowCustomModal(false);
-                    if (!customStart || !customEnd) {
-                      setTimeframe('month');
-                    }
                   }}
                   style={{
                     padding: '0.5rem 1rem',
@@ -1065,15 +1168,14 @@ export function Sales() {
                 </button>
                 <button
                   type="button"
-                  disabled={!customStart || !customEnd}
                   onClick={() => setShowCustomModal(false)}
                   style={{
                     padding: '0.5rem 1rem',
                     borderRadius: '0.375rem',
                     border: 'none',
-                    backgroundColor: (!customStart || !customEnd) ? '#9ca3af' : '#1e40af',
+                    backgroundColor: '#1e40af',
                     color: 'white',
-                    cursor: (!customStart || !customEnd) ? 'not-allowed' : 'pointer'
+                    cursor: 'pointer'
                   }}
                 >
                   Apply

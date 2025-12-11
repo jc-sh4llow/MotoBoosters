@@ -145,10 +145,18 @@ export function Login() {
         console.error('Failed to update lastLogin', updateErr);
       }
 
+      // Use roles array (new Discord-style) or fall back to single role (legacy)
+      const userRoles: string[] = Array.isArray(profileData?.roles) && profileData.roles.length > 0
+        ? profileData.roles
+        : profileData?.role
+          ? [profileData.role]
+          : ['staff']; // Default to staff if no role assigned
+
       login({
         id: profileDoc.id,
         name: profileData?.fullName || profileData?.username || identifier,
-        role: profileData?.role || 'employee',
+        roles: userRoles,
+        role: profileData?.role, // Keep for backward compatibility
       });
 
       navigate('/');
@@ -242,7 +250,9 @@ export function Login() {
                   borderRadius: '0.5rem',
                   fontSize: '0.95rem',
                   transition: 'border-color 0.2s',
-                  boxSizing: 'border-box'
+                  boxSizing: 'border-box',
+                  backgroundColor: '#f9fafb',
+                  color: '#111827'
                 }}
               />
             </div>
@@ -272,7 +282,9 @@ export function Login() {
                   borderRadius: '0.5rem',
                   fontSize: '0.95rem',
                   transition: 'border-color 0.2s',
-                  boxSizing: 'border-box'
+                  boxSizing: 'border-box',
+                  backgroundColor: '#f9fafb',
+                  color: '#111827'
                 }}
               />
               <button
@@ -430,6 +442,8 @@ export function Login() {
                   border: '1px solid #d1d5db',
                   marginBottom: '1rem',
                   fontSize: '0.9rem',
+                  backgroundColor: '#f9fafb',
+                  color: '#111827'
                 }}
                 placeholder="Username needing help"
               />

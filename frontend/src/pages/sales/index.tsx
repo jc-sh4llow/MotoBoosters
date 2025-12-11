@@ -19,10 +19,10 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
-
 import { useAuth } from '../../contexts/AuthContext';
 import { can } from '../../config/permissions';
 import { db } from '../../lib/firebase';
+import { HeaderDropdown } from '../../components/HeaderDropdown';
 
 export function Sales() {
   const navigate = useNavigate();
@@ -51,25 +51,7 @@ export function Sales() {
   const [firestoreSales, setFirestoreSales] = useState<any[]>([]);
 
   const currentRole = (user?.role || '').toString();
-
-  const pathPermissionMap: Record<string, string> = {
-    '/': 'page.home.view',
-    '/inventory': 'page.inventory.view',
-    '/sales': 'page.sales.view',
-    '/services': 'page.services.view',
-    '/transactions': 'page.transactions.view',
-    '/transactions/new': 'page.transactions.view',
-    '/returns': 'page.returns.view',
-    '/customers': 'page.customers.view',
-    '/users': 'page.users.view',
-    '/settings': 'page.settings.view',
-  };
-
-  const canSeePath = (path: string) => {
-    const key = pathPermissionMap[path];
-    if (!key) return true;
-    return can(currentRole, key as any);
-  };
+  const userRoles = user?.roles?.length ? user.roles : (user?.role ? [user.role] : []);
 
   // Sample data - used as fallback if Firestore has no data
   const salesData = [
@@ -232,18 +214,7 @@ export function Sales() {
     return rows;
   })();
 
-  const menuItems = [
-    { title: 'Home', path: '/', icon: <FaHome /> },
-    { title: 'Inventory Management', path: '/inventory', icon: <FaWarehouse /> },
-    { title: 'Sales Records', path: '/sales', icon: <FaTag /> },
-    { title: 'Services Offered', path: '/services', icon: <FaWrench /> },
-    { title: 'New Transaction', path: '/transactions/new', icon: <FaPlus /> },
-    { title: 'Transaction History', path: '/transactions', icon: <FaFileInvoice /> },
-    { title: 'Customers', path: '/customers', icon: <FaUser /> },
-    { title: 'User Management', path: '/users', icon: <FaUser /> },
-    { title: 'Returns & Refunds', path: '/returns', icon: <FaUndoAlt /> },
-    { title: 'Settings', path: '/settings', icon: <FaCog /> },
-  ];
+
 
   const loadSalesFromFirestore = async () => {
     try {
@@ -500,26 +471,11 @@ export function Sales() {
             </button>
 
             {/* Dropdown Menu */}
-            <div
-              style={{
-                position: 'absolute',
-                top: '100%',
-                right: '0',
-                backgroundColor: 'white',
-                borderRadius: '0.5rem',
-                padding: isNavExpanded ? '0.5rem 0' : 0,
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.25rem',
-                minWidth: '220px',
-                zIndex: 1000,
-                overflow: 'hidden',
-                maxHeight: isNavExpanded ? '500px' : '0',
-                transition: 'all 0.3s ease-out',
-                pointerEvents: isNavExpanded ? 'auto' : 'none',
-                border: isNavExpanded ? '1px solid rgba(0, 0, 0, 0.1)' : 'none'
-              }}
+            <HeaderDropdown
+              isNavExpanded={isNavExpanded}
+              setIsNavExpanded={setIsNavExpanded}
+              isMobile={isMobile}
+              userRoles={userRoles}
               onMouseEnter={() => {
                 if (!isMobile && closeMenuTimeout) {
                   clearTimeout(closeMenuTimeout);
@@ -532,49 +488,7 @@ export function Sales() {
                   }, 200);
                 }
               }}
-            >
-              {menuItems.filter(item => canSeePath(item.path)).map((item) => (
-                <button
-                  key={item.path}
-                  onClick={() => {
-                    navigate(item.path);
-                    setIsNavExpanded(false);
-                  }}
-                  style={{
-                    background: 'white',
-                    border: 'none',
-                    color: '#1f2937',
-                    padding: '0.75rem 1.25rem',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.75rem',
-                    transition: 'background-color 0.2s ease',
-                    ':hover': {
-                      backgroundColor: '#f3f4f6'
-                    }
-                  }}
-                >
-                  <span style={{
-                    fontSize: '1.1rem',
-                    color: '#4b5563',
-                    width: '24px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>
-                    {item.icon}
-                  </span>
-                  <span style={{
-                    fontSize: '0.95rem',
-                    fontWeight: 500
-                  }}>
-                    {item.title}
-                  </span>
-                </button>
-              ))}
-            </div>
+            />
           </div>
         </header>
 

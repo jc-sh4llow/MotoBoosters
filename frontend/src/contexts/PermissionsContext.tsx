@@ -1,122 +1,152 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { defaultPermissions, type PermissionKey, type RoleName, setRuntimePermissions } from '../config/permissions';
+import { setCachedRoles, getCachedRoles, type Role, type PermissionKey } from '../config/permissions';
 
-interface PermissionsContextValue {
-  effectivePermissions: Record<PermissionKey, RoleName[]>;
+interface RolesContextValue {
+  roles: Role[];
   loading: boolean;
   error: string | null;
-  usingDefaultsOnly: boolean;
+  maxRolesPerUser: number;
+  refreshRoles: () => Promise<void>;
 }
 
-const PermissionsContext = createContext<PermissionsContextValue | undefined>(undefined);
+const RolesContext = createContext<RolesContextValue | undefined>(undefined);
 
-const buildBaseFromDefaults = (): Record<PermissionKey, RoleName[]> => {
-  const base: Record<PermissionKey, RoleName[]> = {} as any;
-  (Object.keys(defaultPermissions) as PermissionKey[]).forEach((key) => {
-    base[key] = [...defaultPermissions[key]];
-  });
-  return base;
-};
-
-async function loadPermissionsFromFirestore(): Promise<Record<PermissionKey, RoleName[]> | null> {
+/**
+ * Load all roles from Firestore
+ */
+async function loadRolesFromFirestore(): Promise<Role[]> {
   try {
-    const snap = await getDocs(collection(db, 'rolePermissions'));
+    const snap = await getDocs(collection(db, 'roles'));
     if (snap.empty) {
-      return null;
+      console.warn('No roles found in Firestore');
+      return [];
     }
 
-    const effective = buildBaseFromDefaults();
-
+    const roles: Role[] = [];
     snap.forEach((docSnap) => {
-      const role = (docSnap.id || '').toString().toLowerCase() as RoleName;
-      if (!role) return;
-      const data = docSnap.data() as Record<string, unknown>;
-
-      Object.entries(data).forEach(([key, value]) => {
-        const permissionKey = key as PermissionKey;
-        if (!(permissionKey in defaultPermissions)) return;
-
-        const allowed = effective[permissionKey] || [];
-        const normalizedRole = role.toLowerCase();
-        const alreadyIncluded = allowed.some((r) => String(r).toLowerCase() === normalizedRole);
-        const shouldAllow = Boolean(value);
-
-        if (shouldAllow && !alreadyIncluded) {
-          allowed.push(role);
-          effective[permissionKey] = allowed;
-        }
-
-        if (!shouldAllow && alreadyIncluded) {
-          effective[permissionKey] = allowed.filter((r) => String(r).toLowerCase() !== normalizedRole);
-        }
+      const data = docSnap.data();
+      roles.push({
+        id: docSnap.id,
+        name: data.name || docSnap.id,
+        color: data.color || '#6b7280',
+        position: typeof data.position === 'number' ? data.position : 999,
+        isDefault: data.isDefault === true,
+        isProtected: data.isProtected === true,
+        permissions: (data.permissions || {}) as Partial<Record<PermissionKey, boolean>>,
+        createdAt: data.createdAt?.toDate?.() || new Date(),
       });
     });
 
-    return effective;
+    // Sort by position (lower = higher authority)
+    roles.sort((a, b) => a.position - b.position);
+
+    return roles;
   } catch (err) {
-    console.error('Failed to load role permissions from Firestore', err);
-    return null;
+    console.error('Failed to load roles from Firestore', err);
+    return [];
   }
 }
 
-export function PermissionsProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<PermissionsContextValue>(() => ({
-    effectivePermissions: buildBaseFromDefaults(),
-    loading: true,
-    error: null,
-    usingDefaultsOnly: true,
-  }));
+/**
+ * Load system settings for roles
+ */
+async function loadRolesSettings(): Promise<{ maxRolesPerUser: number }> {
+  try {
+    const settingsDoc = await getDoc(doc(db, 'systemSettings', 'roles'));
+    if (settingsDoc.exists()) {
+      const data = settingsDoc.data();
+      return {
+        maxRolesPerUser: typeof data.maxRolesPerUser === 'number' ? data.maxRolesPerUser : 5,
+      };
+    }
+    return { maxRolesPerUser: 5 };
+  } catch (err) {
+    console.error('Failed to load roles settings', err);
+    return { maxRolesPerUser: 5 };
+  }
+}
+
+export function RolesProvider({ children }: { children: ReactNode }) {
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [maxRolesPerUser, setMaxRolesPerUser] = useState(5);
+
+  const refreshRoles = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const [loadedRoles, settings] = await Promise.all([
+        loadRolesFromFirestore(),
+        loadRolesSettings(),
+      ]);
+
+      setRoles(loadedRoles);
+      setCachedRoles(loadedRoles); // Update global cache for can() function
+      setMaxRolesPerUser(settings.maxRolesPerUser);
+    } catch (err) {
+      console.error('Failed to refresh roles', err);
+      setError(String(err));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    let isMounted = true;
-
-    const bootstrap = async () => {
-      const overrides = await loadPermissionsFromFirestore();
-
-      if (!isMounted) return;
-
-      if (!overrides) {
-        // Firestore not configured or failed -> stick with defaults
-        setRuntimePermissions(null);
-        setState({
-          effectivePermissions: buildBaseFromDefaults(),
-          loading: false,
-          error: null,
-          usingDefaultsOnly: true,
-        });
-        return;
-      }
-
-      setRuntimePermissions(overrides);
-      setState({
-        effectivePermissions: overrides,
-        loading: false,
-        error: null,
-        usingDefaultsOnly: false,
-      });
-    };
-
-    bootstrap();
-
-    return () => {
-      isMounted = false;
-    };
+    refreshRoles();
   }, []);
 
   return (
-    <PermissionsContext.Provider value={state}>
+    <RolesContext.Provider value={{ roles, loading, error, maxRolesPerUser, refreshRoles }}>
       {children}
-    </PermissionsContext.Provider>
+    </RolesContext.Provider>
   );
 }
 
-export function usePermissions(): PermissionsContextValue {
-  const ctx = useContext(PermissionsContext);
+export function useRoles(): RolesContextValue {
+  const ctx = useContext(RolesContext);
   if (!ctx) {
-    throw new Error('usePermissions must be used within a PermissionsProvider');
+    throw new Error('useRoles must be used within a RolesProvider');
   }
   return ctx;
 }
+
+/**
+ * Helper hook to get a role by ID
+ */
+export function useRole(roleId: string | undefined): Role | undefined {
+  const { roles } = useRoles();
+  if (!roleId) return undefined;
+  return roles.find(r => r.id === roleId);
+}
+
+/**
+ * Helper hook to get multiple roles by IDs
+ */
+export function useUserRoles(roleIds: string[] | undefined): Role[] {
+  const { roles } = useRoles();
+  if (!roleIds || roleIds.length === 0) return [];
+  return roles.filter(r => roleIds.includes(r.id));
+}
+
+// ============================================================================
+// LEGACY EXPORTS (for backward compatibility during migration)
+// ============================================================================
+
+// Keep old context name as alias
+export const PermissionsProvider = RolesProvider;
+export const usePermissions = () => {
+  const { roles, loading, error } = useRoles();
+  return {
+    roles,
+    loading,
+    error,
+    // Legacy properties (deprecated)
+    effectivePermissions: {} as Record<PermissionKey, string[]>,
+    usingDefaultsOnly: roles.length === 0,
+  };
+};

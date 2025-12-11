@@ -8,6 +8,7 @@ import { db } from '../../lib/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import logo from '../../assets/logo.png';
 import { can } from '../../config/permissions';
+import { HeaderDropdown } from '../../components/HeaderDropdown';
 
 export function Inventory() {
   // Sample data - replace with actual data from your backend
@@ -35,24 +36,7 @@ export function Inventory() {
   const currentRole = (user?.role || '').toString();
   const canEditInventory = can(currentRole, 'inventory.add');
 
-  const pathPermissionMap: Record<string, string> = {
-    '/': 'page.home.view',
-    '/inventory': 'page.inventory.view',
-    '/sales': 'page.sales.view',
-    '/services': 'page.services.view',
-    '/transactions': 'page.transactions.view',
-    '/transactions/new': 'page.transactions.view',
-    '/returns': 'page.returns.view',
-    '/customers': 'page.customers.view',
-    '/users': 'page.users.view',
-    '/settings': 'page.settings.view',
-  };
-
-  const canSeePath = (path: string) => {
-    const key = pathPermissionMap[path];
-    if (!key) return true;
-    return can(currentRole, key as any);
-  };
+  const userRoles = user?.roles?.length ? user.roles : (user?.role ? [user.role] : []);
 
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [isNavExpanded, setIsNavExpanded] = useState(false);
@@ -156,16 +140,7 @@ export function Inventory() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const menuItems = [
-    { title: 'Item Sales', path: '/sales', icon: <FaTag /> },
-    { title: 'Services', path: '/services', icon: <FaWrench /> },
-    { title: 'New Transaction', path: '/transactions/new', icon: <FaPlus /> },
-    { title: 'Transactions', path: '/transactions', icon: <FaFileInvoice /> },
-    { title: 'Customers', path: '/customers', icon: <FaUser /> },
-    { title: 'Users', path: '/users', icon: <FaUser /> },
-    { title: 'Returns', path: '/returns', icon: <FaUndoAlt /> },
-    { title: 'Settings', path: '/settings', icon: <FaCog /> },
-  ];
+
 
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({
@@ -1652,28 +1627,12 @@ export function Inventory() {
             </div>
 
             {/* Dropdown Menu */}
-            <div
-              style={{
-                position: 'absolute',
-                top: '100%',
-                right: '0',
-                backgroundColor: 'white',
-                borderRadius: '0.5rem',
-                padding: isNavExpanded ? '0.5rem 0' : 0,
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.25rem',
-                minWidth: '220px',
-                zIndex: 1000,
-                overflow: 'hidden',
-                maxHeight: isNavExpanded ? '500px' : '0',
-                transition: 'all 0.3s ease-out',
-                pointerEvents: isNavExpanded ? 'auto' : 'none',
-                border: isNavExpanded ? '1px solid rgba(0, 0, 0, 0.1)' : '1px solid transparent',
-                opacity: isNavExpanded ? 1 : 0,
-                transform: isNavExpanded ? 'translateY(0)' : 'translateY(-10px)'
-              }}
+            {/* Dropdown Menu */}
+            <HeaderDropdown
+              isNavExpanded={isNavExpanded}
+              setIsNavExpanded={setIsNavExpanded}
+              isMobile={isMobile}
+              userRoles={userRoles}
               onMouseEnter={() => {
                 if (!isMobile && closeMenuTimeout) {
                   clearTimeout(closeMenuTimeout);
@@ -1686,85 +1645,7 @@ export function Inventory() {
                   }, 200);
                 }
               }}
-            >
-              {menuItems.filter(item => canSeePath(item.path)).map((item) => (
-                <button
-                  key={item.path}
-                  onClick={() => {
-                    navigate(item.path);
-                    setIsNavExpanded(false);
-                  }}
-                  style={{
-                    background: 'white',
-                    border: 'none',
-                    color: '#1f2937',
-                    padding: '0.75rem 1.25rem',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.75rem',
-                    transition: 'background-color 0.2s ease',
-                  }}
-                >
-                  <span style={{
-                    fontSize: '1.1rem',
-                    color: '#4b5563',
-                    width: '24px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>
-                    {item.icon}
-                  </span>
-                  <span style={{
-                    fontSize: '0.95rem',
-                    fontWeight: 500
-                  }}>
-                    {item.title}
-                  </span>
-                </button>
-              ))}
-
-              {/* Divider */}
-              <div style={{
-                height: '1px',
-                backgroundColor: '#e5e7eb',
-                margin: '0.25rem 0'
-              }} />
-
-              {/* Services (current page) */}
-              <button
-                onClick={() => {
-                  navigate('/services');
-                  setIsNavExpanded(false);
-                }}
-                style={{
-                  background: '#eff6ff',
-                  border: 'none',
-                  color: '#1d4ed8',
-                  padding: '0.75rem 1.25rem',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.75rem',
-                  fontWeight: 500
-                }}
-              >
-                <span style={{
-                  fontSize: '1.1rem',
-                  color: '#1d4ed8',
-                  width: '24px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <FaWarehouse />
-                </span>
-                <span>Inventory</span>
-              </button>
-            </div>
+            />
           </div>
         </header>
 

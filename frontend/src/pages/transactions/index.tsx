@@ -3,7 +3,7 @@ import { FaSearch, FaFilter, FaRedo, FaFileExcel, FaHome, FaBars, FaTag, FaWrenc
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { collection, getDocs, doc, updateDoc } from 'firebase/firestore';
-
+import { HeaderDropdown } from '../../components/HeaderDropdown';
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import logo from '../../assets/logo.png';
@@ -69,40 +69,11 @@ export function Transactions() {
   const [paymentReviewGcashRef, setPaymentReviewGcashRef] = useState('');
   const [paymentReviewError, setPaymentReviewError] = useState<string | null>(null);
   const [isPaymentReviewProcessing, setIsPaymentReviewProcessing] = useState(false);
-
+  const userRoles = user?.roles?.length ? user.roles : (user?.role ? [user.role] : []);
   const roleName = (user?.role || '').toString();
   const isSuperadmin = roleName.toLowerCase() === 'superadmin';
   const canDeleteTransactions = can(roleName, 'transactions.delete');
 
-  const pathPermissionMap: Record<string, string> = {
-    '/': 'page.home.view',
-    '/inventory': 'page.inventory.view',
-    '/sales': 'page.sales.view',
-    '/services': 'page.services.view',
-    '/transactions': 'page.transactions.view',
-    '/transactions/new': 'page.transactions.view',
-    '/returns': 'page.returns.view',
-    '/customers': 'page.customers.view',
-    '/users': 'page.users.view',
-    '/settings': 'page.settings.view',
-  };
-
-  const canSeePath = (path: string) => {
-    const key = pathPermissionMap[path];
-    if (!key) return true;
-    return can(roleName, key as any);
-  };
-
-  const menuItems = [
-    { title: 'Inventory', path: '/inventory', icon: <FaWarehouse /> },
-    { title: 'Sales Records', path: '/sales', icon: <FaTag /> },
-    { title: 'Services Offered', path: '/services', icon: <FaWrench /> },
-    { title: 'New Transaction', path: '/transactions/new', icon: <FaPlus /> },
-    { title: 'Customers', path: '/customers', icon: <FaUser /> },
-    { title: 'User Management', path: '/users', icon: <FaUser /> },
-    { title: 'Returns & Refunds', path: '/returns', icon: <FaUndoAlt /> },
-    { title: 'Settings', path: '/settings', icon: <FaCog /> },
-  ];
 
   const loadTransactions = async () => {
     setIsLoading(true);
@@ -584,28 +555,11 @@ export function Transactions() {
               </button>
 
               {/* Dropdown Menu */}
-              <div
-                style={{
-                  position: 'absolute',
-                  top: '100%',
-                  right: '0',
-                  backgroundColor: 'white',
-                  borderRadius: '0.5rem',
-                  padding: isNavExpanded ? '0.5rem 0' : 0,
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '0.25rem',
-                  minWidth: '220px',
-                  zIndex: 1000,
-                  maxHeight: isNavExpanded ? '420px' : '0',
-                  overflowY: isNavExpanded ? 'auto' : 'hidden',
-                  overflowX: 'hidden',
-                  transition: 'all 0.3s ease-out',
-                  pointerEvents: isNavExpanded ? 'auto' : 'none',
-                  border: isNavExpanded ? '1px solid rgba(0, 0, 0, 0.1)' : 'none'
-                }}
-
+              <HeaderDropdown
+                isNavExpanded={isNavExpanded}
+                setIsNavExpanded={setIsNavExpanded}
+                isMobile={isMobile}
+                userRoles={userRoles}
                 onMouseEnter={() => {
                   if (!isMobile && closeMenuTimeout) {
                     clearTimeout(closeMenuTimeout);
@@ -618,95 +572,7 @@ export function Transactions() {
                     }, 200);
                   }
                 }}
-              >
-                <style>{`
-                  div::-webkit-scrollbar {
-                    width: 0;
-                    height: 0;
-                  }
-                `}</style>
-                {menuItems.filter(item => canSeePath(item.path)).map((item) => (
-                  <button
-                    key={item.path}
-                    onClick={() => {
-                      navigate(item.path);
-                      setIsNavExpanded(false);
-                    }}
-                    style={{
-                      background: 'white',
-                      border: 'none',
-                      color: '#1f2937',
-                      padding: '0.75rem 1.25rem',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.75rem',
-                      transition: 'background-color 0.2s ease'
-                    }}
-                  >
-                    <span style={{
-                      fontSize: '1.1rem',
-                      color: '#4b5563',
-                      width: '24px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}>
-                      {item.icon}
-                    </span>
-                    <span style={{
-                      fontSize: '0.95rem',
-                      fontWeight: 500
-                    }}>
-                      {item.title}
-                    </span>
-                  </button>
-                ))}
-
-                {/* Divider */}
-                <div
-                  style={{
-                    height: '1px',
-                    backgroundColor: '#e5e7eb',
-                    margin: '0.25rem 0',
-                  }}
-                />
-
-                {/* Transaction History (current page) */}
-                <button
-                  onClick={() => {
-                    navigate('/transactions');
-                    setIsNavExpanded(false);
-                  }}
-                  style={{
-                    background: '#eff6ff',
-                    border: 'none',
-                    color: '#1d4ed8',
-                    padding: '0.75rem 1.25rem',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.75rem',
-                    fontWeight: 500,
-                  }}
-                >
-                  <span
-                    style={{
-                      fontSize: '1.1rem',
-                      color: '#1d4ed8',
-                      width: '24px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <FaFileInvoice />
-                  </span>
-                  <span>Transaction History</span>
-                </button>
-              </div>
+              />
             </div>
           </div>
         </header>

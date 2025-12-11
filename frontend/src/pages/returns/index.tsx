@@ -7,6 +7,7 @@ import { Footer } from '@/components/Footer';
 import { can } from '../../config/permissions';
 import { db } from '../../lib/firebase';
 import logo from '../../assets/logo.png';
+import { HeaderDropdown } from '../../components/HeaderDropdown';
 
 type TransactionRow = {
   id: string; // Firestore document ID
@@ -39,7 +40,7 @@ export const Returns: React.FC = () => {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [isReturnDetailsExpanded, setIsReturnDetailsExpanded] = useState(true);
-
+  const userRoles = user?.roles?.length ? user.roles : (user?.role ? [user.role] : []);
   const [transactions, setTransactions] = useState<TransactionRow[]>([]);
   const [transactionsLoading, setTransactionsLoading] = useState(false);
   const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null);
@@ -95,44 +96,27 @@ export const Returns: React.FC = () => {
   const canArchiveReturns = can(roleName, 'returns.archive');
   const canUnarchiveReturns = can(roleName, 'returns.unarchive');
 
-  const pathPermissionMap: Record<string, string> = {
-    '/': 'page.home.view',
-    '/inventory': 'page.inventory.view',
-    '/sales': 'page.sales.view',
-    '/services': 'page.services.view',
-    '/transactions': 'page.transactions.view',
-    '/transactions/new': 'page.transactions.view',
-    '/returns': 'page.returns.view',
-    '/customers': 'page.customers.view',
-    '/users': 'page.users.view',
-    '/settings': 'page.settings.view',
-  };
 
-  const canSeePath = (path: string) => {
-    const key = pathPermissionMap[path];
-    if (!key) return true;
-    return can(roleName, key as any);
-  };
 
   const [modalState, setModalState] = useState<
     | null
     | {
-        type: 'info';
-        title: string;
-        message: string;
-      }
+      type: 'info';
+      title: string;
+      message: string;
+    }
     | {
-        type: 'confirm-archive';
-        title: string;
-        message: string;
-        returnDocId: string;
-        currentStatus?: string;
-      }
+      type: 'confirm-archive';
+      title: string;
+      message: string;
+      returnDocId: string;
+      currentStatus?: string;
+    }
     | {
-        type: 'returns-settings';
-        title: string;
-        message: string;
-      }
+      type: 'returns-settings';
+      title: string;
+      message: string;
+    }
   >(null);
 
   const [rcabSettings, setRcabSettings] = useState({
@@ -459,9 +443,9 @@ export const Returns: React.FC = () => {
         prev.map((row) =>
           row.returnDocId === returnDocId
             ? {
-                ...row,
-                status: newStatus,
-              }
+              ...row,
+              status: newStatus,
+            }
             : row,
         ),
       );
@@ -763,16 +747,7 @@ export const Returns: React.FC = () => {
     }
   };
 
-  const menuItems = [
-    { title: 'Inventory Management', path: '/inventory', icon: <FaWarehouse /> },
-    { title: 'Sales Records', path: '/sales', icon: <FaTag /> },
-    { title: 'Services Offered', path: '/services', icon: <FaWrench /> },
-    { title: 'New Transaction', path: '/transactions/new', icon: <FaPlus /> },
-    { title: 'Transaction History', path: '/transactions', icon: <FaFileInvoice /> },
-    { title: 'Customers', path: '/customers', icon: <FaUser /> },
-    { title: 'User Management', path: '/users', icon: <FaUser /> },
-    { title: 'Settings', path: '/settings', icon: <FaCog /> },
-  ];
+
 
   return (
     <div
@@ -995,34 +970,11 @@ export const Returns: React.FC = () => {
             </div>
 
             {/* Dropdown Menu */}
-            <div
-              style={{
-                position: 'absolute',
-                top: '100%',
-                right: '0',
-                backgroundColor: 'white',
-                borderRadius: '0.5rem',
-                padding: isNavExpanded ? '0.5rem 0' : 0,
-                boxShadow:
-                  '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.25rem',
-                minWidth: '220px',
-                zIndex: 1000,
-                overflowY: 'auto',
-                overflowX: 'hidden',
-                scrollbarWidth: 'none', // Firefox
-                msOverflowStyle: 'none', // IE/Edge
-                maxHeight: isNavExpanded ? '420px' : '0',
-                transition: 'all 0.3s ease-out',
-                pointerEvents: isNavExpanded ? 'auto' : 'none',
-                border: isNavExpanded
-                  ? '1px solid rgba(0, 0, 0, 0.1)'
-                  : '1px solid transparent',
-                opacity: isNavExpanded ? 1 : 0,
-                transform: isNavExpanded ? 'translateY(0)' : 'translateY(-10px)',
-              }}
+            <HeaderDropdown
+              isNavExpanded={isNavExpanded}
+              setIsNavExpanded={setIsNavExpanded}
+              isMobile={isMobile}
+              userRoles={userRoles}
               onMouseEnter={() => {
                 if (!isMobile && closeMenuTimeout) {
                   clearTimeout(closeMenuTimeout);
@@ -1035,101 +987,7 @@ export const Returns: React.FC = () => {
                   }, 200);
                 }
               }}
-            >
-              {/* Hide default scrollbar in WebKit browsers while preserving scroll */}
-              <style>{`
-                div::-webkit-scrollbar {
-                  width: 0;
-                  height: 0;
-                }
-              `}</style>
-              {menuItems.filter(item => canSeePath(item.path)).map((item) => (
-                <button
-                  key={item.path}
-                  onClick={() => {
-                    navigate(item.path);
-                    setIsNavExpanded(false);
-                  }}
-                  style={{
-                    background: item.path === '/returns' ? '#eff6ff' : 'white',
-                    border: 'none',
-                    color: item.path === '/returns' ? '#1d4ed8' : '#1f2937',
-                    padding: '0.75rem 1.25rem',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.75rem',
-                    transition: 'background-color 0.2s ease',
-                  }}
-                >
-                  <span
-                    style={{
-                      fontSize: '1.1rem',
-                      color: item.path === '/returns' ? '#1d4ed8' : '#4b5563',
-                      width: '24px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    {item.icon}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: '0.95rem',
-                      fontWeight: 500,
-                    }}
-                  >
-                    {item.title}
-                  </span>
-                </button>
-              ))}
-
-              {/* Divider */}
-              <div
-                style={{
-                  height: '1px',
-                  backgroundColor: '#e5e7eb',
-                  margin: '0.25rem 0',
-                }}
-              />
-
-              {/* Returns & Refunds (current page) */}
-              <button
-                onClick={() => {
-                  navigate('/returns');
-                  setIsNavExpanded(false);
-                }}
-                style={{
-                  background: '#eff6ff',
-                  border: 'none',
-                  color: '#1d4ed8',
-                  padding: '0.75rem 1.25rem',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.75rem',
-                  fontWeight: 500,
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: '1.1rem',
-                    color: '#1d4ed8',
-                    width: '24px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <FaUndoAlt />
-                </span>
-                <span>Returns & Refunds</span>
-              </button>
-
-            </div>
+            />
           </div>
         </header>
 
@@ -1301,48 +1159,48 @@ export const Returns: React.FC = () => {
                             transition: 'opacity 0.15s ease-out, transform 0.15s ease-out',
                           }}
                         >
-                            <div
+                          <div
+                            style={{
+                              fontSize: '0.75rem',
+                              fontWeight: 600,
+                              color: '#4b5563',
+                              marginBottom: '0.25rem',
+                            }}
+                          >
+                            Date Filter
+                          </div>
+                          {[
+                            { key: 'all', label: 'All dates' },
+                            { key: 'today', label: 'Today' },
+                            { key: 'last7', label: 'Last 7 days' },
+                            { key: 'thisMonth', label: 'This month' },
+                          ].map((opt) => (
+                            <button
+                              key={opt.key}
+                              type="button"
+                              onClick={() => {
+                                setDateFilter(opt.key as any);
+                                setIsTransactionsFilterOpen(false);
+                              }}
                               style={{
+                                width: '100%',
+                                textAlign: 'left',
+                                padding: '0.3rem 0.45rem',
+                                borderRadius: '0.375rem',
+                                border: 'none',
+                                backgroundColor:
+                                  dateFilter === opt.key ? '#eff6ff' : 'white',
+                                color:
+                                  dateFilter === opt.key ? '#1d4ed8' : '#374151',
                                 fontSize: '0.75rem',
-                                fontWeight: 600,
-                                color: '#4b5563',
-                                marginBottom: '0.25rem',
+                                cursor: 'pointer',
+                                marginBottom: '0.2rem',
                               }}
                             >
-                              Date Filter
-                            </div>
-                            {[
-                              { key: 'all', label: 'All dates' },
-                              { key: 'today', label: 'Today' },
-                              { key: 'last7', label: 'Last 7 days' },
-                              { key: 'thisMonth', label: 'This month' },
-                            ].map((opt) => (
-                              <button
-                                key={opt.key}
-                                type="button"
-                                onClick={() => {
-                                  setDateFilter(opt.key as any);
-                                  setIsTransactionsFilterOpen(false);
-                                }}
-                                style={{
-                                  width: '100%',
-                                  textAlign: 'left',
-                                  padding: '0.3rem 0.45rem',
-                                  borderRadius: '0.375rem',
-                                  border: 'none',
-                                  backgroundColor:
-                                    dateFilter === opt.key ? '#eff6ff' : 'white',
-                                  color:
-                                    dateFilter === opt.key ? '#1d4ed8' : '#374151',
-                                  fontSize: '0.75rem',
-                                  cursor: 'pointer',
-                                  marginBottom: '0.2rem',
-                                }}
-                              >
-                                {opt.label}
-                              </button>
-                            ))}
-                          </div>
+                              {opt.label}
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1372,248 +1230,248 @@ export const Returns: React.FC = () => {
                           color: '#111827',
                         }}
                       >
-                      <thead>
-                        <tr
-                          style={{
-                            backgroundColor: '#f9fafb',
-                            borderBottom: '1px solid #e5e7eb',
-                          }}
-                        >
-                          <th
+                        <thead>
+                          <tr
                             style={{
-                              padding: '0.4rem 0.5rem',
-                              textAlign: 'center',
-                              fontWeight: 600,
-                              color: '#6b7280',
+                              backgroundColor: '#f9fafb',
+                              borderBottom: '1px solid #e5e7eb',
                             }}
                           >
-                            Customer
-                          </th>
-                          <th
-                            style={{
-                              padding: '0.4rem 0.5rem',
-                              textAlign: 'center',
-                              fontWeight: 600,
-                              color: '#6b7280',
-                            }}
-                          >
-                            Date
-                          </th>
-                          <th
-                            style={{
-                              padding: '0.4rem 0.5rem',
-                              textAlign: 'center',
-                              fontWeight: 600,
-                              color: '#6b7280',
-                              width: '8%',
-                            }}
-                          >
-                            Type
-                          </th>
-                          <th
-                            style={{
-                              padding: '0.4rem 0.5rem',
-                              textAlign: 'center',
-                              fontWeight: 600,
-                              color: '#6b7280',
-                              width: 'auto',
-                            }}
-                          >
-                            Total
-                          </th>
-                          <th
-                            style={{
-                              padding: '0.4rem 0.5rem',
-                              textAlign: 'center',
-                              fontWeight: 600,
-                              color: '#6b7280',
-                              width: 'auto',
-                            }}
-                          >
-                            Payment
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {transactionsLoading && (
-                          <tr>
-                            <td
-                              colSpan={5}
+                            <th
                               style={{
-                                padding: '0.75rem 0.75rem',
-                                fontSize: '0.8rem',
-                                color: '#6b7280',
+                                padding: '0.4rem 0.5rem',
                                 textAlign: 'center',
-                              }}
-                            >
-                              Loading transactions...
-                            </td>
-                          </tr>
-                        )}
-                        {!transactionsLoading && filteredTransactions.length === 0 && (
-                          <tr>
-                            <td
-                              colSpan={5}
-                              style={{
-                                padding: '0.75rem 0.75rem',
-                                fontSize: '0.8rem',
+                                fontWeight: 600,
                                 color: '#6b7280',
-                                textAlign: 'center',
                               }}
                             >
-                              No matching transactions.
-                            </td>
-                          </tr>
-                        )}
-                        {!transactionsLoading &&
-                          filteredTransactions.map((tx) => (
-                            <tr
-                              key={tx.id}
-                              onClick={() => handleSelectTransaction(tx)}
+                              Customer
+                            </th>
+                            <th
                               style={{
-                                cursor: 'pointer',
-                                backgroundColor:
-                                  selectedTransactionId === tx.id ? '#eff6ff' : 'white',
-                                borderBottom: '1px solid #e5e7eb',
+                                padding: '0.4rem 0.5rem',
+                                textAlign: 'center',
+                                fontWeight: 600,
+                                color: '#6b7280',
                               }}
                             >
+                              Date
+                            </th>
+                            <th
+                              style={{
+                                padding: '0.4rem 0.5rem',
+                                textAlign: 'center',
+                                fontWeight: 600,
+                                color: '#6b7280',
+                                width: '8%',
+                              }}
+                            >
+                              Type
+                            </th>
+                            <th
+                              style={{
+                                padding: '0.4rem 0.5rem',
+                                textAlign: 'center',
+                                fontWeight: 600,
+                                color: '#6b7280',
+                                width: 'auto',
+                              }}
+                            >
+                              Total
+                            </th>
+                            <th
+                              style={{
+                                padding: '0.4rem 0.5rem',
+                                textAlign: 'center',
+                                fontWeight: 600,
+                                color: '#6b7280',
+                                width: 'auto',
+                              }}
+                            >
+                              Payment
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {transactionsLoading && (
+                            <tr>
                               <td
+                                colSpan={5}
                                 style={{
-                                  padding: '0.4rem 0.5rem',
+                                  padding: '0.75rem 0.75rem',
+                                  fontSize: '0.8rem',
+                                  color: '#6b7280',
                                   textAlign: 'center',
-                                  verticalAlign: 'middle',
-                                  whiteSpace: 'normal',
-                                  wordBreak: 'break-word',
-                                  overflowWrap: 'break-word',
                                 }}
                               >
-                                {tx.customerName || 'Walk-in Customer'}
-                              </td>
-                              <td
-                                style={{
-                                  padding: '0.4rem 0.5rem',
-                                  textAlign: 'center',
-                                  verticalAlign: 'middle',
-                                }}
-                              >
-                                {(() => {
-                                  const raw = tx.date || '';
-                                  const parts = raw.split('-'); // expect YYYY-MM-DD
-                                  if (parts.length === 3) {
-                                    const [yyyy, mm, dd] = parts;
-                                    const yy = yyyy.slice(-2);
-                                    return `${dd}/${mm}/${yy}`;
-                                  }
-                                  return raw;
-                                })()}
-                              </td>
-                              <td
-                                style={{
-                                  padding: '0.4rem 0.5rem',
-                                  textAlign: 'center',
-                                  verticalAlign: 'middle',
-                                }}
-                              >
-                                {(() => {
-                                  const t = (tx.transactionType || '').toLowerCase();
-                                  let label = 'N/A';
-                                  let bg = '#e5e7eb';
-                                  let fg = '#374151';
-
-                                  if (t.includes('parts') && t.includes('service')) {
-                                    label = 'PS';
-                                    bg = '#f3e8ff'; // light purple
-                                    fg = '#7c3aed'; // purple text
-                                  } else if (t.includes('parts')) {
-                                    label = 'P';
-                                    bg = '#dbeafe'; // light blue
-                                    fg = '#1d4ed8'; // blue text
-                                  } else if (t.includes('service')) {
-                                    label = 'S';
-                                    bg = '#dcfce7'; // light green
-                                    fg = '#15803d'; // green text
-                                  }
-
-                                  return (
-                                    <span
-                                      style={{
-                                        display: 'inline-flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        padding: '0.15rem 0.6rem',
-                                        borderRadius: '9999px',
-                                        fontSize: '0.7rem',
-                                        fontWeight: 600,
-                                        backgroundColor: bg,
-                                        color: fg,
-                                        whiteSpace: 'nowrap',
-                                      }}
-                                    >
-                                      {label}
-                                    </span>
-                                  );
-                                })()}
-                              </td>
-                              <td
-                                style={{
-                                  padding: '0.4rem 0.5rem',
-                                  textAlign: 'right',
-                                  verticalAlign: 'middle',
-                                  fontVariantNumeric: 'tabular-nums',
-                                }}
-                              >
-                                ₱{tx.total.toFixed(2)}
-                              </td>
-                              <td
-                                style={{
-                                  padding: '0.4rem 0.5rem',
-                                  textAlign: 'center',
-                                  verticalAlign: 'middle',
-                                }}
-                              >
-                                {(() => {
-                                  const p = (tx.paymentType || '').toLowerCase();
-                                  let label = 'N/A';
-                                  let bg = '#e5e7eb';
-                                  let fg = '#374151';
-
-                                  if (p === 'cash') {
-                                    label = 'C';
-                                    bg = '#dcfce7'; // light green
-                                    fg = '#15803d'; // green text
-                                  } else if (p === 'gcash') {
-                                    label = 'G';
-                                    bg = '#e0f2fe'; // light gcash-like blue
-                                    fg = '#0369a1'; // blue text
-                                  }
-
-                                  return (
-                                    <span
-                                      style={{
-                                        display: 'inline-flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        padding: '0.15rem 0.6rem',
-                                        borderRadius: '9999px',
-                                        fontSize: '0.7rem',
-                                        fontWeight: 600,
-                                        backgroundColor: bg,
-                                        color: fg,
-                                        whiteSpace: 'nowrap',
-                                      }}
-                                    >
-                                      {label}
-                                    </span>
-                                  );
-                                })()}
+                                Loading transactions...
                               </td>
                             </tr>
-                          ))}
-                      </tbody>
-                    </table>
+                          )}
+                          {!transactionsLoading && filteredTransactions.length === 0 && (
+                            <tr>
+                              <td
+                                colSpan={5}
+                                style={{
+                                  padding: '0.75rem 0.75rem',
+                                  fontSize: '0.8rem',
+                                  color: '#6b7280',
+                                  textAlign: 'center',
+                                }}
+                              >
+                                No matching transactions.
+                              </td>
+                            </tr>
+                          )}
+                          {!transactionsLoading &&
+                            filteredTransactions.map((tx) => (
+                              <tr
+                                key={tx.id}
+                                onClick={() => handleSelectTransaction(tx)}
+                                style={{
+                                  cursor: 'pointer',
+                                  backgroundColor:
+                                    selectedTransactionId === tx.id ? '#eff6ff' : 'white',
+                                  borderBottom: '1px solid #e5e7eb',
+                                }}
+                              >
+                                <td
+                                  style={{
+                                    padding: '0.4rem 0.5rem',
+                                    textAlign: 'center',
+                                    verticalAlign: 'middle',
+                                    whiteSpace: 'normal',
+                                    wordBreak: 'break-word',
+                                    overflowWrap: 'break-word',
+                                  }}
+                                >
+                                  {tx.customerName || 'Walk-in Customer'}
+                                </td>
+                                <td
+                                  style={{
+                                    padding: '0.4rem 0.5rem',
+                                    textAlign: 'center',
+                                    verticalAlign: 'middle',
+                                  }}
+                                >
+                                  {(() => {
+                                    const raw = tx.date || '';
+                                    const parts = raw.split('-'); // expect YYYY-MM-DD
+                                    if (parts.length === 3) {
+                                      const [yyyy, mm, dd] = parts;
+                                      const yy = yyyy.slice(-2);
+                                      return `${dd}/${mm}/${yy}`;
+                                    }
+                                    return raw;
+                                  })()}
+                                </td>
+                                <td
+                                  style={{
+                                    padding: '0.4rem 0.5rem',
+                                    textAlign: 'center',
+                                    verticalAlign: 'middle',
+                                  }}
+                                >
+                                  {(() => {
+                                    const t = (tx.transactionType || '').toLowerCase();
+                                    let label = 'N/A';
+                                    let bg = '#e5e7eb';
+                                    let fg = '#374151';
+
+                                    if (t.includes('parts') && t.includes('service')) {
+                                      label = 'PS';
+                                      bg = '#f3e8ff'; // light purple
+                                      fg = '#7c3aed'; // purple text
+                                    } else if (t.includes('parts')) {
+                                      label = 'P';
+                                      bg = '#dbeafe'; // light blue
+                                      fg = '#1d4ed8'; // blue text
+                                    } else if (t.includes('service')) {
+                                      label = 'S';
+                                      bg = '#dcfce7'; // light green
+                                      fg = '#15803d'; // green text
+                                    }
+
+                                    return (
+                                      <span
+                                        style={{
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          padding: '0.15rem 0.6rem',
+                                          borderRadius: '9999px',
+                                          fontSize: '0.7rem',
+                                          fontWeight: 600,
+                                          backgroundColor: bg,
+                                          color: fg,
+                                          whiteSpace: 'nowrap',
+                                        }}
+                                      >
+                                        {label}
+                                      </span>
+                                    );
+                                  })()}
+                                </td>
+                                <td
+                                  style={{
+                                    padding: '0.4rem 0.5rem',
+                                    textAlign: 'right',
+                                    verticalAlign: 'middle',
+                                    fontVariantNumeric: 'tabular-nums',
+                                  }}
+                                >
+                                  ₱{tx.total.toFixed(2)}
+                                </td>
+                                <td
+                                  style={{
+                                    padding: '0.4rem 0.5rem',
+                                    textAlign: 'center',
+                                    verticalAlign: 'middle',
+                                  }}
+                                >
+                                  {(() => {
+                                    const p = (tx.paymentType || '').toLowerCase();
+                                    let label = 'N/A';
+                                    let bg = '#e5e7eb';
+                                    let fg = '#374151';
+
+                                    if (p === 'cash') {
+                                      label = 'C';
+                                      bg = '#dcfce7'; // light green
+                                      fg = '#15803d'; // green text
+                                    } else if (p === 'gcash') {
+                                      label = 'G';
+                                      bg = '#e0f2fe'; // light gcash-like blue
+                                      fg = '#0369a1'; // blue text
+                                    }
+
+                                    return (
+                                      <span
+                                        style={{
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          padding: '0.15rem 0.6rem',
+                                          borderRadius: '9999px',
+                                          fontSize: '0.7rem',
+                                          fontWeight: 600,
+                                          backgroundColor: bg,
+                                          color: fg,
+                                          whiteSpace: 'nowrap',
+                                        }}
+                                      >
+                                        {label}
+                                      </span>
+                                    );
+                                  })()}
+                                </td>
+                              </tr>
+                            ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
-                </div>
-              </>
+                </>
               )}
             </section>
 
@@ -1946,18 +1804,18 @@ export const Returns: React.FC = () => {
                                     // If selecting and qtyToReturn is falsy, auto-fill with max; if unselecting, reset qty
                                     const nextLine = checked
                                       ? {
-                                          ...current,
-                                          selected: true,
-                                          qtyToReturn:
-                                            !current.qtyToReturn && current.qtyToReturn !== 0
-                                              ? current.maxReturn
-                                              : Math.min(current.qtyToReturn || current.maxReturn, current.maxReturn),
-                                        }
+                                        ...current,
+                                        selected: true,
+                                        qtyToReturn:
+                                          !current.qtyToReturn && current.qtyToReturn !== 0
+                                            ? current.maxReturn
+                                            : Math.min(current.qtyToReturn || current.maxReturn, current.maxReturn),
+                                      }
                                       : {
-                                          ...current,
-                                          selected: false,
-                                          qtyToReturn: 0,
-                                        };
+                                        ...current,
+                                        selected: false,
+                                        qtyToReturn: 0,
+                                      };
                                     next[index] = nextLine;
                                     return next;
                                   });
@@ -2351,26 +2209,26 @@ export const Returns: React.FC = () => {
                               >
                                 {((ret.status === 'archived' && canUnarchiveReturns) ||
                                   (ret.status !== 'archived' && canArchiveReturns)) && (
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      handleToggleArchiveReturn(ret.returnDocId, ret.status)
-                                    }
-                                    style={{
-                                      padding: '0.25rem 0.75rem',
-                                      borderRadius: '999px',
-                                      border: '1px solid #d1d5db',
-                                      backgroundColor:
-                                        ret.status === 'archived' && isSuperAdmin ? '#e0f2fe' : '#fee2e2',
-                                      color:
-                                        ret.status === 'archived' && isSuperAdmin ? '#0369a1' : '#b91c1c',
-                                      fontSize: '0.75rem',
-                                      cursor: 'pointer',
-                                    }}
-                                  >
-                                    {ret.status === 'archived' && isSuperAdmin ? 'Unarchive' : 'Archive'}
-                                  </button>
-                                )}
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleToggleArchiveReturn(ret.returnDocId, ret.status)
+                                      }
+                                      style={{
+                                        padding: '0.25rem 0.75rem',
+                                        borderRadius: '999px',
+                                        border: '1px solid #d1d5db',
+                                        backgroundColor:
+                                          ret.status === 'archived' && isSuperAdmin ? '#e0f2fe' : '#fee2e2',
+                                        color:
+                                          ret.status === 'archived' && isSuperAdmin ? '#0369a1' : '#b91c1c',
+                                        fontSize: '0.75rem',
+                                        cursor: 'pointer',
+                                      }}
+                                    >
+                                      {ret.status === 'archived' && isSuperAdmin ? 'Unarchive' : 'Archive'}
+                                    </button>
+                                  )}
                               </td>
                             </tr>
                           ))}

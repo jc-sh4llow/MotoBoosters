@@ -5,20 +5,14 @@ import { can, type PermissionKey } from '../config/permissions';
 
 interface ProtectedRouteProps {
   /**
-   * Legacy role-based restriction. If provided, user.role must be in this list.
-   * Prefer using requiredPermission for new code so everything flows through
-   * the centralized permissions.ts config.
-   */
-  allowedRoles?: string[];
-
-  /**
    * Optional permission key to enforce via the centralized can() helper.
    * Example: 'page.settings.view'.
+   * The can() function now checks if ANY of the user's roles has this permission.
    */
   requiredPermission?: PermissionKey;
 }
 
-export function ProtectedRoute({ allowedRoles, requiredPermission }: ProtectedRouteProps) {
+export function ProtectedRoute({ requiredPermission }: ProtectedRouteProps) {
   const { user, initializing } = useAuth();
 
   if (initializing) {
@@ -30,13 +24,14 @@ export function ProtectedRoute({ allowedRoles, requiredPermission }: ProtectedRo
     return <Navigate to="/login" replace />;
   }
 
-  // 1) Legacy role list support (kept for backward compatibility)
-  if (allowedRoles && !allowedRoles.includes(user.role)) {
-    return <Navigate to="/" replace />;
-  }
+  // Use roles array with fallback to legacy single role (pre-migration)
+  const userRoles = (user.roles && user.roles.length > 0) 
+    ? user.roles 
+    : (user.role ? [user.role] : []);
 
-  // 2) Centralized permission check when requiredPermission is specified
-  if (requiredPermission && !can(user.role, requiredPermission)) {
+  // Permission check using user's roles array
+  // can() now accepts string[] and checks if ANY role has the permission
+  if (requiredPermission && !can(userRoles, requiredPermission)) {
     return <Navigate to="/" replace />;
   }
 

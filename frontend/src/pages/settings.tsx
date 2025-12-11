@@ -1,41 +1,353 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaHome, FaBars, FaWarehouse, FaTag, FaWrench, FaPlus, FaFileInvoice, FaUser, FaUndoAlt, FaSearch, FaTimes } from 'react-icons/fa';
+import { FaBars, FaWarehouse, FaTag, FaWrench, FaPlus, FaFileInvoice, FaUser, FaUndoAlt, FaSearch, FaTimes, FaPlus as FaPlusIcon, FaTrash, FaEdit, FaChevronDown, FaUpload } from 'react-icons/fa';
 import { useAuth } from '../contexts/AuthContext';
 import logo from '../assets/logo.png';
-import { defaultPermissions, pageViewPermissions, can, type PermissionKey } from '../config/permissions';
-import { collection, doc, setDoc } from 'firebase/firestore';
+import { can, permissionGroups, DEVELOPER_ROLE_ID, type PermissionKey, type Role } from '../config/permissions';
+import { collection, doc, setDoc, deleteDoc, updateDoc, serverTimestamp, getDoc, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { usePermissions } from '../contexts/PermissionsContext';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { useRoles } from '../contexts/PermissionsContext';
+import { RoleBadge } from '../components/RoleBadge';
+import { HeaderDropdown } from '../components/HeaderDropdown';
+
+// Section title color (consistent with other pages)
+const SECTION_TITLE_COLOR = '#1e40af';
+
+// Permission groups for each settings section
+const inventoryPermissions: PermissionKey[] = [
+  'page.inventory.view', 'inventory.view.purchaseprice', 'inventory.view.archived',
+  'inventory.add', 'inventory.edit', 'inventory.addstock.multiple',
+  'inventory.archive', 'inventory.delete', 'inventory.export'
+];
+
+const salesPermissions: PermissionKey[] = [
+  'page.sales.view'
+];
+
+const servicesPermissions: PermissionKey[] = [
+  'page.services.view', 'services.view.archived', 'services.add', 'services.edit',
+  'services.archive', 'services.delete', 'services.toggle.status', 'services.export'
+];
+
+const newTransactionPermissions: PermissionKey[] = [
+  'page.newtransaction.view', 'transactions.create'
+];
+
+const transactionsPermissions: PermissionKey[] = [
+  'page.transactions.view', 'transactions.view.archived',
+  'transactions.archive', 'transactions.delete', 'transactions.export'
+];
+
+const returnsPermissions: PermissionKey[] = [
+  'page.returns.view', 'returns.process', 'returns.view.archived',
+  'returns.archive', 'returns.unarchive', 'returns.delete', 'returns.export'
+];
+
+const customersPermissions: PermissionKey[] = [
+  'page.customers.view', 'customers.view.archived', 'customers.add',
+  'customers.edit', 'customers.archive', 'customers.delete'
+];
+
+const usersPermissions: PermissionKey[] = [
+  'page.users.view', 'users.view.developer', 'users.view.archived',
+  'users.edit.any', 'users.edit.self', 'users.archive', 'users.delete'
+];
+
+// Get permission label from permissionGroups
+const getPermissionLabel = (key: PermissionKey): string => {
+  for (const group of permissionGroups) {
+    const found = group.permissions.find(p => p.key === key);
+    if (found) return found.label;
+  }
+  return key;
+};
 
 export const Settings: React.FC = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const { usingDefaultsOnly } = usePermissions();
+  const { roles, loading: rolesLoading, refreshRoles, maxRolesPerUser } = useRoles();
 
   const [isNavExpanded, setIsNavExpanded] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [searchTerm, setSearchTerm] = useState('');
   let closeMenuTimeout: number | undefined;
+  // Role management state
+  const [editingRole, setEditingRole] = useState<Role | null>(null);
+  const [newRoleName, setNewRoleName] = useState('');
+  const [newRoleColor, setNewRoleColor] = useState('#6b7280');
+  const [isCreatingRole, setIsCreatingRole] = useState(false);
+  const [isSavingRole, setIsSavingRole] = useState(false);
+  const [expandedPermissionGroups, setExpandedPermissionGroups] = useState<string[]>([]);
 
-  const [isSeedingPermissions, setIsSeedingPermissions] = useState(false);
-  const [seedStatus, setSeedStatus] = useState<string | null>(null);
+  // Accordion state for settings sections (all closed by default)
+  const [expandedSections, setExpandedSections] = useState<string[]>([]);
+  const sectionsContainerRef = useRef<HTMLDivElement>(null);
 
-  const currentRole = (user?.role || '').toString().toLowerCase();
-  const isAdminLike = currentRole === 'superadmin' || currentRole === 'admin';
+  // Click outside to close accordions
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (sectionsContainerRef.current && !sectionsContainerRef.current.contains(event.target as Node)) {
+        setExpandedSections([]);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
-  const handleTogglePageVisibility = async (
-    role: string,
-    permissionKey: PermissionKey,
-    nextChecked: boolean
+  // Required fields state for each page (loaded from Firestore)
+  const [inventoryRequiredFields, setInventoryRequiredFields] = useState<Record<string, boolean>>({
+    brand: true, itemName: true, itemType: true, purchasePrice: true,
+    sellingPrice: true, addedStock: true, restockLevel: true, discount: false
+  });
+  const [servicesRequiredFields, setServicesRequiredFields] = useState<Record<string, boolean>>({
+    serviceName: true, servicePrice: true, description: false, vehicleType: false
+  });
+  const [newTransactionRequiredFields, setNewTransactionRequiredFields] = useState<Record<string, boolean>>({
+    customerName: true, contactNumber: false, email: false, handledBy: true
+  });
+  const [customersRequiredFields, setCustomersRequiredFields] = useState<Record<string, boolean>>({
+    customerName: true, contactNumber: false, email: false, address: false, vehicleType: false
+  });
+
+  // Vehicle types state (loaded from Firestore)
+  const [vehicleTypes, setVehicleTypes] = useState<Array<{ id: string; name: string }>>([]);
+  const [isAddingVehicleType, setIsAddingVehicleType] = useState(false);
+  const [newVehicleTypeName, setNewVehicleTypeName] = useState('');
+  const [editingVehicleType, setEditingVehicleType] = useState<{ id: string; name: string } | null>(null);
+
+  // GCash QR Code state
+  const [gcashQrUrl, setGcashQrUrl] = useState<string | null>(null);
+  const [isUploadingQr, setIsUploadingQr] = useState(false);
+
+  // Use roles array with fallback to legacy single role
+  const userRoles = user?.roles?.length ? user.roles : (user?.role ? [user.role] : []);
+
+  // Permission-based checks (Developer role automatically has all permissions)
+  const canManageRoles = can(userRoles, 'roles.view');
+  const canCreateRoles = can(userRoles, 'roles.create');
+  const canEditRoles = can(userRoles, 'roles.edit');
+  const canDeleteRoles = can(userRoles, 'roles.delete');
+  const canViewInventory = can(userRoles, 'page.inventory.view');
+  const canViewSales = can(userRoles, 'page.sales.view');
+  const canViewServices = can(userRoles, 'page.services.view');
+  const canViewTransactions = can(userRoles, 'page.transactions.view');
+  const canViewNewTransaction = can(userRoles, 'page.newtransaction.view');
+  const canViewReturns = can(userRoles, 'page.returns.view');
+  const canViewCustomers = can(userRoles, 'page.customers.view');
+  const canViewUsers = can(userRoles, 'page.users.view');
+  const isAdminLike = can(userRoles, 'users.edit.any');
+
+  // Toggle section accordion
+  const toggleSection = (sectionId: string) => {
+    setExpandedSections(prev =>
+      prev.includes(sectionId)
+        ? prev.filter(id => id !== sectionId)
+        : [...prev, sectionId]
+    );
+  };
+
+  // Load settings from Firestore on mount
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        // Load required fields settings
+        const settingsDoc = await getDoc(doc(db, 'settings', 'requiredFields'));
+        if (settingsDoc.exists()) {
+          const data = settingsDoc.data();
+          if (data.inventory) setInventoryRequiredFields(data.inventory);
+          if (data.services) setServicesRequiredFields(data.services);
+          if (data.newTransaction) setNewTransactionRequiredFields(data.newTransaction);
+          if (data.customers) setCustomersRequiredFields(data.customers);
+        }
+
+        // Load vehicle types
+        const vehicleTypesSnap = await getDocs(collection(db, 'vehicleTypes'));
+        const types: Array<{ id: string; name: string }> = [];
+        vehicleTypesSnap.forEach(doc => {
+          types.push({ id: doc.id, name: doc.data().name || doc.id });
+        });
+        setVehicleTypes(types);
+
+        // Load GCash QR URL
+        const gcashDoc = await getDoc(doc(db, 'settings', 'gcash'));
+        if (gcashDoc.exists() && gcashDoc.data().qrUrl) {
+          setGcashQrUrl(gcashDoc.data().qrUrl);
+        }
+      } catch (err) {
+        console.error('Failed to load settings:', err);
+      }
+    };
+    loadSettings();
+  }, []);
+
+  // Save required fields to Firestore
+  const saveRequiredFields = async (
+    section: 'inventory' | 'services' | 'newTransaction' | 'customers',
+    fields: Record<string, boolean>
   ) => {
     try {
-      const normalizedRole = role.toLowerCase();
-      const ref = doc(collection(db, 'rolePermissions'), normalizedRole);
-      await setDoc(ref, { [permissionKey]: nextChecked }, { merge: true });
+      await setDoc(doc(db, 'settings', 'requiredFields'), { [section]: fields }, { merge: true });
     } catch (err) {
-      console.error('Failed to update page visibility permission in Firestore', err);
+      console.error('Failed to save required fields:', err);
     }
+  };
+
+  // Vehicle type handlers
+  const handleAddVehicleType = async () => {
+    if (!newVehicleTypeName.trim()) return;
+    try {
+      const id = newVehicleTypeName.toLowerCase().replace(/\s+/g, '-');
+      await setDoc(doc(db, 'vehicleTypes', id), { name: newVehicleTypeName.trim() });
+      setVehicleTypes(prev => [...prev, { id, name: newVehicleTypeName.trim() }]);
+      setNewVehicleTypeName('');
+      setIsAddingVehicleType(false);
+    } catch (err) {
+      console.error('Failed to add vehicle type:', err);
+    }
+  };
+
+  const handleUpdateVehicleType = async () => {
+    if (!editingVehicleType || !editingVehicleType.name.trim()) return;
+    try {
+      await updateDoc(doc(db, 'vehicleTypes', editingVehicleType.id), { name: editingVehicleType.name.trim() });
+      setVehicleTypes(prev => prev.map(t => t.id === editingVehicleType.id ? editingVehicleType : t));
+      setEditingVehicleType(null);
+    } catch (err) {
+      console.error('Failed to update vehicle type:', err);
+    }
+  };
+
+  const handleDeleteVehicleType = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this vehicle type?')) return;
+    try {
+      await deleteDoc(doc(db, 'vehicleTypes', id));
+      setVehicleTypes(prev => prev.filter(t => t.id !== id));
+    } catch (err) {
+      console.error('Failed to delete vehicle type:', err);
+    }
+  };
+
+  // GCash QR upload handler
+  const handleGcashQrUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingQr(true);
+    try {
+      const storage = getStorage();
+      const storageRef = ref(storage, `settings/gcash-qr-${Date.now()}`);
+      await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(storageRef);
+
+      await setDoc(doc(db, 'settings', 'gcash'), { qrUrl: url }, { merge: true });
+      setGcashQrUrl(url);
+    } catch (err) {
+      console.error('Failed to upload GCash QR:', err);
+    } finally {
+      setIsUploadingQr(false);
+    }
+  };
+
+  // Get roles that have a specific permission
+  const getRolesWithPermission = (permKey: PermissionKey): Role[] => {
+    return roles.filter(role => role.permissions[permKey] === true);
+  };
+
+  // Role management handlers
+  const handleCreateRole = async () => {
+    if (!newRoleName.trim() || !canCreateRoles) return;
+
+    setIsSavingRole(true);
+    try {
+      const roleId = newRoleName.toLowerCase().replace(/\s+/g, '-');
+      const newPosition = roles.length > 0 ? Math.max(...roles.map(r => r.position)) + 1 : 1;
+
+      const newRole: Role = {
+        id: roleId,
+        name: newRoleName.trim(),
+        color: newRoleColor,
+        position: newPosition,
+        permissions: {},
+        isDefault: false,
+        isProtected: false,
+        createdAt: new Date(),
+      };
+
+      await setDoc(doc(db, 'roles', roleId), {
+        ...newRole,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+
+      await refreshRoles();
+      setIsCreatingRole(false);
+      setNewRoleName('');
+      setNewRoleColor('#6b7280');
+    } catch (err) {
+      console.error('Failed to create role:', err);
+    } finally {
+      setIsSavingRole(false);
+    }
+  };
+
+  const handleUpdateRole = async () => {
+    if (!editingRole || !canEditRoles) return;
+
+    setIsSavingRole(true);
+    try {
+      await updateDoc(doc(db, 'roles', editingRole.id), {
+        name: editingRole.name,
+        color: editingRole.color,
+        permissions: editingRole.permissions,
+        updatedAt: serverTimestamp(),
+      });
+
+      await refreshRoles();
+      setEditingRole(null);
+    } catch (err) {
+      console.error('Failed to update role:', err);
+    } finally {
+      setIsSavingRole(false);
+    }
+  };
+
+  const handleDeleteRole = async (roleId: string) => {
+    if (!canDeleteRoles) return;
+
+    const role = roles.find(r => r.id === roleId);
+    if (role?.isProtected) {
+      alert('Cannot delete a protected role.');
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to delete the role "${role?.name}"?`)) return;
+
+    try {
+      await deleteDoc(doc(db, 'roles', roleId));
+      await refreshRoles();
+    } catch (err) {
+      console.error('Failed to delete role:', err);
+    }
+  };
+
+  const togglePermission = (permKey: PermissionKey) => {
+    if (!editingRole) return;
+    setEditingRole({
+      ...editingRole,
+      permissions: {
+        ...editingRole.permissions,
+        [permKey]: !editingRole.permissions[permKey],
+      },
+    });
+  };
+
+  const togglePermissionGroup = (category: string) => {
+    setExpandedPermissionGroups(prev =>
+      prev.includes(category)
+        ? prev.filter(c => c !== category)
+        : [...prev, category]
+    );
   };
 
   useEffect(() => {
@@ -46,17 +358,6 @@ export const Settings: React.FC = () => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-
-  const menuItems = [
-    { title: 'Inventory', path: '/inventory', icon: <FaWarehouse /> },
-    { title: 'Sales Records', path: '/sales', icon: <FaTag /> },
-    { title: 'Services Offered', path: '/services', icon: <FaWrench /> },
-    { title: 'New Transaction', path: '/transactions/new', icon: <FaPlus /> },
-    { title: 'Transaction History', path: '/transactions', icon: <FaFileInvoice /> },
-    { title: 'Customers', path: '/customers', icon: <FaUser /> },
-    { title: 'User Management', path: '/users', icon: <FaUser /> },
-    { title: 'Returns & Refunds', path: '/returns', icon: <FaUndoAlt /> },
-  ];
 
   return (
     <div
@@ -96,12 +397,12 @@ export const Settings: React.FC = () => {
       >
         <header
           style={{
-            backgroundColor: 'rgba(255, 255, 255, 0.15)',
+            backgroundColor: 'rgba(255, 255, 255, 0.92)',
             backdropFilter: 'blur(12px)',
             borderRadius: '1rem',
             padding: '1rem 2rem',
-            boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.15)',
-            border: '1px solid rgba(255, 255, 255, 0.18)',
+            boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.25)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
             marginBottom: '1.25rem',
             position: 'sticky',
             top: '1rem',
@@ -134,6 +435,7 @@ export const Settings: React.FC = () => {
                 <img
                   src={logo}
                   alt="Business Logo"
+                  title="Back to Dashboard"
                   style={{
                     height: '100%',
                     width: 'auto',
@@ -146,16 +448,15 @@ export const Settings: React.FC = () => {
                   style={{
                     fontSize: '1.875rem',
                     fontWeight: 'bold',
-                    color: 'white',
+                    color: '#1e40af',
                     margin: 0,
-                    textShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
                   }}
                 >
                   Settings
                 </h1>
                 <span
                   style={{
-                    color: 'rgba(255, 255, 255, 0.9)',
+                    color: '#4b5563',
                     fontSize: '0.9rem',
                   }}
                 >
@@ -163,7 +464,7 @@ export const Settings: React.FC = () => {
                 </span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginLeft: '1rem' }}>
-                <span style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: '0.9rem' }}>
+                <span style={{ color: '#374151', fontSize: '0.9rem' }}>
                   Welcome, {user?.name || 'Guest'}
                 </span>
               </div>
@@ -196,7 +497,7 @@ export const Settings: React.FC = () => {
                   style={{
                     padding: '0.5rem 2.5rem 0.5rem 2.5rem',
                     borderRadius: '0.5rem',
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    border: '1px solid #d1d5db',
                     backgroundColor: 'rgba(255, 255, 255)',
                     color: '#1f2937',
                     width: '320px',
@@ -234,8 +535,8 @@ export const Settings: React.FC = () => {
                   }}
                   style={{
                     backgroundColor: 'transparent',
-                    border: '1px solid white',
-                    color: 'white',
+                    border: '1px solid #1e40af',
+                    color: '#1e40af',
                     padding: '0.25rem 0.75rem',
                     borderRadius: '0.25rem',
                     cursor: 'pointer',
@@ -268,7 +569,7 @@ export const Settings: React.FC = () => {
                 style={{
                   background: 'transparent',
                   border: 'none',
-                  color: 'white',
+                  color: '#1e40af',
                   fontSize: '1.5rem',
                   cursor: 'pointer',
                   padding: '0.5rem',
@@ -281,26 +582,11 @@ export const Settings: React.FC = () => {
               </button>
 
               {/* Dropdown Menu */}
-              <div
-                style={{
-                  position: 'absolute',
-                  top: '100%',
-                  right: '0',
-                  backgroundColor: 'white',
-                  borderRadius: '0.5rem',
-                  padding: isNavExpanded ? '0.5rem 0' : 0,
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '0.25rem',
-                  minWidth: '220px',
-                  zIndex: 1000,
-                  overflow: 'hidden',
-                  maxHeight: isNavExpanded ? '500px' : '0',
-                  transition: 'all 0.3s ease-out',
-                  pointerEvents: isNavExpanded ? 'auto' : 'none',
-                  border: isNavExpanded ? '1px solid rgba(0, 0, 0, 0.1)' : 'none',
-                }}
+              <HeaderDropdown
+                isNavExpanded={isNavExpanded}
+                setIsNavExpanded={setIsNavExpanded}
+                isMobile={isMobile}
+                userRoles={userRoles}
                 onMouseEnter={() => {
                   if (!isMobile && closeMenuTimeout) {
                     clearTimeout(closeMenuTimeout);
@@ -313,50 +599,7 @@ export const Settings: React.FC = () => {
                     }, 200);
                   }
                 }}
-              >
-                {menuItems.map((item) => (
-                  <button
-                    key={item.path}
-                    onClick={() => {
-                      navigate(item.path);
-                      setIsNavExpanded(false);
-                    }}
-                    style={{
-                      background: 'white',
-                      border: 'none',
-                      color: '#1f2937',
-                      padding: '0.75rem 1.25rem',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.75rem',
-                      transition: 'background-color 0.2s ease',
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: '1.1rem',
-                        color: '#4b5563',
-                        width: '24px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      {item.icon}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: '0.95rem',
-                        fontWeight: 500,
-                      }}
-                    >
-                      {item.title}
-                    </span>
-                  </button>
-                ))}
-              </div>
+              />
             </div>
           </div>
         </header>
@@ -369,1814 +612,1440 @@ export const Settings: React.FC = () => {
               gap: '1.25rem',
             }}
           >
-            {/* Roles & Access Overview */}
+            {/* Semi-transparent container for all sections */}
             <div
+              ref={sectionsContainerRef}
               style={{
-                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                backgroundColor: 'rgba(255, 255, 255, 0.85)',
                 borderRadius: '1rem',
-                padding: '1.75rem',
-                boxShadow: '0 8px 32px rgba(15, 23, 42, 0.15)',
+                padding: '1.5rem',
+                boxShadow: '0 8px 32px rgba(15, 23, 42, 0.1)',
               }}
             >
-              <h2
-                style={{
-                  fontSize: '1.1rem',
-                  fontWeight: 600,
-                  marginTop: 0,
-                  marginBottom: '0.75rem',
-                  color: '#111827',
-                }}
-              >
-                Roles & Access Overview
-              </h2>
-              <p
-                style={{
-                  fontSize: '0.9rem',
-                  color: '#4b5563',
-                  marginTop: 0,
-                  marginBottom: '1rem',
-                }}
-              >
-                High-level view of role levels and which pages each role can see. This is hardcoded for
-                now and will later drive real RCAB logic.
-              </p>
-              {usingDefaultsOnly && (
-                <p
-                  style={{
-                    fontSize: '0.8rem',
-                    color: '#6b7280',
-                    marginTop: 0,
-                    marginBottom: '0.75rem',
-                  }}
-                >
-                  Currently showing built-in default permissions. Firestore overrides are not active.
-                </p>
-              )}
-
-              {isAdminLike && (
+              {/* Role Management Section - Accordion */}
+              {canManageRoles && (
                 <div
                   style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.75rem',
-                    marginBottom: '1rem',
-                    fontSize: '0.8rem',
-                    color: '#4b5563',
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    borderRadius: '1rem',
+                    boxShadow: '0 8px 32px rgba(15, 23, 42, 0.15)',
+                    overflow: 'hidden',
+                    marginBottom: '1.25rem',
                   }}
                 >
                   <button
                     type="button"
-                    disabled={isSeedingPermissions}
-                    onClick={async () => {
-                      setSeedStatus(null);
-                      setIsSeedingPermissions(true);
-                      try {
-                        const roles: Array<'superadmin' | 'admin' | 'employee' | 'mechanic'> = [
-                          'superadmin',
-                          'admin',
-                          'employee',
-                          'mechanic',
-                        ];
-
-                        for (const role of roles) {
-                          const payload: Record<string, boolean> = {};
-                          (Object.keys(defaultPermissions) as Array<keyof typeof defaultPermissions>).forEach(
-                            (key) => {
-                              const allowedRoles = defaultPermissions[key] || [];
-                              const isAllowed = allowedRoles.some(
-                                (r) => String(r).toLowerCase() === role.toLowerCase()
-                              );
-                              if (isAllowed) {
-                                payload[key] = true;
-                              }
-                            }
-                          );
-
-                          const ref = doc(collection(db, 'rolePermissions'), role);
-                          await setDoc(ref, payload, { merge: false });
-                        }
-
-                        setSeedStatus('Firestore permissions initialized from current defaults.');
-                      } catch (err) {
-                        console.error('Failed to seed Firestore rolePermissions from defaults', err);
-                        setSeedStatus('Failed to initialize Firestore permissions. Please try again.');
-                      } finally {
-                        setIsSeedingPermissions(false);
-                      }
-                    }}
+                    onClick={() => toggleSection('roleManagement')}
                     style={{
-                      padding: '0.35rem 0.8rem',
-                      borderRadius: '0.375rem',
-                      border: '1px solid #d1d5db',
-                      backgroundColor: isSeedingPermissions ? '#e5e7eb' : '#f9fafb',
-                      color: '#111827',
-                      fontSize: '0.8rem',
-                      cursor: isSeedingPermissions ? 'default' : 'pointer',
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '1.25rem 1.75rem',
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      textAlign: 'left',
                     }}
                   >
-                    {isSeedingPermissions ? 'Initializing permissions...' : 'Initialize Firestore permissions from defaults'}
+                    <h2 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0, color: SECTION_TITLE_COLOR }}>
+                      Role Management
+                    </h2>
+                    <FaChevronDown style={{
+                      color: SECTION_TITLE_COLOR,
+                      transition: 'transform 0.2s',
+                      transform: expandedSections.includes('roleManagement') ? 'rotate(180deg)' : 'rotate(0)',
+                    }} />
                   </button>
-                  {seedStatus && (
-                    <span
-                      style={{
-                        color: seedStatus.startsWith('Failed') ? '#b91c1c' : '#047857',
-                      }}
-                    >
-                      {seedStatus}
-                    </span>
-                  )}
-                </div>
-              )}
 
-              {/* Subsection 1: Role levels */}
-              <div
-                style={{
-                  marginBottom: '1.25rem',
-                  paddingBottom: '1rem',
-                  borderBottom: '1px solid #e5e7eb',
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: '0.95rem',
-                    fontWeight: 600,
-                    color: '#111827',
-                    marginBottom: '0.5rem',
-                  }}
-                >
-                  Role Levels
-                </div>
-                <div
-                  style={{
-                    overflowX: 'auto',
-                  }}
-                >
-                  <table
-                    style={{
-                      width: '100%',
-                      borderCollapse: 'collapse',
-                      fontSize: '0.85rem',
-                      minWidth: '420px',
-                    }}
-                  >
-                    <thead>
-                      <tr>
-                        <th
+                  {expandedSections.includes('roleManagement') && (
+                    <div style={{ padding: '0 1.75rem 1.75rem 1.75rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                        <p
                           style={{
-                            textAlign: 'left',
-                            padding: '0.45rem 0.5rem',
-                            backgroundColor: '#f3f4f6',
-                            borderBottom: '1px solid #e5e7eb',
-                            borderTopLeftRadius: '0.5rem',
-                            color: '#111827',
+                            fontSize: '0.85rem',
+                            color: '#6b7280',
+                            margin: 0,
                           }}
                         >
-                          Level
-                        </th>
-                        {['superadmin', 'admin', 'employee', 'mechanic'].map((role) => (
-                          <th
-                            key={role}
+                          Manage roles and their permissions. Max roles per user: {maxRolesPerUser}
+                        </p>
+                        {canCreateRoles && (
+                          <button
+                            type="button"
+                            onClick={() => setIsCreatingRole(true)}
                             style={{
-                              textAlign: 'center',
-                              padding: '0.45rem 0.5rem',
-                              backgroundColor: '#f3f4f6',
-                              borderBottom: '1px solid #e5e7eb',
-                              color: '#111827',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.4rem',
+                              padding: '0.5rem 1rem',
+                              borderRadius: '0.375rem',
+                              border: 'none',
+                              backgroundColor: '#2563eb',
+                              color: 'white',
+                              fontSize: '0.85rem',
+                              fontWeight: 600,
+                              cursor: 'pointer',
                             }}
                           >
-                            {role.charAt(0).toUpperCase() + role.slice(1)}
-                          </th>
-                        ))}
-                        <th
-                          style={{
-                            textAlign: 'center',
-                            padding: '0.45rem 0.5rem',
-                            backgroundColor: '#f3f4f6',
-                            borderBottom: '1px solid #e5e7eb',
-                            borderTopRightRadius: '0.5rem',
-                            color: '#111827',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          + Add role
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {[
-                        { level: 1, role: 'superadmin' },
-                        { level: 2, role: 'admin' },
-                        { level: 3, role: 'employee' },
-                        { level: 4, role: 'mechanic' },
-                      ].map((row) => (
-                        <tr key={row.level}>
-                          <td
-                            style={{
-                              padding: '0.45rem 0.5rem',
-                              borderBottom: '1px solid #e5e7eb',
-                              fontWeight: 500,
-                              color: '#111827',
-                            }}
-                          >
-                            Level {row.level}
-                          </td>
-                          {['superadmin', 'admin', 'employee', 'mechanic'].map((r) => (
-                            <td
-                              key={r}
-                              style={{
-                                padding: '0.45rem 0.5rem',
-                                borderBottom: '1px solid #e5e7eb',
-                                textAlign: 'center',
-                                color: '#111827',
-                              }}
-                            >
-                              {row.role === r ? '●' : ''}
-                            </td>
-                          ))}
-                          <td
-                            style={{
-                              padding: '0.45rem 0.5rem',
-                              borderBottom: '1px solid #e5e7eb',
-                              textAlign: 'center',
-                              color: '#9ca3af',
-                              fontSize: '0.8rem',
-                            }}
-                          >
-                            
-                          </td>
-                        </tr>
-                      ))}
-                      <tr>
-                        <td
-                          style={{
-                            padding: '0.45rem 0.5rem',
-                            borderBottom: '1px solid #e5e7eb',
-                            fontWeight: 500,
-                            color: '#111827',
-                          }}
-                        >
-                          + Add level access
-                        </td>
-                        {['superadmin', 'admin', 'employee', 'mechanic'].map((r) => (
-                          <td
-                            key={r}
-                            style={{
-                              padding: '0.45rem 0.5rem',
-                              borderBottom: '1px solid #e5e7eb',
-                              textAlign: 'center',
-                              color: '#9ca3af',
-                            }}
-                          >
-                            
-                          </td>
-                        ))}
-                        <td
-                          style={{
-                            padding: '0.45rem 0.5rem',
-                            borderBottom: '1px solid #e5e7eb',
-                            textAlign: 'center',
-                            color: '#111827',
-                            fontSize: '0.8rem',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          + Add level
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* Subsection 2: Page visibility matrix */}
-              <div>
-                <div
-                  style={{
-                    fontSize: '0.95rem',
-                    fontWeight: 600,
-                    color: '#111827',
-                    marginBottom: '0.5rem',
-                  }}
-                >
-                  Page Visibility by Role
-                </div>
-                <div
-                  style={{
-                    fontSize: '0.85rem',
-                    color: '#6b7280',
-                    marginBottom: '0.5rem',
-                  }}
-                >
-                  Which roles can see each main page. These checkboxes are visual only for now.
-                </div>
-                <div
-                  style={{
-                    overflowX: 'auto',
-                  }}
-                >
-                  <table
-                    style={{
-                      width: '100%',
-                      borderCollapse: 'collapse',
-                      fontSize: '0.8rem',
-                      minWidth: '720px',
-                    }}
-                  >
-                    <thead>
-                      <tr>
-                        <th
-                          style={{
-                            textAlign: 'left',
-                            padding: '0.45rem 0.5rem',
-                            backgroundColor: '#f3f4f6',
-                            borderBottom: '1px solid #e5e7eb',
-                            borderTopLeftRadius: '0.5rem',
-                            whiteSpace: 'nowrap',
-                            color: '#111827',
-                          }}
-                        >
-                          Role
-                        </th>
-                        {pageViewPermissions.map((page, idx) => (
-                          <th
-                            key={page.key}
-                            style={{
-                              textAlign: 'center',
-                              padding: '0.45rem 0.5rem',
-                              backgroundColor: '#f3f4f6',
-                              borderBottom: '1px solid #e5e7eb',
-                              whiteSpace: 'nowrap',
-                              color: '#111827',
-                              ...(idx === pageViewPermissions.length - 1
-                                ? { borderTopRightRadius: '0.5rem' }
-                                : {}),
-                            }}
-                          >
-                            {page.label}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {['superadmin', 'admin', 'employee', 'mechanic'].map((role) => {
-                        const roleLower = role.toLowerCase();
-                        return (
-                          <tr key={role}>
-                            <td
-                              style={{
-                                padding: '0.45rem 0.5rem',
-                                borderBottom: '1px solid #e5e7eb',
-                                fontWeight: 500,
-                                color: '#111827',
-                                textTransform: 'capitalize',
-                              }}
-                            >
-                              {roleLower}
-                            </td>
-                            {pageViewPermissions.map((page) => {
-                              const canView = can(roleLower, page.key);
-                              return (
-                                <td
-                                  key={page.key}
-                                  style={{
-                                    padding: '0.35rem 0.5rem',
-                                    borderBottom: '1px solid #e5e7eb',
-                                    textAlign: 'center',
-                                  }}
-                                >
-                                  <input
-                                    type="checkbox"
-                                    defaultChecked={canView}
-                                    disabled={usingDefaultsOnly || !isAdminLike}
-                                    onChange={(e) =>
-                                      handleTogglePageVisibility(roleLower, page.key, e.target.checked)
-                                    }
-                                  />
-                                </td>
-                              );
-                            })}
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-            {/* Inventory */}
-            <div
-              style={{
-                backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                borderRadius: '1rem',
-                padding: '1.75rem',
-                boxShadow: '0 8px 32px rgba(15, 23, 42, 0.15)',
-              }}
-            >
-              <h2
-                style={{
-                  fontSize: '1.1rem',
-                  fontWeight: 600,
-                  marginTop: 0,
-                  marginBottom: '0.75rem',
-                  color: '#111827',
-                }}
-              >
-                Inventory
-              </h2>
-              <p
-                style={{
-                  fontSize: '0.9rem',
-                  color: '#4b5563',
-                  marginBottom: '0.75rem',
-                }}
-              >
-                Entering new item: choose which fields are required when adding inventory.
-              </p>
-              {usingDefaultsOnly && (
-                <p
-                  style={{
-                    fontSize: '0.8rem',
-                    color: '#6b7280',
-                    marginTop: 0,
-                    marginBottom: '0.75rem',
-                  }}
-                >
-                  RCAB in this section is based on default permissions because Firestore overrides are not active.
-                </p>
-              )}
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-                  gap: '0.5rem 1.5rem',
-                }}
-              >
-                {[
-                  'Brand',
-                  'Item Name',
-                  'Item Type',
-                  'Purchase Price',
-                  'Selling Price',
-                  'Added Stock',
-                  'Restock Level',
-                  'Discount',
-                ].map((label) => (
-                  <label
-                    key={label}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.4rem',
-                      fontSize: '0.9rem',
-                      color: '#111827',
-                    }}
-                  >
-                    <input type="checkbox" defaultChecked />
-                    <span>{label}</span>
-                  </label>
-                ))}
-              </div>
-              <div
-                style={{
-                  marginTop: '0.75rem',
-                  paddingTop: '0.75rem',
-                  borderTop: '1px solid #e5e7eb',
-                  fontSize: '0.85rem',
-                  color: '#4b5563',
-                }}
-              >
-                <div style={{ fontWeight: 600, marginBottom: '0.35rem' }}>Profit Margin</div>
-                <div>
-                  Set a minimum allowed profit margin for new items to help prevent underpricing. (Static
-                  placeholder for now.)
-                </div>
-              </div>
-
-              <div
-                style={{
-                  marginTop: '0.9rem',
-                  paddingTop: '0.75rem',
-                  borderTop: '1px dashed #e5e7eb',
-                  fontSize: '0.85rem',
-                  color: '#4b5563',
-                }}
-              >
-                <div style={{ fontWeight: 600, marginBottom: '0.35rem', color: '#111827' }}>
-                  RCAB: Who can add inventory
-                </div>
-                <div
-                  style={{
-                    marginTop: '0.35rem',
-                    overflowX: 'auto',
-                  }}
-                >
-                  <table
-                    style={{
-                      width: '100%',
-                      borderCollapse: 'collapse',
-                      fontSize: '0.8rem',
-                      minWidth: '320px',
-                    }}
-                  >
-                    <thead>
-                      <tr>
-                        <th
-                          style={{
-                            textAlign: 'left',
-                            padding: '0.4rem 0.5rem',
-                            backgroundColor: '#f3f4f6',
-                            borderBottom: '1px solid #e5e7eb',
-                            color: '#111827',
-                            fontWeight: 600,
-                          }}
-                        >
-                          Role
-                        </th>
-                        <th
-                          style={{
-                            textAlign: 'center',
-                            padding: '0.4rem 0.5rem',
-                            backgroundColor: '#f3f4f6',
-                            borderBottom: '1px solid #e5e7eb',
-                            color: '#111827',
-                            fontWeight: 600,
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          Can add inventory
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {['superadmin', 'admin', 'employee', 'mechanic'].map((role) => {
-                        const roleLower = role.toLowerCase();
-                        const canAdd = can(roleLower, 'inventory.add');
-                        return (
-                          <tr key={role}>
-                            <td
-                              style={{
-                                padding: '0.4rem 0.5rem',
-                                borderBottom: '1px solid #e5e7eb',
-                                color: '#111827',
-                                textTransform: 'capitalize',
-                                fontWeight: 500,
-                              }}
-                            >
-                              {role}
-                            </td>
-                            <td
-                              style={{
-                                padding: '0.35rem 0.5rem',
-                                borderBottom: '1px solid #e5e7eb',
-                                textAlign: 'center',
-                              }}
-                            >
-                              <input
-                                type="checkbox"
-                                defaultChecked={canAdd}
-                                disabled={usingDefaultsOnly || !isAdminLike}
-                                onChange={(e) =>
-                                  handleTogglePageVisibility(
-                                    roleLower,
-                                    'inventory.add',
-                                    e.target.checked
-                                  )
-                                }
-                              />
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-
-            {/* Sales */}
-            <div
-              style={{
-                backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                borderRadius: '1rem',
-                padding: '1.75rem',
-                boxShadow: '0 8px 32px rgba(15, 23, 42, 0.15)',
-              }}
-            >
-              <h2
-                style={{
-                  fontSize: '1.1rem',
-                  fontWeight: 600,
-                  marginTop: 0,
-                  marginBottom: '0.75rem',
-                  color: '#111827',
-                }}
-              >
-                Sales
-              </h2>
-              <p
-                style={{
-                  fontSize: '0.9rem',
-                  color: '#4b5563',
-                  marginBottom: '0.5rem',
-                }}
-              >
-                Placeholder for Sales configuration, including reporting defaults, date ranges, and
-                visibility of archived or cancelled sales.
-              </p>
-              <p
-                style={{
-                  fontSize: '0.85rem',
-                  color: '#6b7280',
-                  margin: 0,
-                }}
-              >
-                Use this section later to standardize how sales data is summarized and filtered.
-              </p>
-            </div>
-
-            {/* Services */}
-            <div
-              style={{
-                backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                borderRadius: '1rem',
-                padding: '1.75rem',
-                boxShadow: '0 8px 32px rgba(15, 23, 42, 0.15)',
-              }}
-            >
-              <h2
-                style={{
-                  fontSize: '1.1rem',
-                  fontWeight: 600,
-                  marginTop: 0,
-                  marginBottom: '0.75rem',
-                  color: '#111827',
-                }}
-              >
-                Services
-              </h2>
-              <p
-                style={{
-                  fontSize: '0.9rem',
-                  color: '#4b5563',
-                  marginBottom: '0.75rem',
-                }}
-              >
-                Entering new service: core fields and vehicle-type settings.
-              </p>
-              {usingDefaultsOnly && (
-                <p
-                  style={{
-                    fontSize: '0.8rem',
-                    color: '#6b7280',
-                    marginTop: 0,
-                    marginBottom: '0.75rem',
-                  }}
-                >
-                  RCAB for who can add services is currently using default permissions (no Firestore overrides).
-                </p>
-              )}
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-                  gap: '0.5rem 1.5rem',
-                  marginBottom: '0.9rem',
-                }}
-              >
-                {['Service Name', 'Service Price', 'Description'].map((label) => (
-                  <label
-                    key={label}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.4rem',
-                      fontSize: '0.9rem',
-                      color: '#111827',
-                    }}
-                  >
-                    <input type="checkbox" defaultChecked />
-                    <span>{label}</span>
-                  </label>
-                ))}
-              </div>
-
-              <div
-                style={{
-                  marginTop: '0.25rem',
-                  paddingTop: '0.75rem',
-                  borderTop: '1px solid #e5e7eb',
-                  display: 'grid',
-                  gridTemplateColumns: 'minmax(0, 1.1fr) minmax(0, 1.4fr)',
-                  gap: '1.25rem',
-                }}
-              >
-                {/* Vehicle types required toggle */}
-                <div>
-                  <div
-                    style={{
-                      fontSize: '0.95rem',
-                      fontWeight: 600,
-                      color: '#111827',
-                      marginBottom: '0.35rem',
-                    }}
-                  >
-                    Vehicle Types - Required?
-                  </div>
-                  <label
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.4rem',
-                      fontSize: '0.9rem',
-                      color: '#111827',
-                    }}
-                  >
-                    <input type="checkbox" defaultChecked />
-                    <span>Vehicle type is required when creating a new service</span>
-                  </label>
-                </div>
-
-                {/* Vehicle types list (static) */}
-                <div>
-                  <div
-                    style={{
-                      fontSize: '0.95rem',
-                      fontWeight: 600,
-                      color: '#111827',
-                      marginBottom: '0.35rem',
-                    }}
-                  >
-                    Vehicle Types List
-                  </div>
-                  <p
-                    style={{
-                      fontSize: '0.85rem',
-                      color: '#6b7280',
-                      marginTop: 0,
-                      marginBottom: '0.5rem',
-                    }}
-                  >
-                    Hardcoded example list. Later, you'll be able to add, edit, or delete vehicle
-                    types from here.
-                  </p>
-                  <div
-                    style={{
-                      display: 'flex',
-                      flexWrap: 'wrap',
-                      gap: '0.5rem',
-                    }}
-                  >
-                    {['Underbone', 'Scooter', 'Backbone', 'Tricycle'].map((type) => (
-                      <div
-                        key={type}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '0.35rem',
-                          padding: '0.25rem 0.5rem',
-                          borderRadius: '999px',
-                          backgroundColor: '#eff6ff',
-                          border: '1px solid #bfdbfe',
-                          fontSize: '0.8rem',
-                          color: '#1d4ed8',
-                        }}
-                      >
-                        <span>{type}</span>
-                        <span style={{ opacity: 0.7 }}>edit | delete</span>
+                            <FaPlusIcon /> Create Role
+                          </button>
+                        )}
                       </div>
-                    ))}
-                    <button
-                      type="button"
-                      style={{
-                        padding: '0.25rem 0.6rem',
-                        borderRadius: '999px',
-                        border: '1px dashed #9ca3af',
-                        backgroundColor: 'transparent',
-                        fontSize: '0.8rem',
-                        color: '#4b5563',
-                        cursor: 'default',
-                      }}
-                    >
-                      + Add type (placeholder)
-                    </button>
-                  </div>
-                </div>
-              </div>
 
-              <div
-                style={{
-                  marginTop: '0.9rem',
-                  paddingTop: '0.75rem',
-                  borderTop: '1px dashed #e5e7eb',
-                  fontSize: '0.85rem',
-                  color: '#4b5563',
-                }}
-              >
-                <div style={{ fontWeight: 600, marginBottom: '0.35rem', color: '#111827' }}>
-                  RCAB: Who can add services
-                </div>
-                <div
-                  style={{
-                    marginTop: '0.35rem',
-                    overflowX: 'auto',
-                  }}
-                >
-                  <table
-                    style={{
-                      width: '100%',
-                      borderCollapse: 'collapse',
-                      fontSize: '0.8rem',
-                      minWidth: '320px',
-                    }}
-                  >
-                    <thead>
-                      <tr>
-                        <th
-                          style={{
-                            textAlign: 'left',
-                            padding: '0.4rem 0.5rem',
-                            backgroundColor: '#f3f4f6',
-                            borderBottom: '1px solid #e5e7eb',
-                            color: '#111827',
-                            fontWeight: 600,
-                          }}
-                        >
-                          Role
-                        </th>
-                        <th
-                          style={{
-                            textAlign: 'center',
-                            padding: '0.4rem 0.5rem',
-                            backgroundColor: '#f3f4f6',
-                            borderBottom: '1px solid #e5e7eb',
-                            color: '#111827',
-                            fontWeight: 600,
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          Can add services
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {['superadmin', 'admin', 'employee', 'mechanic'].map((role) => {
-                        const roleLower = role.toLowerCase();
-                        const canAdd = can(roleLower, 'services.add');
-                        return (
-                          <tr key={role}>
-                            <td
-                              style={{
-                                padding: '0.4rem 0.5rem',
-                                borderBottom: '1px solid #e5e7eb',
-                                color: '#111827',
-                                textTransform: 'capitalize',
-                                fontWeight: 500,
-                              }}
-                            >
-                              {role}
-                            </td>
-                            <td
-                              style={{
-                                padding: '0.35rem 0.5rem',
-                                borderBottom: '1px solid #e5e7eb',
-                                textAlign: 'center',
-                              }}
-                            >
-                              <input
-                                type="checkbox"
-                                defaultChecked={canAdd}
-                                disabled={usingDefaultsOnly || !isAdminLike}
-                                onChange={(e) =>
-                                  handleTogglePageVisibility(
-                                    roleLower,
-                                    'services.add',
-                                    e.target.checked
-                                  )
-                                }
-                              />
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-                {usingDefaultsOnly && (
-                  <p
-                    style={{
-                      fontSize: '0.8rem',
-                      color: '#6b7280',
-                      marginTop: 0,
-                      marginBottom: '0.75rem',
-                    }}
-                  >
-                    These matrices currently reflect the default, hardcoded permissions. Firestore overrides are not in effect.
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* New Transaction */}
-            <div
-              style={{
-                backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                borderRadius: '1rem',
-                padding: '1.75rem',
-                boxShadow: '0 8px 32px rgba(15, 23, 42, 0.15)',
-              }}
-            >
-              <h2
-                style={{
-                  fontSize: '1.1rem',
-                  fontWeight: 600,
-                  marginTop: 0,
-                  marginBottom: '0.75rem',
-                  color: '#111827',
-                }}
-              >
-                New Transaction
-              </h2>
-              <p
-                style={{
-                  fontSize: '0.9rem',
-                  color: '#4b5563',
-                  marginBottom: '0.75rem',
-                }}
-              >
-                Step 1: Customer information  choose which fields are required when starting a new
-                transaction.
-              </p>
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-                  gap: '0.5rem 1.5rem',
-                }}
-              >
-                {['Customer Name', 'Contact Number', 'Email', 'Handled By'].map((label) => (
-                  <label
-                    key={label}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.4rem',
-                      fontSize: '0.9rem',
-                      color: '#111827',
-                    }}
-                  >
-                    <input type="checkbox" defaultChecked />
-                    <span>{label}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {/* Transaction History */}
-            <div
-              style={{
-                backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                borderRadius: '1rem',
-                padding: '1.75rem',
-                boxShadow: '0 8px 32px rgba(15, 23, 42, 0.15)',
-              }}
-            >
-              <h2
-                style={{
-                  fontSize: '1.1rem',
-                  fontWeight: 600,
-                  marginTop: 0,
-                  marginBottom: '0.75rem',
-                  color: '#111827',
-                }}
-              >
-                Transaction History
-              </h2>
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
-                  gap: '1.25rem',
-                  fontSize: '0.9rem',
-                  color: '#4b5563',
-                }}
-              >
-                <div>
-                  <div style={{ fontWeight: 600, marginBottom: '0.4rem', color: '#111827' }}>
-                    RCAB: Who can see Transaction History page
-                  </div>
-                  <div
-                    style={{
-                      marginTop: '0.35rem',
-                      overflowX: 'auto',
-                    }}
-                  >
-                    <table
-                      style={{
-                        width: '100%',
-                        borderCollapse: 'collapse',
-                        fontSize: '0.8rem',
-                        minWidth: '320px',
-                      }}
-                    >
-                      <thead>
-                        <tr>
-                          <th
-                            style={{
-                              textAlign: 'left',
-                              padding: '0.4rem 0.5rem',
-                              backgroundColor: '#f3f4f6',
-                              borderBottom: '1px solid #e5e7eb',
-                              color: '#111827',
-                              fontWeight: 600,
-                            }}
-                          >
-                            Role
-                          </th>
-                          <th
-                            style={{
-                              textAlign: 'center',
-                              padding: '0.4rem 0.5rem',
-                              backgroundColor: '#f3f4f6',
-                              borderBottom: '1px solid #e5e7eb',
-                              color: '#111827',
-                              fontWeight: 600,
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            Can view history
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {['superadmin', 'admin', 'employee', 'mechanic'].map((role) => {
-                          const roleLower = role.toLowerCase();
-                          const canView = can(roleLower, 'page.transactions.view');
-                          return (
-                            <tr key={role}>
-                              <td
+                      {rolesLoading ? (
+                        <p style={{ color: '#6b7280', fontSize: '0.9rem' }}>Loading roles...</p>
+                      ) : roles.length === 0 ? (
+                        <p style={{ color: '#6b7280', fontSize: '0.9rem' }}>
+                          No roles found. Contact an administrator.
+                        </p>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                          {roles
+                            // Hide Developer role from users without users.view.developer permission
+                            .filter((role) => role.id !== DEVELOPER_ROLE_ID || can(userRoles, 'users.view.developer'))
+                            .map((role) => (
+                              <div
+                                key={role.id}
                                 style={{
-                                  padding: '0.4rem 0.5rem',
-                                  borderBottom: '1px solid #e5e7eb',
-                                  color: '#111827',
-                                  textTransform: 'capitalize',
-                                  fontWeight: 500,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  padding: '1rem',
+                                  backgroundColor: '#f9fafb',
+                                  borderRadius: '0.5rem',
+                                  border: '1px solid #e5e7eb',
                                 }}
                               >
-                                {role}
-                              </td>
-                              <td
-                                style={{
-                                  padding: '0.35rem 0.5rem',
-                                  borderBottom: '1px solid #e5e7eb',
-                                  textAlign: 'center',
-                                }}
-                              >
-                                <input
-                                  type="checkbox"
-                                  defaultChecked={canView}
-                                  disabled={usingDefaultsOnly || !isAdminLike}
-                                  onChange={(e) =>
-                                    handleTogglePageVisibility(
-                                      roleLower,
-                                      'page.transactions.view',
-                                      e.target.checked
-                                    )
-                                  }
-                                />
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                  {usingDefaultsOnly && (
-                    <p
-                      style={{
-                        fontSize: '0.8rem',
-                        color: '#6b7280',
-                        marginTop: 0,
-                        marginBottom: '0.75rem',
-                      }}
-                    >
-                      These matrices currently reflect the default, hardcoded permissions. Firestore overrides are not in effect.
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <div style={{ fontWeight: 600, marginBottom: '0.4rem', color: '#111827' }}>
-                    RCAB: Who can delete transactions
-                  </div>
-                  <div
-                    style={{
-                      marginTop: '0.35rem',
-                      overflowX: 'auto',
-                    }}
-                  >
-                    <table
-                      style={{
-                        width: '100%',
-                        borderCollapse: 'collapse',
-                        fontSize: '0.8rem',
-                        minWidth: '320px',
-                      }}
-                    >
-                      <thead>
-                        <tr>
-                          <th
-                            style={{
-                              textAlign: 'left',
-                              padding: '0.4rem 0.5rem',
-                              backgroundColor: '#f3f4f6',
-                              borderBottom: '1px solid #e5e7eb',
-                              color: '#111827',
-                              fontWeight: 600,
-                            }}
-                          >
-                            Role
-                          </th>
-                          <th
-                            style={{
-                              textAlign: 'center',
-                              padding: '0.4rem 0.5rem',
-                              backgroundColor: '#f3f4f6',
-                              borderBottom: '1px solid #e5e7eb',
-                              color: '#111827',
-                              fontWeight: 600,
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            Can delete (archive)
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {['superadmin', 'admin', 'employee', 'mechanic'].map((role) => {
-                          const roleLower = role.toLowerCase();
-                          const canDelete = can(roleLower, 'transactions.delete');
-                          return (
-                            <tr key={role}>
-                              <td
-                                style={{
-                                  padding: '0.4rem 0.5rem',
-                                  borderBottom: '1px solid #e5e7eb',
-                                  color: '#111827',
-                                  textTransform: 'capitalize',
-                                  fontWeight: 500,
-                                }}
-                              >
-                                {role}
-                              </td>
-                              <td
-                                style={{
-                                  padding: '0.35rem 0.5rem',
-                                  borderBottom: '1px solid #e5e7eb',
-                                  textAlign: 'center',
-                                }}
-                              >
-                                <input
-                                  type="checkbox"
-                                  defaultChecked={canDelete}
-                                  disabled={usingDefaultsOnly || !isAdminLike}
-                                  onChange={(e) =>
-                                    handleTogglePageVisibility(
-                                      roleLower,
-                                      'transactions.delete',
-                                      e.target.checked
-                                    )
-                                  }
-                                />
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                  {usingDefaultsOnly && (
-                    <p
-                      style={{
-                        fontSize: '0.8rem',
-                        color: '#6b7280',
-                        marginTop: 0,
-                        marginBottom: '0.75rem',
-                      }}
-                    >
-                      These matrices currently reflect the default, hardcoded permissions. Firestore overrides are not in effect.
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Returns & Refunds */}
-            <div
-              style={{
-                backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                borderRadius: '1rem',
-                padding: '1.75rem',
-                boxShadow: '0 8px 32px rgba(15, 23, 42, 0.15)',
-              }}
-            >
-              <h2
-                style={{
-                  fontSize: '1.1rem',
-                  fontWeight: 600,
-                  marginTop: 0,
-                  marginBottom: '0.75rem',
-                  color: '#111827',
-                }}
-              >
-                Returns & Refunds
-              </h2>
-              <p
-                style={{
-                  fontSize: '0.9rem',
-                  color: '#4b5563',
-                  marginBottom: '0.75rem',
-                }}
-              >
-                Configure who can access the Returns & Refunds page and who is allowed to process or
-                archive refunds.
-              </p>
-              {usingDefaultsOnly && (
-                <p
-                  style={{
-                    fontSize: '0.8rem',
-                    color: '#6b7280',
-                    marginTop: 0,
-                    marginBottom: '0.75rem',
-                  }}
-                >
-                  Showing default Returns & Refunds permissions. Firestore-based overrides are not active.
-                </p>
-              )}
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
-                  gap: '1.25rem',
-                  fontSize: '0.9rem',
-                  color: '#4b5563',
-                }}
-              >
-                <div>
-                  <div style={{ fontWeight: 600, marginBottom: '0.4rem', color: '#111827' }}>
-                    RCAB: Who can see Returns & Refunds page
-                  </div>
-                  <div
-                    style={{
-                      marginTop: '0.35rem',
-                      overflowX: 'auto',
-                    }}
-                  >
-                    <table
-                      style={{
-                        width: '100%',
-                        borderCollapse: 'collapse',
-                        fontSize: '0.8rem',
-                        minWidth: '320px',
-                      }}
-                    >
-                      <thead>
-                        <tr>
-                          <th
-                            style={{
-                              textAlign: 'left',
-                              padding: '0.4rem 0.5rem',
-                              backgroundColor: '#f3f4f6',
-                              borderBottom: '1px solid #e5e7eb',
-                              color: '#111827',
-                              fontWeight: 600,
-                            }}
-                          >
-                            Role
-                          </th>
-                          <th
-                            style={{
-                              textAlign: 'center',
-                              padding: '0.4rem 0.5rem',
-                              backgroundColor: '#f3f4f6',
-                              borderBottom: '1px solid #e5e7eb',
-                              color: '#111827',
-                              fontWeight: 600,
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            Can view
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {['superadmin', 'admin', 'employee', 'mechanic'].map((role) => {
-                          const roleLower = role.toLowerCase();
-                          const canView = can(roleLower, 'page.returns.view');
-                          return (
-                            <tr key={role}>
-                              <td
-                                style={{
-                                  padding: '0.4rem 0.5rem',
-                                  borderBottom: '1px solid #e5e7eb',
-                                  color: '#111827',
-                                  textTransform: 'capitalize',
-                                  fontWeight: 500,
-                                }}
-                              >
-                                {role}
-                              </td>
-                              <td
-                                style={{
-                                  padding: '0.35rem 0.5rem',
-                                  borderBottom: '1px solid #e5e7eb',
-                                  textAlign: 'center',
-                                }}
-                              >
-                                <input
-                                  type="checkbox"
-                                  defaultChecked={canView}
-                                  disabled={usingDefaultsOnly || !isAdminLike}
-                                  onChange={(e) =>
-                                    handleTogglePageVisibility(
-                                      roleLower,
-                                      'page.returns.view',
-                                      e.target.checked
-                                    )
-                                  }
-                                />
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                <div>
-                  <div style={{ fontWeight: 600, marginBottom: '0.4rem', color: '#111827' }}>
-                    RCAB: Who can process refunds
-                  </div>
-                  <div
-                    style={{
-                      marginTop: '0.35rem',
-                      overflowX: 'auto',
-                    }}
-                  >
-                    <table
-                      style={{
-                        width: '100%',
-                        borderCollapse: 'collapse',
-                        fontSize: '0.8rem',
-                        minWidth: '320px',
-                      }}
-                    >
-                      <thead>
-                        <tr>
-                          <th
-                            style={{
-                              textAlign: 'left',
-                              padding: '0.4rem 0.5rem',
-                              backgroundColor: '#f3f4f6',
-                              borderBottom: '1px solid #e5e7eb',
-                              color: '#111827',
-                              fontWeight: 600,
-                            }}
-                          >
-                            Role
-                          </th>
-                          <th
-                            style={{
-                              textAlign: 'center',
-                              padding: '0.4rem 0.5rem',
-                              backgroundColor: '#f3f4f6',
-                              borderBottom: '1px solid #e5e7eb',
-                              color: '#111827',
-                              fontWeight: 600,
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            Process refunds
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {['superadmin', 'admin', 'employee', 'mechanic'].map((role) => {
-                          const roleLower = role.toLowerCase();
-                          const canProcess = can(roleLower, 'returns.process');
-                          return (
-                            <tr key={role}>
-                              <td
-                                style={{
-                                  padding: '0.4rem 0.5rem',
-                                  borderBottom: '1px solid #e5e7eb',
-                                  color: '#111827',
-                                  textTransform: 'capitalize',
-                                  fontWeight: 500,
-                                }}
-                              >
-                                {role}
-                              </td>
-                              <td
-                                style={{
-                                  padding: '0.35rem 0.5rem',
-                                  borderBottom: '1px solid #e5e7eb',
-                                  textAlign: 'center',
-                                }}
-                              >
-                                <input
-                                  type="checkbox"
-                                  defaultChecked={canProcess}
-                                  disabled={usingDefaultsOnly || !isAdminLike}
-                                  onChange={(e) =>
-                                    handleTogglePageVisibility(
-                                      roleLower,
-                                      'returns.process',
-                                      e.target.checked
-                                    )
-                                  }
-                                />
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-
-              <div
-                style={{
-                  marginTop: '0.9rem',
-                  paddingTop: '0.75rem',
-                  borderTop: '1px dashed #e5e7eb',
-                  fontSize: '0.9rem',
-                  color: '#4b5563',
-                }}
-              >
-                <div style={{ fontWeight: 600, marginBottom: '0.4rem', color: '#111827' }}>
-                  RCAB: Who can delete/archive returns
-                </div>
-                <div
-                  style={{
-                    marginTop: '0.35rem',
-                    overflowX: 'auto',
-                  }}
-                >
-                  <table
-                    style={{
-                      width: '100%',
-                      borderCollapse: 'collapse',
-                      fontSize: '0.8rem',
-                      minWidth: '380px',
-                    }}
-                  >
-                    <thead>
-                      <tr>
-                        <th
-                          style={{
-                            textAlign: 'left',
-                            padding: '0.4rem 0.5rem',
-                            backgroundColor: '#f3f4f6',
-                            borderBottom: '1px solid #e5e7eb',
-                            color: '#111827',
-                            fontWeight: 600,
-                          }}
-                        >
-                          Role
-                        </th>
-                        <th
-                          style={{
-                            textAlign: 'center',
-                            padding: '0.4rem 0.5rem',
-                            backgroundColor: '#f3f4f6',
-                            borderBottom: '1px solid #e5e7eb',
-                            color: '#111827',
-                            fontWeight: 600,
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          Archive (delete)
-                        </th>
-                        <th
-                          style={{
-                            textAlign: 'center',
-                            padding: '0.4rem 0.5rem',
-                            backgroundColor: '#f3f4f6',
-                            borderBottom: '1px solid #e5e7eb',
-                            color: '#111827',
-                            fontWeight: 600,
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          Unarchive
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {['superadmin', 'admin', 'employee', 'mechanic'].map((role) => {
-                        const roleLower = role.toLowerCase();
-                        const canArchive = can(roleLower, 'returns.archive');
-                        const canUnarchive = can(roleLower, 'returns.unarchive');
-                        return (
-                          <tr key={role}>
-                            <td
-                              style={{
-                                padding: '0.4rem 0.5rem',
-                                borderBottom: '1px solid #e5e7eb',
-                                color: '#111827',
-                                textTransform: 'capitalize',
-                                fontWeight: 500,
-                              }}
-                            >
-                              {role}
-                            </td>
-                            <td
-                              style={{
-                                padding: '0.35rem 0.5rem',
-                                borderBottom: '1px solid #e5e7eb',
-                                textAlign: 'center',
-                              }}
-                            >
-                              <input
-                                type="checkbox"
-                                defaultChecked={canArchive}
-                                disabled={usingDefaultsOnly || !isAdminLike}
-                                onChange={(e) =>
-                                  handleTogglePageVisibility(
-                                    roleLower,
-                                    'returns.archive',
-                                    e.target.checked
-                                  )
-                                }
-                              />
-                            </td>
-                            <td
-                              style={{
-                                padding: '0.35rem 0.5rem',
-                                borderBottom: '1px solid #e5e7eb',
-                                textAlign: 'center',
-                              }}
-                            >
-                              <input
-                                type="checkbox"
-                                defaultChecked={canUnarchive}
-                                disabled={usingDefaultsOnly || !isAdminLike}
-                                onChange={(e) =>
-                                  handleTogglePageVisibility(
-                                    roleLower,
-                                    'returns.unarchive',
-                                    e.target.checked
-                                  )
-                                }
-                              />
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-
-            {/* Customers */}
-            <div
-              style={{
-                backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                borderRadius: '1rem',
-                padding: '1.75rem',
-                boxShadow: '0 8px 32px rgba(15, 23, 42, 0.15)',
-              }}
-            >
-              <h2
-                style={{
-                  fontSize: '1.1rem',
-                  fontWeight: 600,
-                  marginTop: 0,
-                  marginBottom: '0.75rem',
-                  color: '#111827',
-                }}
-              >
-                Customers
-              </h2>
-              <p
-                style={{
-                  fontSize: '0.9rem',
-                  color: '#4b5563',
-                  marginBottom: '0.75rem',
-                }}
-              >
-                Entering new customer: decide which details must be captured.
-              </p>
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-                  gap: '0.5rem 1.5rem',
-                }}
-              >
-                {['Customer Name', 'Contact Number', 'Email', 'Address', 'Vehicle Type'].map((label) => (
-                  <label
-                    key={label}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.4rem',
-                      fontSize: '0.9rem',
-                      color: '#111827',
-                    }}
-                  >
-                    <input type="checkbox" defaultChecked />
-                    <span>{label}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {/* User Management */}
-            <div
-              style={{
-                backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                borderRadius: '1rem',
-                padding: '1.75rem',
-                boxShadow: '0 8px 32px rgba(15, 23, 42, 0.15)',
-              }}
-            >
-              <h2
-                style={{
-                  fontSize: '1.1rem',
-                  fontWeight: 600,
-                  marginTop: 0,
-                  marginBottom: '0.75rem',
-                  color: '#111827',
-                }}
-              >
-                User Management
-              </h2>
-              <p
-                style={{
-                  fontSize: '0.9rem',
-                  color: '#4b5563',
-                  marginBottom: '0.75rem',
-                }}
-              >
-                Entering new user: required account details and RCAB rules for who can edit or delete
-                users.
-              </p>
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-                  gap: '0.5rem 1.5rem',
-                }}
-              >
-                {[
-                  'Full Name',
-                  'Contact Number',
-                  'Username',
-                  'Email',
-                  'Password',
-                  'Confirm Password',
-                  'User Role',
-                  'Account Status',
-                ].map((label) => (
-                  <label
-                    key={label}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.4rem',
-                      fontSize: '0.9rem',
-                      color: '#111827',
-                    }}
-                  >
-                    <input type="checkbox" defaultChecked />
-                    <span>{label}</span>
-                  </label>
-                ))}
-              </div>
-
-              <div
-                style={{
-                  marginTop: '0.9rem',
-                  paddingTop: '0.75rem',
-                  borderTop: '1px dashed #e5e7eb',
-                  fontSize: '0.85rem',
-                  color: '#4b5563',
-                }}
-              >
-                <div style={{ fontWeight: 600, marginBottom: '0.35rem', color: '#111827' }}>
-                  RCAB: Who can manage users
-                </div>
-                <div
-                  style={{
-                    marginTop: '0.35rem',
-                    overflowX: 'auto',
-                  }}
-                >
-                  <table
-                    style={{
-                      width: '100%',
-                      borderCollapse: 'collapse',
-                      fontSize: '0.8rem',
-                      minWidth: '520px',
-                    }}
-                  >
-                    <thead>
-                      <tr>
-                        <th
-                          style={{
-                            textAlign: 'left',
-                            padding: '0.4rem 0.5rem',
-                            backgroundColor: '#f3f4f6',
-                            borderBottom: '1px solid #e5e7eb',
-                            color: '#111827',
-                            fontWeight: 600,
-                          }}
-                        >
-                          Role
-                        </th>
-                        {['Create', 'Edit', 'Edit own', 'Delete'].map((action) => (
-                          <th
-                            key={action}
-                            style={{
-                              textAlign: 'center',
-                              padding: '0.4rem 0.5rem',
-                              backgroundColor: '#f3f4f6',
-                              borderBottom: '1px solid #e5e7eb',
-                              color: '#111827',
-                              fontWeight: 600,
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            {action}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {['superadmin', 'admin', 'employee', 'mechanic'].map((role) => {
-                        const roleLower = role.toLowerCase();
-                        const canCreate = can(roleLower, 'users.edit.any');
-                        const canEditAny = can(roleLower, 'users.edit.any');
-                        const canEditOwn = can(roleLower, 'users.edit.self');
-                        const canDelete = can(roleLower, 'users.delete');
-                        const values = [canCreate, canEditAny, canEditOwn, canDelete];
-                        const permissionKeys: PermissionKey[] = [
-                          'users.edit.any',
-                          'users.edit.any',
-                          'users.edit.self',
-                          'users.delete',
-                        ];
-                        return (
-                          <tr key={role}>
-                            <td
-                              style={{
-                                padding: '0.4rem 0.5rem',
-                                borderBottom: '1px solid #e5e7eb',
-                                color: '#111827',
-                                textTransform: 'capitalize',
-                                fontWeight: 500,
-                              }}
-                            >
-                              {role}
-                            </td>
-                            {values.map((value, idx) => (
-                              <td
-                                key={idx}
-                                style={{
-                                  padding: '0.35rem 0.5rem',
-                                  borderBottom: '1px solid #e5e7eb',
-                                  textAlign: 'center',
-                                }}
-                              >
-                                <input
-                                  type="checkbox"
-                                  defaultChecked={value}
-                                  disabled={usingDefaultsOnly || !isAdminLike}
-                                  onChange={(e) =>
-                                    handleTogglePageVisibility(
-                                      roleLower,
-                                      permissionKeys[idx],
-                                      e.target.checked
-                                    )
-                                  }
-                                />
-                              </td>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                  <RoleBadge role={role} />
+                                  <div>
+                                    <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>
+                                      Position: {role.position}
+                                      {role.isDefault && ' • Default'}
+                                      {role.isProtected && ' • Protected'}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                  {canEditRoles && !role.isProtected && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setEditingRole(role)}
+                                      style={{
+                                        padding: '0.35rem 0.75rem',
+                                        borderRadius: '0.25rem',
+                                        border: '1px solid #d1d5db',
+                                        backgroundColor: 'white',
+                                        color: '#374151',
+                                        fontSize: '0.8rem',
+                                        cursor: 'pointer',
+                                      }}
+                                    >
+                                      <FaEdit /> Edit
+                                    </button>
+                                  )}
+                                  {canDeleteRoles && !role.isProtected && !role.isDefault && (
+                                    <button
+                                      type="button"
+                                      onClick={async () => {
+                                        if (confirm(`Are you sure you want to delete the "${role.name}" role?`)) {
+                                          try {
+                                            await deleteDoc(doc(db, 'roles', role.id));
+                                            await refreshRoles();
+                                          } catch (err) {
+                                            console.error('Failed to delete role', err);
+                                          }
+                                        }
+                                      }}
+                                      style={{
+                                        padding: '0.35rem 0.75rem',
+                                        borderRadius: '0.25rem',
+                                        border: '1px solid #fca5a5',
+                                        backgroundColor: '#fef2f2',
+                                        color: '#b91c1c',
+                                        fontSize: '0.8rem',
+                                        cursor: 'pointer',
+                                      }}
+                                    >
+                                      <FaTrash /> Delete
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
                             ))}
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-              </div>
+              )}
+
+              {/* Inventory Section - Accordion */}
+              {canViewInventory && (
+                <div
+                  style={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    borderRadius: '1rem',
+                    boxShadow: '0 8px 32px rgba(15, 23, 42, 0.15)',
+                    overflow: 'hidden',
+                    marginBottom: '1.25rem',
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => toggleSection('inventory')}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '1.25rem 1.75rem',
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                    }}
+                  >
+                    <h2 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0, color: SECTION_TITLE_COLOR }}>
+                      Inventory
+                    </h2>
+                    <FaChevronDown style={{
+                      color: SECTION_TITLE_COLOR,
+                      transition: 'transform 0.2s',
+                      transform: expandedSections.includes('inventory') ? 'rotate(180deg)' : 'rotate(0)',
+                    }} />
+                  </button>
+
+                  {expandedSections.includes('inventory') && (
+                    <div style={{ padding: '0 1.75rem 1.75rem 1.75rem' }}>
+                      {/* Required Fields Subsection */}
+                      <div style={{ marginBottom: '1.5rem' }}>
+                        <p style={{ fontSize: '0.9rem', color: '#4b5563', marginBottom: '0.75rem', marginTop: 0 }}>
+                          Entering new item: choose which fields are required when adding inventory.
+                        </p>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.5rem 1.5rem' }}>
+                          {[
+                            { key: 'brand', label: 'Brand' },
+                            { key: 'itemName', label: 'Item Name' },
+                            { key: 'itemType', label: 'Item Type' },
+                            { key: 'purchasePrice', label: 'Purchase Price' },
+                            { key: 'sellingPrice', label: 'Selling Price' },
+                            { key: 'addedStock', label: 'Added Stock' },
+                            { key: 'restockLevel', label: 'Restock Level' },
+                            { key: 'discount', label: 'Discount' },
+                          ].map(({ key, label }) => (
+                            <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.9rem', color: '#111827', cursor: 'pointer' }}>
+                              <input
+                                type="checkbox"
+                                checked={inventoryRequiredFields[key] ?? false}
+                                onChange={(e) => {
+                                  const newFields = { ...inventoryRequiredFields, [key]: e.target.checked };
+                                  setInventoryRequiredFields(newFields);
+                                  saveRequiredFields('inventory', newFields);
+                                }}
+                              />
+                              <span>{label}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Permissions Subsection */}
+                      <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '1rem' }}>
+                        <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#111827', marginBottom: '0.75rem' }}>
+                          Permissions
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                          {inventoryPermissions.map((permKey) => {
+                            const rolesWithPerm = getRolesWithPermission(permKey);
+                            return (
+                              <div key={permKey} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem' }}>
+                                <span style={{ fontSize: '0.85rem', color: '#374151', minWidth: '180px' }}>
+                                  {getPermissionLabel(permKey)}
+                                </span>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                                  {rolesWithPerm.length > 0 ? rolesWithPerm.map(role => (
+                                    <RoleBadge key={role.id} role={role} size="sm" />
+                                  )) : (
+                                    <span style={{ fontSize: '0.75rem', color: '#9ca3af', fontStyle: 'italic' }}>No roles</span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Item Sales Section - Accordion */}
+              {canViewSales && (
+                <div
+                  style={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    borderRadius: '1rem',
+                    boxShadow: '0 8px 32px rgba(15, 23, 42, 0.15)',
+                    overflow: 'hidden',
+                    marginBottom: '1.25rem',
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => toggleSection('sales')}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '1.25rem 1.75rem',
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                    }}
+                  >
+                    <h2 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0, color: SECTION_TITLE_COLOR }}>
+                      Item Sales
+                    </h2>
+                    <FaChevronDown style={{
+                      color: SECTION_TITLE_COLOR,
+                      transition: 'transform 0.2s',
+                      transform: expandedSections.includes('sales') ? 'rotate(180deg)' : 'rotate(0)',
+                    }} />
+                  </button>
+
+                  {expandedSections.includes('sales') && (
+                    <div style={{ padding: '0 1.75rem 1.75rem 1.75rem' }}>
+                      <p style={{ fontSize: '0.9rem', color: '#4b5563', marginBottom: '1rem', marginTop: 0 }}>
+                        Configure sales reporting defaults, date ranges, and visibility settings.
+                      </p>
+
+                      {/* Permissions Subsection */}
+                      <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '1rem' }}>
+                        <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#111827', marginBottom: '0.75rem' }}>
+                          Permissions
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                          {salesPermissions.map((permKey) => {
+                            const rolesWithPerm = getRolesWithPermission(permKey);
+                            return (
+                              <div key={permKey} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem' }}>
+                                <span style={{ fontSize: '0.85rem', color: '#374151', minWidth: '180px' }}>
+                                  {getPermissionLabel(permKey)}
+                                </span>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                                  {rolesWithPerm.length > 0 ? rolesWithPerm.map(role => (
+                                    <RoleBadge key={role.id} role={role} size="sm" />
+                                  )) : (
+                                    <span style={{ fontSize: '0.75rem', color: '#9ca3af', fontStyle: 'italic' }}>No roles</span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Services Section - Accordion */}
+              {canViewServices && (
+                <div
+                  style={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    borderRadius: '1rem',
+                    boxShadow: '0 8px 32px rgba(15, 23, 42, 0.15)',
+                    overflow: 'hidden',
+                    marginBottom: '1.25rem',
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => toggleSection('services')}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '1.25rem 1.75rem',
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                    }}
+                  >
+                    <h2 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0, color: SECTION_TITLE_COLOR }}>
+                      Services
+                    </h2>
+                    <FaChevronDown style={{
+                      color: SECTION_TITLE_COLOR,
+                      transition: 'transform 0.2s',
+                      transform: expandedSections.includes('services') ? 'rotate(180deg)' : 'rotate(0)',
+                    }} />
+                  </button>
+
+                  {expandedSections.includes('services') && (
+                    <div style={{ padding: '0 1.75rem 1.75rem 1.75rem' }}>
+                      {/* Required Fields Subsection */}
+                      <div style={{ marginBottom: '1.5rem' }}>
+                        <p style={{ fontSize: '0.9rem', color: '#4b5563', marginBottom: '0.75rem', marginTop: 0 }}>
+                          Entering new service: choose which fields are required when adding a new service.
+                        </p>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.5rem 1.5rem' }}>
+                          {[
+                            { key: 'serviceName', label: 'Service Name' },
+                            { key: 'servicePrice', label: 'Service Price' },
+                            { key: 'description', label: 'Description' },
+                            { key: 'vehicleType', label: 'Vehicle Type' },
+                          ].map(({ key, label }) => (
+                            <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.9rem', color: '#111827', cursor: 'pointer' }}>
+                              <input
+                                type="checkbox"
+                                checked={servicesRequiredFields[key] ?? false}
+                                onChange={(e) => {
+                                  const newFields = { ...servicesRequiredFields, [key]: e.target.checked };
+                                  setServicesRequiredFields(newFields);
+                                  saveRequiredFields('services', newFields);
+                                }}
+                              />
+                              <span>{label}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Vehicle Types List Subsection */}
+                      <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '1rem', marginBottom: '1.5rem' }}>
+                        <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#111827', marginBottom: '0.5rem' }}>
+                          Vehicle Types List
+                        </div>
+                        <p style={{ fontSize: '0.85rem', color: '#6b7280', marginTop: 0, marginBottom: '0.75rem' }}>
+                          Manage the list of vehicle types available throughout the system.
+                        </p>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center' }}>
+                          {vehicleTypes.map((type) => (
+                            editingVehicleType?.id === type.id ? (
+                              <div key={type.id} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                <input
+                                  type="text"
+                                  value={editingVehicleType.name}
+                                  onChange={(e) => setEditingVehicleType({ ...editingVehicleType, name: e.target.value })}
+                                  style={{
+                                    padding: '0.25rem 0.5rem',
+                                    borderRadius: '0.25rem',
+                                    border: '1px solid #3b82f6',
+                                    fontSize: '0.8rem',
+                                    width: '120px',
+                                  }}
+                                  autoFocus
+                                />
+                                <button
+                                  type="button"
+                                  onClick={handleUpdateVehicleType}
+                                  style={{ padding: '0.2rem 0.4rem', fontSize: '0.75rem', backgroundColor: '#3b82f6', color: 'white', border: 'none', borderRadius: '0.25rem', cursor: 'pointer' }}
+                                >
+                                  Save
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingVehicleType(null)}
+                                  style={{ padding: '0.2rem 0.4rem', fontSize: '0.75rem', backgroundColor: '#e5e7eb', color: '#374151', border: 'none', borderRadius: '0.25rem', cursor: 'pointer' }}
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            ) : (
+                              <div
+                                key={type.id}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.5rem',
+                                  padding: '0.25rem 0.5rem 0.25rem 0.75rem',
+                                  borderRadius: '999px',
+                                  backgroundColor: '#eff6ff',
+                                  border: '1px solid #bfdbfe',
+                                  fontSize: '0.8rem',
+                                  color: '#1d4ed8',
+                                }}
+                              >
+                                <span>{type.name}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingVehicleType(type)}
+                                  style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', fontSize: '0.7rem', padding: 0 }}
+                                >
+                                  Edit
+                                </button>
+                                <span style={{ color: '#bfdbfe' }}>|</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteVehicleType(type.id)}
+                                  style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.7rem', padding: 0 }}
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            )
+                          ))}
+                          {isAddingVehicleType ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                              <input
+                                type="text"
+                                value={newVehicleTypeName}
+                                onChange={(e) => setNewVehicleTypeName(e.target.value)}
+                                placeholder="Type name"
+                                style={{
+                                  padding: '0.25rem 0.5rem',
+                                  borderRadius: '0.25rem',
+                                  border: '1px solid #3b82f6',
+                                  fontSize: '0.8rem',
+                                  width: '120px',
+                                }}
+                                autoFocus
+                              />
+                              <button
+                                type="button"
+                                onClick={handleAddVehicleType}
+                                style={{ padding: '0.2rem 0.4rem', fontSize: '0.75rem', backgroundColor: '#3b82f6', color: 'white', border: 'none', borderRadius: '0.25rem', cursor: 'pointer' }}
+                              >
+                                Add
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => { setIsAddingVehicleType(false); setNewVehicleTypeName(''); }}
+                                style={{ padding: '0.2rem 0.4rem', fontSize: '0.75rem', backgroundColor: '#e5e7eb', color: '#374151', border: 'none', borderRadius: '0.25rem', cursor: 'pointer' }}
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setIsAddingVehicleType(true)}
+                              style={{
+                                padding: '0.25rem 0.6rem',
+                                borderRadius: '999px',
+                                border: '1px dashed #3b82f6',
+                                backgroundColor: 'transparent',
+                                fontSize: '0.8rem',
+                                color: '#3b82f6',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              + Add type
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Permissions Subsection */}
+                      <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '1rem' }}>
+                        <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#111827', marginBottom: '0.75rem' }}>
+                          Permissions
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                          {servicesPermissions.map((permKey) => {
+                            const rolesWithPerm = getRolesWithPermission(permKey);
+                            return (
+                              <div key={permKey} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem' }}>
+                                <span style={{ fontSize: '0.85rem', color: '#374151', minWidth: '180px' }}>
+                                  {getPermissionLabel(permKey)}
+                                </span>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                                  {rolesWithPerm.length > 0 ? rolesWithPerm.map(role => (
+                                    <RoleBadge key={role.id} role={role} size="sm" />
+                                  )) : (
+                                    <span style={{ fontSize: '0.75rem', color: '#9ca3af', fontStyle: 'italic' }}>No roles</span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* New Transaction Section - Accordion */}
+              {canViewNewTransaction && (
+                <div
+                  style={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    borderRadius: '1rem',
+                    boxShadow: '0 8px 32px rgba(15, 23, 42, 0.15)',
+                    overflow: 'hidden',
+                    marginBottom: '1.25rem',
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => toggleSection('newTransaction')}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '1.25rem 1.75rem',
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                    }}
+                  >
+                    <h2 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0, color: SECTION_TITLE_COLOR }}>
+                      New Transaction
+                    </h2>
+                    <FaChevronDown style={{
+                      color: SECTION_TITLE_COLOR,
+                      transition: 'transform 0.2s',
+                      transform: expandedSections.includes('newTransaction') ? 'rotate(180deg)' : 'rotate(0)',
+                    }} />
+                  </button>
+
+                  {expandedSections.includes('newTransaction') && (
+                    <div style={{ padding: '0 1.75rem 1.75rem 1.75rem' }}>
+                      {/* Required Fields Subsection */}
+                      <div style={{ marginBottom: '1.5rem' }}>
+                        <p style={{ fontSize: '0.9rem', color: '#4b5563', marginBottom: '0.75rem', marginTop: 0 }}>
+                          Step 1: Customer information — choose which fields are required when starting a new transaction.
+                        </p>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.5rem 1.5rem' }}>
+                          {[
+                            { key: 'customerName', label: 'Customer Name' },
+                            { key: 'contactNumber', label: 'Contact Number' },
+                            { key: 'email', label: 'Email' },
+                            { key: 'handledBy', label: 'Handled By' },
+                          ].map(({ key, label }) => (
+                            <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.9rem', color: '#111827', cursor: 'pointer' }}>
+                              <input
+                                type="checkbox"
+                                checked={newTransactionRequiredFields[key] ?? false}
+                                onChange={(e) => {
+                                  const newFields = { ...newTransactionRequiredFields, [key]: e.target.checked };
+                                  setNewTransactionRequiredFields(newFields);
+                                  saveRequiredFields('newTransaction', newFields);
+                                }}
+                              />
+                              <span>{label}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* GCash QR Code Subsection */}
+                      <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '1rem', marginBottom: '1.5rem' }}>
+                        <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#111827', marginBottom: '0.5rem' }}>
+                          GCash QR Code
+                        </div>
+                        <p style={{ fontSize: '0.85rem', color: '#6b7280', marginTop: 0, marginBottom: '0.75rem' }}>
+                          Upload a GCash QR code image to display during the payment step of new transactions.
+                        </p>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem' }}>
+                          {gcashQrUrl && (
+                            <div style={{
+                              width: '120px',
+                              height: '120px',
+                              border: '1px solid #e5e7eb',
+                              borderRadius: '0.5rem',
+                              overflow: 'hidden',
+                              flexShrink: 0,
+                            }}>
+                              <img
+                                src={gcashQrUrl}
+                                alt="GCash QR Code"
+                                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                              />
+                            </div>
+                          )}
+                          <div>
+                            <label
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                                padding: '0.5rem 1rem',
+                                backgroundColor: '#3b82f6',
+                                color: 'white',
+                                borderRadius: '0.375rem',
+                                cursor: isUploadingQr ? 'not-allowed' : 'pointer',
+                                fontSize: '0.85rem',
+                                fontWeight: 500,
+                                opacity: isUploadingQr ? 0.6 : 1,
+                              }}
+                            >
+                              <FaUpload />
+                              {isUploadingQr ? 'Uploading...' : gcashQrUrl ? 'Change QR Code' : 'Upload QR Code'}
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleGcashQrUpload}
+                                disabled={isUploadingQr}
+                                style={{ display: 'none' }}
+                              />
+                            </label>
+                            {!gcashQrUrl && (
+                              <p style={{ fontSize: '0.8rem', color: '#9ca3af', marginTop: '0.5rem', marginBottom: 0 }}>
+                                No QR code uploaded yet
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Permissions Subsection */}
+                      <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '1rem' }}>
+                        <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#111827', marginBottom: '0.75rem' }}>
+                          Permissions
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                          {newTransactionPermissions.map((permKey) => {
+                            const rolesWithPerm = getRolesWithPermission(permKey);
+                            return (
+                              <div key={permKey} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem' }}>
+                                <span style={{ fontSize: '0.85rem', color: '#374151', minWidth: '180px' }}>
+                                  {getPermissionLabel(permKey)}
+                                </span>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                                  {rolesWithPerm.length > 0 ? rolesWithPerm.map(role => (
+                                    <RoleBadge key={role.id} role={role} size="sm" />
+                                  )) : (
+                                    <span style={{ fontSize: '0.75rem', color: '#9ca3af', fontStyle: 'italic' }}>No roles</span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Transactions Section - Accordion */}
+              {canViewTransactions && (
+                <div
+                  style={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    borderRadius: '1rem',
+                    boxShadow: '0 8px 32px rgba(15, 23, 42, 0.15)',
+                    overflow: 'hidden',
+                    marginBottom: '1.25rem',
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => toggleSection('transactions')}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '1.25rem 1.75rem',
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                    }}
+                  >
+                    <h2 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0, color: SECTION_TITLE_COLOR }}>
+                      Transactions
+                    </h2>
+                    <FaChevronDown style={{
+                      color: SECTION_TITLE_COLOR,
+                      transition: 'transform 0.2s',
+                      transform: expandedSections.includes('transactions') ? 'rotate(180deg)' : 'rotate(0)',
+                    }} />
+                  </button>
+
+                  {expandedSections.includes('transactions') && (
+                    <div style={{ padding: '0 1.75rem 1.75rem 1.75rem' }}>
+                      <p style={{ fontSize: '0.9rem', color: '#4b5563', marginBottom: '1rem', marginTop: 0 }}>
+                        Configure transaction history settings and permissions.
+                      </p>
+
+                      {/* Permissions Subsection */}
+                      <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '1rem' }}>
+                        <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#111827', marginBottom: '0.75rem' }}>
+                          Permissions
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                          {transactionsPermissions.map((permKey) => {
+                            const rolesWithPerm = getRolesWithPermission(permKey);
+                            return (
+                              <div key={permKey} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem' }}>
+                                <span style={{ fontSize: '0.85rem', color: '#374151', minWidth: '180px' }}>
+                                  {getPermissionLabel(permKey)}
+                                </span>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                                  {rolesWithPerm.length > 0 ? rolesWithPerm.map(role => (
+                                    <RoleBadge key={role.id} role={role} size="sm" />
+                                  )) : (
+                                    <span style={{ fontSize: '0.75rem', color: '#9ca3af', fontStyle: 'italic' }}>No roles</span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Returns Section - Accordion */}
+              {canViewReturns && (
+                <div
+                  style={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    borderRadius: '1rem',
+                    boxShadow: '0 8px 32px rgba(15, 23, 42, 0.15)',
+                    overflow: 'hidden',
+                    marginBottom: '1.25rem',
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => toggleSection('returns')}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '1.25rem 1.75rem',
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                    }}
+                  >
+                    <h2 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0, color: SECTION_TITLE_COLOR }}>
+                      Returns
+                    </h2>
+                    <FaChevronDown style={{
+                      color: SECTION_TITLE_COLOR,
+                      transition: 'transform 0.2s',
+                      transform: expandedSections.includes('returns') ? 'rotate(180deg)' : 'rotate(0)',
+                    }} />
+                  </button>
+
+                  {expandedSections.includes('returns') && (
+                    <div style={{ padding: '0 1.75rem 1.75rem 1.75rem' }}>
+                      <p style={{ fontSize: '0.9rem', color: '#4b5563', marginBottom: '1rem', marginTop: 0 }}>
+                        Configure returns and refunds settings and permissions.
+                      </p>
+
+                      {/* Permissions Subsection */}
+                      <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '1rem' }}>
+                        <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#111827', marginBottom: '0.75rem' }}>
+                          Permissions
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                          {returnsPermissions.map((permKey) => {
+                            const rolesWithPerm = getRolesWithPermission(permKey);
+                            return (
+                              <div key={permKey} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem' }}>
+                                <span style={{ fontSize: '0.85rem', color: '#374151', minWidth: '180px' }}>
+                                  {getPermissionLabel(permKey)}
+                                </span>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                                  {rolesWithPerm.length > 0 ? rolesWithPerm.map(role => (
+                                    <RoleBadge key={role.id} role={role} size="sm" />
+                                  )) : (
+                                    <span style={{ fontSize: '0.75rem', color: '#9ca3af', fontStyle: 'italic' }}>No roles</span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Customers Section - Accordion */}
+              {canViewCustomers && (
+                <div
+                  style={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    borderRadius: '1rem',
+                    boxShadow: '0 8px 32px rgba(15, 23, 42, 0.15)',
+                    overflow: 'hidden',
+                    marginBottom: '1.25rem',
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => toggleSection('customers')}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '1.25rem 1.75rem',
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                    }}
+                  >
+                    <h2 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0, color: SECTION_TITLE_COLOR }}>
+                      Customers
+                    </h2>
+                    <FaChevronDown style={{
+                      color: SECTION_TITLE_COLOR,
+                      transition: 'transform 0.2s',
+                      transform: expandedSections.includes('customers') ? 'rotate(180deg)' : 'rotate(0)',
+                    }} />
+                  </button>
+
+                  {expandedSections.includes('customers') && (
+                    <div style={{ padding: '0 1.75rem 1.75rem 1.75rem' }}>
+                      {/* Required Fields Subsection */}
+                      <div style={{ marginBottom: '1.5rem' }}>
+                        <p style={{ fontSize: '0.9rem', color: '#4b5563', marginBottom: '0.75rem', marginTop: 0 }}>
+                          Adding new customer: choose which fields are required when adding a new customer.
+                        </p>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.5rem 1.5rem' }}>
+                          {[
+                            { key: 'customerName', label: 'Customer Name' },
+                            { key: 'contactNumber', label: 'Contact Number' },
+                            { key: 'email', label: 'Email' },
+                            { key: 'address', label: 'Address' },
+                            { key: 'vehicleType', label: 'Vehicle Type' },
+                          ].map(({ key, label }) => (
+                            <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.9rem', color: '#111827', cursor: 'pointer' }}>
+                              <input
+                                type="checkbox"
+                                checked={customersRequiredFields[key] ?? false}
+                                onChange={(e) => {
+                                  const newFields = { ...customersRequiredFields, [key]: e.target.checked };
+                                  setCustomersRequiredFields(newFields);
+                                  saveRequiredFields('customers', newFields);
+                                }}
+                              />
+                              <span>{label}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Permissions Subsection */}
+                      <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '1rem' }}>
+                        <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#111827', marginBottom: '0.75rem' }}>
+                          Permissions
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                          {customersPermissions.map((permKey) => {
+                            const rolesWithPerm = getRolesWithPermission(permKey);
+                            return (
+                              <div key={permKey} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem' }}>
+                                <span style={{ fontSize: '0.85rem', color: '#374151', minWidth: '180px' }}>
+                                  {getPermissionLabel(permKey)}
+                                </span>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                                  {rolesWithPerm.length > 0 ? rolesWithPerm.map(role => (
+                                    <RoleBadge key={role.id} role={role} size="sm" />
+                                  )) : (
+                                    <span style={{ fontSize: '0.75rem', color: '#9ca3af', fontStyle: 'italic' }}>No roles</span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Users Section - Accordion */}
+              {canViewUsers && (
+                <div
+                  style={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    borderRadius: '1rem',
+                    boxShadow: '0 8px 32px rgba(15, 23, 42, 0.15)',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => toggleSection('users')}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '1.25rem 1.75rem',
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                    }}
+                  >
+                    <h2 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0, color: SECTION_TITLE_COLOR }}>
+                      Users
+                    </h2>
+                    <FaChevronDown style={{
+                      color: SECTION_TITLE_COLOR,
+                      transition: 'transform 0.2s',
+                      transform: expandedSections.includes('users') ? 'rotate(180deg)' : 'rotate(0)',
+                    }} />
+                  </button>
+
+                  {expandedSections.includes('users') && (
+                    <div style={{ padding: '0 1.75rem 1.75rem 1.75rem' }}>
+                      <p style={{ fontSize: '0.9rem', color: '#4b5563', marginBottom: '1rem', marginTop: 0 }}>
+                        Configure user management settings and permissions.
+                      </p>
+
+                      {/* Permissions Subsection */}
+                      <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '1rem' }}>
+                        <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#111827', marginBottom: '0.75rem' }}>
+                          Permissions
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                          {usersPermissions.map((permKey) => {
+                            const rolesWithPerm = getRolesWithPermission(permKey);
+                            return (
+                              <div key={permKey} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem' }}>
+                                <span style={{ fontSize: '0.85rem', color: '#374151', minWidth: '180px' }}>
+                                  {getPermissionLabel(permKey)}
+                                </span>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                                  {rolesWithPerm.length > 0 ? rolesWithPerm.map(role => (
+                                    <RoleBadge key={role.id} role={role} size="sm" />
+                                  )) : (
+                                    <span style={{ fontSize: '0.75rem', color: '#9ca3af', fontStyle: 'italic' }}>No roles</span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </main>
       </div>
+
+      {/* Create Role Modal */}
+      {isCreatingRole && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+          }}
+          onClick={() => setIsCreatingRole(false)}
+        >
+          <div
+            style={{
+              backgroundColor: 'white',
+              borderRadius: '0.75rem',
+              padding: '1.5rem',
+              width: '100%',
+              maxWidth: '450px',
+              boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ margin: 0, marginBottom: '1rem', fontSize: '1.25rem', fontWeight: 600, color: '#111827' }}>
+              Create New Role
+            </h3>
+
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500, color: '#374151' }}>
+                Role Name
+              </label>
+              <input
+                type="text"
+                value={newRoleName}
+                onChange={(e) => setNewRoleName(e.target.value)}
+                placeholder="e.g., Manager"
+                style={{
+                  width: '100%',
+                  padding: '0.5rem 0.75rem',
+                  borderRadius: '0.375rem',
+                  border: '1px solid #d1d5db',
+                  fontSize: '0.875rem',
+                  backgroundColor: 'white',
+                  color: '#111827',
+                }}
+              />
+            </div>
+
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500, color: '#374151' }}>
+                Role Color
+              </label>
+              {/* Preset color palette */}
+              <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+                {['#3b82f6', '#2563eb', '#1e88e5', '#0d47a1', '#10b981', '#059669', '#f59e0b', '#d97706', '#ef4444', '#dc2626', '#8b5cf6', '#7c3aed', '#ec4899', '#6b7280', '#374151'].map((color) => (
+                  <button
+                    key={color}
+                    type="button"
+                    onClick={() => setNewRoleColor(color)}
+                    style={{
+                      width: '28px',
+                      height: '28px',
+                      borderRadius: '0.375rem',
+                      backgroundColor: color,
+                      border: newRoleColor === color ? '2px solid #111827' : '1px solid #d1d5db',
+                      cursor: 'pointer',
+                      padding: 0,
+                    }}
+                    title={color}
+                  />
+                ))}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <input
+                  type="color"
+                  value={newRoleColor}
+                  onChange={(e) => setNewRoleColor(e.target.value)}
+                  style={{ width: '50px', height: '36px', border: '1px solid #d1d5db', borderRadius: '0.375rem', cursor: 'pointer' }}
+                />
+                <input
+                  type="text"
+                  value={newRoleColor}
+                  onChange={(e) => setNewRoleColor(e.target.value)}
+                  style={{
+                    flex: 1,
+                    padding: '0.5rem 0.75rem',
+                    borderRadius: '0.375rem',
+                    border: '1px solid #d1d5db',
+                    fontSize: '0.875rem',
+                    backgroundColor: 'white',
+                    color: '#111827',
+                  }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => setIsCreatingRole(false)}
+                style={{
+                  padding: '0.5rem 1rem',
+                  borderRadius: '0.375rem',
+                  border: '1px solid #d1d5db',
+                  backgroundColor: 'white',
+                  color: '#374151',
+                  fontSize: '0.875rem',
+                  cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleCreateRole}
+                disabled={!newRoleName.trim() || isSavingRole}
+                style={{
+                  padding: '0.5rem 1rem',
+                  borderRadius: '0.375rem',
+                  border: 'none',
+                  backgroundColor: '#2563eb',
+                  color: 'white',
+                  fontSize: '0.875rem',
+                  cursor: newRoleName.trim() && !isSavingRole ? 'pointer' : 'not-allowed',
+                  opacity: newRoleName.trim() && !isSavingRole ? 1 : 0.6,
+                }}
+              >
+                {isSavingRole ? 'Creating...' : 'Create Role'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Role Modal */}
+      {editingRole && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+          }}
+          onClick={() => setEditingRole(null)}
+        >
+          <div
+            style={{
+              backgroundColor: 'white',
+              borderRadius: '0.75rem',
+              padding: '1.5rem',
+              width: '100%',
+              maxWidth: '600px',
+              maxHeight: '80vh',
+              overflow: 'auto',
+              boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ margin: 0, marginBottom: '1rem', fontSize: '1.25rem', fontWeight: 600, color: '#111827' }}>
+              Edit Role: {editingRole.name}
+            </h3>
+
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500, color: '#374151' }}>
+                Role Name
+              </label>
+              <input
+                type="text"
+                value={editingRole.name}
+                onChange={(e) => setEditingRole({ ...editingRole, name: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '0.5rem 0.75rem',
+                  borderRadius: '0.375rem',
+                  border: '1px solid #d1d5db',
+                  fontSize: '0.875rem',
+                  backgroundColor: 'white',
+                  color: '#111827',
+                }}
+              />
+            </div>
+
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500, color: '#374151' }}>
+                Role Color
+              </label>
+              {/* Preset color palette */}
+              <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+                {['#3b82f6', '#2563eb', '#1e88e5', '#0d47a1', '#10b981', '#059669', '#f59e0b', '#d97706', '#ef4444', '#dc2626', '#8b5cf6', '#7c3aed', '#ec4899', '#6b7280', '#374151'].map((color) => (
+                  <button
+                    key={color}
+                    type="button"
+                    onClick={() => setEditingRole({ ...editingRole, color })}
+                    style={{
+                      width: '28px',
+                      height: '28px',
+                      borderRadius: '0.375rem',
+                      backgroundColor: color,
+                      border: editingRole.color === color ? '2px solid #111827' : '1px solid #d1d5db',
+                      cursor: 'pointer',
+                      padding: 0,
+                    }}
+                    title={color}
+                  />
+                ))}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <input
+                  type="color"
+                  value={editingRole.color}
+                  onChange={(e) => setEditingRole({ ...editingRole, color: e.target.value })}
+                  style={{ width: '50px', height: '36px', border: '1px solid #d1d5db', borderRadius: '0.375rem', cursor: 'pointer' }}
+                />
+                <input
+                  type="text"
+                  value={editingRole.color}
+                  onChange={(e) => setEditingRole({ ...editingRole, color: e.target.value })}
+                  style={{
+                    flex: 1,
+                    padding: '0.5rem 0.75rem',
+                    borderRadius: '0.375rem',
+                    border: '1px solid #d1d5db',
+                    fontSize: '0.875rem',
+                    backgroundColor: 'white',
+                    color: '#111827',
+                  }}
+                />
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.75rem', fontSize: '0.875rem', fontWeight: 500, color: '#374151' }}>
+                Permissions
+              </label>
+              <style>{`
+                .permissions-scroll::-webkit-scrollbar {
+                  width: 6px;
+                }
+                .permissions-scroll::-webkit-scrollbar-track {
+                  background: transparent;
+                }
+                .permissions-scroll::-webkit-scrollbar-thumb {
+                  background: rgba(0, 0, 0, 0.15);
+                  border-radius: 3px;
+                }
+                .permissions-scroll::-webkit-scrollbar-thumb:hover {
+                  background: rgba(0, 0, 0, 0.25);
+                }
+              `}</style>
+              <div
+                className="permissions-scroll"
+                style={{
+                  maxHeight: '300px',
+                  overflow: 'overlay' as any,
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '0.5rem',
+                  scrollbarWidth: 'thin',
+                  scrollbarColor: 'rgba(0,0,0,0.15) transparent',
+                }}
+              >
+                {permissionGroups.map((group) => {
+                  const isExpanded = expandedPermissionGroups.includes(group.category);
+                  const enabledCount = group.permissions.filter(p => editingRole.permissions[p.key] === true).length;
+
+                  return (
+                    <div key={group.category} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                      {/* Accordion Header */}
+                      <button
+                        type="button"
+                        onClick={() => togglePermissionGroup(group.category)}
+                        style={{
+                          width: '100%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '0.75rem',
+                          backgroundColor: '#f9fafb',
+                          border: 'none',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <span style={{
+                            fontSize: '0.75rem',
+                            color: '#6b7280',
+                            transition: 'transform 0.2s',
+                            transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+                          }}>
+                            ▶
+                          </span>
+                          <span style={{ fontWeight: 600, fontSize: '0.8rem', color: '#374151' }}>
+                            {group.category}
+                          </span>
+                        </div>
+                        <span style={{
+                          fontSize: '0.7rem',
+                          color: '#6b7280',
+                          backgroundColor: enabledCount > 0 ? '#dbeafe' : '#f3f4f6',
+                          padding: '0.15rem 0.5rem',
+                          borderRadius: '9999px',
+                        }}>
+                          {enabledCount}/{group.permissions.length}
+                        </span>
+                      </button>
+
+                      {/* Accordion Content */}
+                      {isExpanded && (
+                        <div style={{ backgroundColor: 'white' }}>
+                          {group.permissions.map((perm) => (
+                            <label
+                              key={perm.key}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.75rem',
+                                padding: '0.5rem 0.75rem 0.5rem 1.75rem',
+                                cursor: 'pointer',
+                                borderBottom: '1px solid #f3f4f6',
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={editingRole.permissions[perm.key] === true}
+                                onChange={() => togglePermission(perm.key)}
+                              />
+                              <div>
+                                <div style={{ fontSize: '0.85rem', color: '#111827' }}>{perm.label}</div>
+                                <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>{perm.key}</div>
+                              </div>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'space-between' }}>
+              <button
+                type="button"
+                onClick={() => handleDeleteRole(editingRole.id)}
+                disabled={editingRole.isProtected}
+                style={{
+                  padding: '0.5rem 1rem',
+                  borderRadius: '0.375rem',
+                  border: 'none',
+                  backgroundColor: editingRole.isProtected ? '#e5e7eb' : '#ef4444',
+                  color: editingRole.isProtected ? '#9ca3af' : 'white',
+                  fontSize: '0.875rem',
+                  cursor: editingRole.isProtected ? 'not-allowed' : 'pointer',
+                }}
+              >
+                Delete Role
+              </button>
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setEditingRole(null)}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    borderRadius: '0.375rem',
+                    border: '1px solid #d1d5db',
+                    backgroundColor: 'white',
+                    color: '#374151',
+                    fontSize: '0.875rem',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleUpdateRole}
+                  disabled={isSavingRole}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    borderRadius: '0.375rem',
+                    border: 'none',
+                    backgroundColor: '#2563eb',
+                    color: 'white',
+                    fontSize: '0.875rem',
+                    cursor: isSavingRole ? 'not-allowed' : 'pointer',
+                    opacity: isSavingRole ? 0.6 : 1,
+                  }}
+                >
+                  {isSavingRole ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

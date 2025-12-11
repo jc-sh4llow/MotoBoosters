@@ -1,16 +1,13 @@
 import { useState, useEffect } from 'react';
-
 import { FaHome, FaGripLinesVertical, FaBars, FaWarehouse, FaTag, FaWrench, FaFileInvoice, FaPlus, FaUser, FaSearch, FaTimes, FaFilter, FaChevronDown, FaEye, FaEyeSlash, FaRedo, FaUndoAlt } from 'react-icons/fa';
-
 import { useNavigate } from 'react-router-dom';
 import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db, auth } from '../../lib/firebase';
-
 import { useAuth } from '../../contexts/AuthContext';
 import { can } from '../../config/permissions';
-
 import logo from '../../assets/logo.png';
 import bcrypt from 'bcryptjs';
+import { HeaderDropdown } from '../../components/HeaderDropdown';
 
 async function hashPassword(raw: string): Promise<string> {
   const normalized = raw.trim();
@@ -52,7 +49,7 @@ export function Users() {
   const [isNavExpanded, setIsNavExpanded] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [isUserSettingsOpen, setIsUserSettingsOpen] = useState(false);
-
+  const userRoles = user?.roles?.length ? user.roles : (user?.role ? [user.role] : []);
   let closeMenuTimeout: number | undefined;
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -460,15 +457,6 @@ export function Users() {
     });
   };
 
-  const menuItems = [
-    { title: 'Inventory Management', path: '/inventory', icon: <FaWarehouse /> },
-    { title: 'Sales Records', path: '/sales', icon: <FaTag /> },
-    { title: 'Services Offered', path: '/services', icon: <FaWrench /> },
-    { title: 'New Transaction', path: '/transactions/new', icon: <FaPlus /> },
-    { title: 'Transaction History', path: '/transactions', icon: <FaFileInvoice /> },
-    { title: 'Returns & Refunds', path: '/returns', icon: <FaUndoAlt /> },
-    { title: 'Customers', path: '/customers', icon: <FaUser /> },
-  ];
 
   const getFirstName = (name: string) => {
     const parts = name.trim().split(/\s+/);
@@ -487,6 +475,7 @@ export function Users() {
     employee: 2,
     mechanic: 3,
   };
+
 
   const visibleUsers = users.filter(u => {
     // Hide superadmin accounts from any non-superadmin viewer
@@ -746,26 +735,11 @@ export function Users() {
             </button>
 
             {/* Dropdown Menu */}
-            <div
-              style={{
-                position: 'absolute',
-                top: '100%',
-                right: '0',
-                backgroundColor: 'white',
-                borderRadius: '0.5rem',
-                padding: isNavExpanded ? '0.5rem 0' : 0,
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.25rem',
-                minWidth: '220px',
-                zIndex: 1000,
-                overflow: 'hidden',
-                maxHeight: isNavExpanded ? '500px' : '0',
-                transition: 'all 0.3s ease-out',
-                pointerEvents: isNavExpanded ? 'auto' : 'none',
-                border: isNavExpanded ? '1px solid rgba(0, 0, 0, 0.1)' : 'none'
-              }}
+            <HeaderDropdown
+              isNavExpanded={isNavExpanded}
+              setIsNavExpanded={setIsNavExpanded}
+              isMobile={isMobile}
+              userRoles={userRoles}
               onMouseEnter={() => {
                 if (!isMobile && closeMenuTimeout) {
                   clearTimeout(closeMenuTimeout);
@@ -778,119 +752,7 @@ export function Users() {
                   }, 200);
                 }
               }}
-            >
-              {menuItems.map((item) => (
-                <button
-                  key={item.path}
-                  onClick={() => {
-                    navigate(item.path);
-                    setIsNavExpanded(false);
-                  }}
-                  style={{
-                    background: 'white',
-                    border: 'none',
-                    color: '#1f2937',
-                    padding: '0.75rem 1.25rem',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.75rem',
-                    transition: 'background-color 0.2s ease',
-                  }}
-                >
-                  <span style={{
-                    fontSize: '1.1rem',
-                    color: '#4b5563',
-                    width: '24px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>
-                    {item.icon}
-                  </span>
-                  <span style={{
-                    fontSize: '0.95rem',
-                    fontWeight: 500
-                  }}>
-                    {item.title}
-                  </span>
-                </button>
-              ))}
-
-              {/* Divider */}
-              <div style={{
-                height: '1px',
-                backgroundColor: '#e5e7eb',
-                margin: '0.25rem 0'
-              }} />
-
-              {/* Users (current page) */}
-              <button
-                onClick={() => {
-                  navigate('/users');
-                  setIsNavExpanded(false);
-                }}
-                style={{
-                  background: '#eff6ff',
-                  border: 'none',
-                  color: '#1d4ed8',
-                  padding: '0.75rem 1.25rem',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.75rem',
-                  fontWeight: 500
-                }}
-              >
-                <span style={{
-                  fontSize: '1.1rem',
-                  color: '#1d4ed8',
-                  width: '24px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <FaUser />
-                </span>
-                <span>Users</span>
-              </button>
-
-              {/* Users Settings button (admins only) */}
-              {can(currentRole, 'users.edit.any') && (
-                <button
-                  onClick={() => {
-                    setIsNavExpanded(false);
-                    setIsUserSettingsOpen(true);
-                  }}
-                  style={{
-                    background: 'white',
-                    border: 'none',
-                    color: '#111827',
-                    padding: '0.75rem 1.25rem',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.75rem',
-                    fontWeight: 500
-                  }}
-                >
-                  <span style={{
-                    fontSize: '1.1rem',
-                    color: '#6b7280',
-                    width: '24px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>
-                    ⚙️
-                  </span>
-                  <span>User Settings</span>
-                </button>
-              )}
-            </div>
+            />
           </div>
         </header>
 

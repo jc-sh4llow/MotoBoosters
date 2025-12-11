@@ -138,6 +138,8 @@ export function SignUp() {
                   borderRadius: '0.5rem',
                   fontSize: '0.95rem',
                   boxSizing: 'border-box',
+                  backgroundColor: '#f9fafb',
+                  color: '#111827'
                 }}
               />
             </div>
@@ -164,6 +166,8 @@ export function SignUp() {
                   borderRadius: '0.5rem',
                   fontSize: '0.95rem',
                   boxSizing: 'border-box',
+                  backgroundColor: '#f9fafb',
+                  color: '#111827'
                 }}
               />
             </div>
@@ -190,6 +194,8 @@ export function SignUp() {
                   borderRadius: '0.5rem',
                   fontSize: '0.95rem',
                   boxSizing: 'border-box',
+                  backgroundColor: '#f9fafb',
+                  color: '#111827'
                 }}
               />
             </div>
@@ -216,6 +222,8 @@ export function SignUp() {
                   borderRadius: '0.5rem',
                   fontSize: '0.95rem',
                   boxSizing: 'border-box',
+                  backgroundColor: '#f9fafb',
+                  color: '#111827'
                 }}
               />
             </div>
@@ -242,6 +250,8 @@ export function SignUp() {
                   borderRadius: '0.5rem',
                   fontSize: '0.95rem',
                   boxSizing: 'border-box',
+                  backgroundColor: '#f9fafb',
+                  color: '#111827'
                 }}
               />
               <button

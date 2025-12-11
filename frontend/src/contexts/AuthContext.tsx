@@ -1,10 +1,14 @@
 // src/contexts/AuthContext.tsx
-import { createContext, useContext, ReactNode, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { DEVELOPER_ROLE_ID } from '../config/permissions';
 
-interface AuthUser {
+export interface AuthUser {
   id: string;
   name: string;
-  role: string;
+  // New: array of role IDs (Discord-style)
+  roles: string[];
+  // Legacy: single role string (kept for backward compatibility during migration)
+  role?: string;
 }
 
 interface AuthContextType {
@@ -12,6 +16,8 @@ interface AuthContextType {
   login: (user: AuthUser) => void;
   logout: () => void;
   initializing: boolean;
+  // Helper to check if current user is Developer
+  isDeveloper: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -26,8 +32,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
-        const parsed = JSON.parse(stored) as AuthUser;
-        setUser(parsed);
+        const parsed = JSON.parse(stored);
+        // Handle migration: if old format (role string), convert to new format (roles array)
+        const migratedUser: AuthUser = {
+          id: parsed.id,
+          name: parsed.name,
+          roles: parsed.roles || (parsed.role ? [parsed.role] : []),
+          role: parsed.role, // Keep for backward compatibility
+        };
+        setUser(migratedUser);
       }
     } catch (err) {
       console.error('Failed to read auth user from storage', err);
@@ -36,10 +49,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const login = (user: AuthUser) => {
-    setUser(user);
+  const login = (userData: AuthUser) => {
+    // Ensure roles array exists
+    const normalizedUser: AuthUser = {
+      ...userData,
+      roles: userData.roles || (userData.role ? [userData.role] : []),
+    };
+    setUser(normalizedUser);
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(normalizedUser));
     } catch (err) {
       console.error('Failed to persist auth user to storage', err);
     }
@@ -54,8 +72,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Check if user has Developer role
+  const isDeveloper = user?.roles?.includes(DEVELOPER_ROLE_ID) ?? false;
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, initializing }}>
+    <AuthContext.Provider value={{ user, login, logout, initializing, isDeveloper }}>
       {children}
     </AuthContext.Provider>
   );

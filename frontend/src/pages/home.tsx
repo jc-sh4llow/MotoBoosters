@@ -1,6 +1,7 @@
 // In home.tsx
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useRoles } from '../contexts/PermissionsContext';
 import { can } from '../config/permissions';
 import logo from '../assets/logo.png';
 
@@ -18,7 +19,12 @@ import {
 export function Home() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();  // Moved inside the component
-  const currentRole = (user?.role || '').toString();
+  const { loading: rolesLoading } = useRoles();
+  // Use roles array for permission checks (new Discord-style system)
+  // Fall back to legacy single role if roles array is empty (pre-migration)
+  const userRoles = (user?.roles && user.roles.length > 0) 
+    ? user.roles 
+    : (user?.role ? [user.role] : []);
 
   const pathPermissionMap: Record<string, string> = {
     '/': 'page.home.view',
@@ -34,24 +40,28 @@ export function Home() {
   };
 
   const baseMenuItems = [
-    { title: 'Inventory Management', path: '/inventory', icon: <FaWarehouse /> },
-    { title: 'Sales Records', path: '/sales', icon: <FaTag /> },
-    { title: 'Services Offered', path: '/services', icon: <FaWrench /> },
     { title: 'New Transaction', path: '/transactions/new', icon: <FaPlus /> },
-    { title: 'Transaction History', path: '/transactions', icon: <FaFileInvoice /> },
-    { title: 'Returns & Refunds', path: '/returns', icon: <FaUndoAlt /> },
+    { title: 'Transactions', path: '/transactions', icon: <FaFileInvoice /> },
+    { title: 'Item Sales', path: '/sales', icon: <FaTag /> },
+    { title: 'Inventory', path: '/inventory', icon: <FaWarehouse /> },
+    { title: 'Services', path: '/services', icon: <FaWrench /> },
     { title: 'Customers', path: '/customers', icon: <FaUser /> },
-    { title: 'User Management', path: '/users', icon: <FaUser /> },
+    { title: 'Returns', path: '/returns', icon: <FaUndoAlt /> },
+    { title: 'Users', path: '/users', icon: <FaUser /> },
     { title: 'Settings', path: '/settings', icon: <FaCog /> },
   ];
 
   const canSeePath = (path: string) => {
     const key = pathPermissionMap[path];
     if (!key) return true;
-    return can(currentRole, key as any);
+    // Use legacy role fallback - can() handles this internally
+    return can(userRoles, key as any);
   };
 
-  const menuItems = baseMenuItems.filter((item) => canSeePath(item.path));
+  // Show all menu items while loading to prevent empty dashboard flash
+  const menuItems = rolesLoading && userRoles.length === 0
+    ? baseMenuItems
+    : baseMenuItems.filter((item) => canSeePath(item.path));
 
   return (
     <div style={{
@@ -102,7 +112,7 @@ export function Home() {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <div style={{
-              color: 'rgba(255, 255, 255, 0.9)',
+              color: '#374151',
               fontSize: '0.9rem'
             }}>
               Welcome, {user ? user.name : 'Guest'}
@@ -115,8 +125,8 @@ export function Home() {
                 }}
                 style={{
                   backgroundColor: 'transparent',
-                  border: '1px solid white',
-                  color: 'white',
+                  border: '1px solid #1e40af',
+                  color: '#1e40af',
                   padding: '0.25rem 0.75rem',
                   borderRadius: '0.25rem',
                   cursor: 'pointer',
@@ -152,7 +162,7 @@ export function Home() {
         padding: '0 2rem'
       }}>
         <header style={{
-          backgroundColor: 'rgba(255, 255, 255, 0.15)',
+          backgroundColor: 'rgba(255, 255, 255, 0.92)',
           backdropFilter: 'blur(12px)',
           borderRadius: '1rem',
           padding: '1.5rem 2rem',
@@ -186,9 +196,8 @@ export function Home() {
             <h1 style={{
               fontSize: '1.875rem',
               fontWeight: 'bold',
-              color: 'white',
+              color: '#1e40af',
               margin: 0,
-              textShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
             }}>
               MotoBooster
             </h1>
@@ -199,7 +208,7 @@ export function Home() {
             gap: '1rem'
           }}>
             <div style={{
-              color: 'rgba(255, 255, 255, 0.9)',
+              color: '#374151',
               fontSize: '0.9rem'
             }}>
               Welcome, {user ? user.name : 'Guest'}
@@ -212,8 +221,8 @@ export function Home() {
                 }}
                 style={{
                   backgroundColor: 'transparent',
-                  border: '1px solid white',
-                  color: 'white',
+                  border: '1px solid #1e40af',
+                  color: '#1e40af',
                   padding: '0.25rem 0.75rem',
                   borderRadius: '0.25rem',
                   cursor: 'pointer',
@@ -256,7 +265,7 @@ export function Home() {
           padding: '0 2rem'
         }}>
           <div style={{
-            backgroundColor: 'rgba(255, 255, 255, 0.15)',
+            backgroundColor: 'rgba(255, 255, 255, 0.92)',
             backdropFilter: 'blur(12px)',
             borderRadius: '1rem',
             padding: '2.5rem',
@@ -269,7 +278,7 @@ export function Home() {
               padding: '2.5rem'
             }}>
               <h1 style={{
-                color: 'white',
+                color: '#1e40af',
                 fontSize: '2rem',
                 fontWeight: 'bold',
                 marginBottom: '2rem',

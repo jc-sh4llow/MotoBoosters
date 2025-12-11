@@ -18,14 +18,15 @@ import {
   FaUser,
   FaTimes,
   FaWarehouse,
-  FaUndoAlt
+  FaUndoAlt,
+  FaCog
 } from 'react-icons/fa';
 import { Footer } from '@/components/Footer';
 import { useAuth } from '../../contexts/AuthContext';
+import { can } from '../../config/permissions';
 import logo from '../../assets/logo.png';
-
+import { HeaderDropdown } from '../../components/HeaderDropdown';
 import { collection, getDocs, doc, updateDoc, getDoc, setDoc, writeBatch, query, where } from 'firebase/firestore';
-
 import { db } from '../../lib/firebase';
 
 // Types
@@ -51,6 +52,20 @@ type CartItem = {
 export function NewTransaction() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+
+  // Use roles array with fallback to legacy single role
+  const userRoles = (user?.roles && user.roles.length > 0)
+    ? user.roles
+    : (user?.role ? [user.role] : []);
+  const canCreateTransaction = can(userRoles, 'transactions.create');
+  const canAddCustomer = can(userRoles, 'customers.add');
+
+  // Block access if user doesn't have transactions.create permission
+  useEffect(() => {
+    if (user && !canCreateTransaction) {
+      navigate('/transactions');
+    }
+  }, [user, canCreateTransaction, navigate]);
 
   const [step, setStep] = useState(1); // 1: Customer Info, 2: Add Items, 3: Review & Pay
 
@@ -356,8 +371,8 @@ export function NewTransaction() {
     return initials || 'NA';
   };
 
-  const generateCustomCustomerId = async (customerName: string) => {
-    const initials = getCustomerInitials(customerName);
+  const generateCustomCustomerId = async () => {
+    const initials = getCustomerInitials(user?.name || '');
 
     let maxSequence = 0;
     try {
@@ -672,29 +687,32 @@ export function NewTransaction() {
 
       await batch.commit();
 
-      // After committing the transaction, decrement inventory stock per product
-      const inventoryEntries = Object.entries(inventoryQuantityByDoc);
-      if (inventoryEntries.length > 0) {
-        try {
-          await Promise.all(
-            inventoryEntries.map(async ([inventoryDocId, soldQty]) => {
-              const invRef = doc(db, 'inventory', inventoryDocId);
-              const snap = await getDoc(invRef);
-              if (!snap.exists()) return;
-              const data = snap.data() as any;
-              const currentStock = Number(data.availableStock ?? 0);
-              const currentSold = Number(data.sold ?? 0);
-              const newStock = Math.max(currentStock - soldQty, 0);
-              const newSold = currentSold + soldQty;
-              await updateDoc(invRef, {
-                availableStock: newStock,
-                sold: newSold,
-                updatedAt: new Date().toISOString(),
-              });
-            }),
-          );
-        } catch (stockErr) {
-          console.error('Error updating inventory stock after transaction', stockErr);
+      // Only decrement inventory stock if transaction is marked as Complete
+      // Pending transactions do not affect stock until they are completed
+      if (transactionStatus === 'Complete') {
+        const inventoryEntries = Object.entries(inventoryQuantityByDoc);
+        if (inventoryEntries.length > 0) {
+          try {
+            await Promise.all(
+              inventoryEntries.map(async ([inventoryDocId, soldQty]) => {
+                const invRef = doc(db, 'inventory', inventoryDocId);
+                const snap = await getDoc(invRef);
+                if (!snap.exists()) return;
+                const data = snap.data() as any;
+                const currentStock = Number(data.availableStock ?? 0);
+                const currentSold = Number(data.sold ?? 0);
+                const newStock = Math.max(currentStock - soldQty, 0);
+                const newSold = currentSold + soldQty;
+                await updateDoc(invRef, {
+                  availableStock: newStock,
+                  sold: newSold,
+                  updatedAt: new Date().toISOString(),
+                });
+              }),
+            );
+          } catch (stockErr) {
+            console.error('Error updating inventory stock after transaction', stockErr);
+          }
         }
       }
 
@@ -737,7 +755,7 @@ export function NewTransaction() {
     setIsSavingCustomer(true);
     setAddCustomerError(null);
     try {
-      const customerId = await generateCustomCustomerId(pendingCustomerForSave.name);
+      const customerId = await generateCustomCustomerId();
       const customersRef = collection(db, 'customers');
       const customerDocRef = doc(customersRef);
       await setDoc(customerDocRef, {
@@ -760,15 +778,7 @@ export function NewTransaction() {
     }
   };
 
-  const menuItems = [
-    { title: 'Inventory', path: '/inventory', icon: <FaWarehouse /> },
-    { title: 'Sales Records', path: '/sales', icon: <FaTag /> },
-    { title: 'Services Offered', path: '/services', icon: <FaWrench /> },
-    { title: 'Transactions', path: '/transactions', icon: <FaFileInvoice /> },
-    { title: 'Returns & Refunds', path: '/returns', icon: <FaUndoAlt /> },
-    { title: 'Customers', path: '/customers', icon: <FaUser /> },
-    { title: 'Users', path: '/users', icon: <FaUser /> },
-  ];
+
 
   return (
     <div style={{
@@ -803,7 +813,7 @@ export function NewTransaction() {
       }}>
         {/* Header */}
         <header style={{
-          backgroundColor: 'rgba(255, 255, 255, 0.15)',
+          backgroundColor: 'rgba(255, 255, 255, 0.92)',
           backdropFilter: 'blur(12px)',
           borderRadius: '1rem',
           padding: '1rem 2rem',
@@ -836,6 +846,7 @@ export function NewTransaction() {
                 <img
                   src={logo}
                   alt="Business Logo"
+                  title="Back to Dashboard"
                   style={{
                     height: '100%',
                     width: 'auto',
@@ -846,14 +857,13 @@ export function NewTransaction() {
               <h1 style={{
                 fontSize: '1.875rem',
                 fontWeight: 'bold',
-                color: 'white',
+                color: '#1e40af',
                 margin: 0,
-                textShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
               }}>
                 New Transaction
               </h1>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <span style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: '0.9rem' }}>
+                <span style={{ color: '#374151', fontSize: '0.9rem' }}>
                   Welcome, {user?.name || 'Guest'}
                 </span>
               </div>
@@ -867,8 +877,8 @@ export function NewTransaction() {
                   }}
                   style={{
                     backgroundColor: 'transparent',
-                    border: '1px solid white',
-                    color: 'white',
+                    border: '1px solid #1e40af',
+                    color: '#1e40af',
                     padding: '0.25rem 0.75rem',
                     borderRadius: '0.25rem',
                     cursor: 'pointer',
@@ -900,7 +910,7 @@ export function NewTransaction() {
                 style={{
                   background: 'transparent',
                   border: 'none',
-                  color: 'white',
+                  color: '#1e40af',
                   fontSize: '1.5rem',
                   cursor: 'pointer',
                   padding: '0.5rem',
@@ -914,26 +924,11 @@ export function NewTransaction() {
             </div>
 
             {/* Dropdown Menu */}
-            <div
-              style={{
-                position: 'absolute',
-                top: '100%',
-                right: '0',
-                backgroundColor: 'white',
-                borderRadius: '0.5rem',
-                padding: isNavExpanded ? '0.5rem 0' : 0,
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.25rem',
-                minWidth: '220px',
-                zIndex: 1000,
-                overflow: 'hidden',
-                maxHeight: isNavExpanded ? '500px' : '0',
-                transition: 'all 0.3s ease-out',
-                pointerEvents: isNavExpanded ? 'auto' : 'none',
-                border: isNavExpanded ? '1px solid rgba(0, 0, 0, 0.1)' : 'none'
-              }}
+            <HeaderDropdown
+              isNavExpanded={isNavExpanded}
+              setIsNavExpanded={setIsNavExpanded}
+              isMobile={isMobile}
+              userRoles={userRoles}
               onMouseEnter={() => {
                 if (!isMobile && closeMenuTimeout) {
                   clearTimeout(closeMenuTimeout);
@@ -946,117 +941,7 @@ export function NewTransaction() {
                   }, 200);
                 }
               }}
-            >
-              {menuItems.map((item) => (
-                <button
-                  key={item.path}
-                  onClick={() => {
-                    navigate(item.path);
-                    setIsNavExpanded(false);
-                  }}
-                  style={{
-                    background: 'white',
-                    border: 'none',
-                    color: '#1f2937',
-                    padding: '0.75rem 1.25rem',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.75rem',
-                    transition: 'background-color 0.2s ease',
-                  }}
-                >
-                  <span style={{
-                    fontSize: '1.1rem',
-                    color: '#4b5563',
-                    width: '24px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}>
-                    {item.icon}
-                  </span>
-                  <span style={{
-                    fontSize: '0.95rem',
-                    fontWeight: 500,
-                  }}>
-                    {item.title}
-                  </span>
-                </button>
-              ))}
-
-              {/* Divider */}
-              <div style={{
-                height: '1px',
-                backgroundColor: '#e5e7eb',
-                margin: '0.25rem 0',
-              }} />
-
-              {/* New Transaction (current page) */}
-              <button
-                onClick={() => {
-                  navigate('/transactions/new');
-                  setIsNavExpanded(false);
-                }}
-                style={{
-                  background: '#eff6ff',
-                  border: 'none',
-                  color: '#1d4ed8',
-                  padding: '0.75rem 1.25rem',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.75rem',
-                  fontWeight: 500,
-                }}
-              >
-                <span style={{
-                  fontSize: '1.1rem',
-                  color: '#1d4ed8',
-                  width: '24px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}>
-                  <FaPlus />
-                </span>
-                <span>New Transaction</span>
-              </button>
-
-              {/* Settings button */}
-              <button
-                onClick={() => {
-                  setIsNavExpanded(false);
-                  setIsSettingsOpen(true);
-                }}
-                style={{
-                  background: 'white',
-                  border: 'none',
-                  color: '#111827',
-                  padding: '0.75rem 1.25rem',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.75rem',
-                  fontWeight: 500,
-                }}
-              >
-                <span style={{
-                  fontSize: '1.1rem',
-                  color: '#6b7280',
-                  width: '24px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}>
-                  ⚙
-                </span>
-                <span>New Transaction Settings</span>
-              </button>
-            </div>
+            />
           </div>
         </header>
 
@@ -1206,25 +1091,27 @@ export function NewTransaction() {
                       </select>
                     </div>
                   </div>
-                  <div className="mt-2 flex items-center gap-2 text-sm text-gray-700">
-                    <input
-                      id="new-customer-checkbox"
-                      type="checkbox"
-                      checked={isNewCustomer}
-                      onChange={(e) => {
-                        const next = e.target.checked;
-                        setIsNewCustomer(next);
-                        if (next) {
-                          // switching back to new customer mode, clear any selected existing id
-                          setSelectedCustomerId(null);
-                        }
-                      }}
-                      className="h-4 w-4 text-blue-600 border-gray-300 rounded"
-                    />
-                    <label htmlFor="new-customer-checkbox" className="select-none cursor-pointer">
-                      New customer
-                    </label>
-                  </div>
+                  {canAddCustomer && (
+                    <div className="mt-2 flex items-center gap-2 text-sm text-gray-700">
+                      <input
+                        id="new-customer-checkbox"
+                        type="checkbox"
+                        checked={isNewCustomer}
+                        onChange={(e) => {
+                          const next = e.target.checked;
+                          setIsNewCustomer(next);
+                          if (next) {
+                            // switching back to new customer mode, clear any selected existing id
+                            setSelectedCustomerId(null);
+                          }
+                        }}
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+                      />
+                      <label htmlFor="new-customer-checkbox" className="select-none cursor-pointer">
+                        New customer
+                      </label>
+                    </div>
+                  )}
                   <div className="flex justify-end mt-6">
                     <button
                       type="button"
@@ -1822,9 +1709,9 @@ export function NewTransaction() {
                           (payment.type === 'gcash' && gcashReference.trim().length === 0)
                         }
                         className={`px-4 py-2 rounded-md text-white ${(payment.type === 'cash' && payment.amountPaid >= calculateTotal() && isChangeGivenConfirmed) ||
-                            (payment.type === 'gcash' && gcashReference.trim().length > 0)
-                            ? 'bg-green-600 hover:bg-green-700'
-                            : 'bg-gray-400 cursor-not-allowed'
+                          (payment.type === 'gcash' && gcashReference.trim().length > 0)
+                          ? 'bg-green-600 hover:bg-green-700'
+                          : 'bg-gray-400 cursor-not-allowed'
                           }`}
                       >
                         <FaSave className="inline mr-2" />
@@ -1906,7 +1793,7 @@ export function NewTransaction() {
                 onChange={(e) => setCustomerLovSearch(e.target.value)}
                 placeholder="Search by name, contact, or email"
                 className="flex-1 px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                style={{ color: '#111827' }}
+                style={{ backgroundColor: 'white', color: '#111827' }}
               />
             </div>
 

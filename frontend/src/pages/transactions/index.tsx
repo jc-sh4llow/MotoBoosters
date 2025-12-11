@@ -1,8 +1,8 @@
-import { FaSearch, FaFilter, FaRedo, FaFileExcel, FaHome, FaBars, FaTag, FaWrench, FaPlus, FaFileInvoice, FaUser, FaTimes, FaWarehouse, FaUndoAlt, FaCog } from 'react-icons/fa';
+import { FaSearch, FaFilter, FaFileExcel, FaBars, FaTimes } from 'react-icons/fa';
 
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { collection, getDocs, doc, updateDoc } from 'firebase/firestore';
+import { collection, onSnapshot, doc, updateDoc, getDocs } from 'firebase/firestore';
 import { HeaderDropdown } from '../../components/HeaderDropdown';
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -69,11 +69,23 @@ export function Transactions() {
   const [paymentReviewGcashRef, setPaymentReviewGcashRef] = useState('');
   const [paymentReviewError, setPaymentReviewError] = useState<string | null>(null);
   const [isPaymentReviewProcessing, setIsPaymentReviewProcessing] = useState(false);
-  const userRoles = user?.roles?.length ? user.roles : (user?.role ? [user.role] : []);
-  const roleName = (user?.role || '').toString();
-  const isSuperadmin = roleName.toLowerCase() === 'superadmin';
-  const canDeleteTransactions = can(roleName, 'transactions.delete');
 
+  // Select mode state (iOS gallery-style selection)
+  const [isSelectMode, setIsSelectMode] = useState(false);
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+
+  // Calendar picker state
+  const [showCalendarPicker, setShowCalendarPicker] = useState(false);
+  const [calendarViewDate, setCalendarViewDate] = useState(new Date());
+  const [selectingDate, setSelectingDate] = useState<'start' | 'end'>('start');
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
+  const [showYearPicker, setShowYearPicker] = useState(false);
+
+  const userRoles = user?.roles?.length ? user.roles : (user?.role ? [user.role] : []);
+  const canDeleteTransactions = can(userRoles, 'transactions.delete');
+  const canArchiveTransactions = can(userRoles, 'transactions.archive');
+  const canExportTransactions = can(userRoles, 'transactions.export');
+  const canViewArchived = can(userRoles, 'transactions.view.archived');
 
   const loadTransactions = async () => {
     setIsLoading(true);
@@ -161,8 +173,8 @@ export function Transactions() {
         });
       });
 
-      // Apply visibility rules: non-superadmins do not see archived transactions
-      const visibleRows = isSuperadmin ? rows : rows.filter(r => !r.archived);
+      // Apply visibility rules: users without view.archived permission do not see archived transactions
+      const visibleRows = canViewArchived ? rows : rows.filter(r => !r.archived);
 
       // Sort by date descending, then by id
       visibleRows.sort((a, b) => {
@@ -182,8 +194,31 @@ export function Transactions() {
   };
 
   useEffect(() => {
+    const handleResize = () => {
+      const isMobileView = window.innerWidth < 768;
+      setIsMobile(isMobileView);
+      if (!isMobileView) {
+        setIsNavExpanded(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+
+    // Real-time listener for transactions - auto-reloads when data changes
+    const unsubscribe = onSnapshot(collection(db, 'transactions'), () => {
+      loadTransactions();
+    }, (err) => {
+      console.error('Error in transactions listener', err);
+      setLoadError('Failed to load transactions. Please try again.');
+    });
+
+    // Initial load
     loadTransactions();
-  }, []);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      unsubscribe();
+    };
+  }, [canViewArchived]);
 
   // Calculate summary data
   const getSummaryData = () => {
@@ -438,7 +473,7 @@ export function Transactions() {
                   margin: 0,
                 }}
               >
-                Transaction History
+                Transactions
               </h1>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginLeft: '1rem' }}>
                 <span style={{ color: '#374151', fontSize: '0.9rem' }}>
@@ -593,75 +628,115 @@ export function Transactions() {
                 marginBottom: '1rem',
                 border: '1px solid #e5e7eb'
               }}>
-                <div style={{
-                  display: 'flex',
-                  gap: '0.5rem',
-                  width: '100%',
-                  marginBottom: showFilters ? '1rem' : 0
-                }}>
-                  {/* Filters Button */}
-                  <div
-                    style={{
-                      flex: 1,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      padding: '0.5rem',
-                      borderRadius: '0.5rem',
-                      backgroundColor: '#1e40af',
-                      color: 'white',
-                      transition: 'all 0.2s',
-                      height: '40px'
-                    }}
-                    onClick={() => setShowFilters(!showFilters)}
-                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#1e3a8a'}
-                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#1e40af'}
-                  >
-                    <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 600 }}>Filters</h3>
-                    <FaFilter style={{ marginLeft: '0.5rem' }} />
+                {/* Action Bar - Left: Export, Select | Right: Filters, Clear Filters */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: showFilters ? '1rem' : 0 }}>
+                  {/* Left side buttons */}
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    {canExportTransactions && (
+                      <button
+                        onClick={handleExportCsv}
+                        style={{
+                          backgroundColor: '#059669',
+                          color: 'white',
+                          padding: '0.5rem 1rem',
+                          borderRadius: '0.375rem',
+                          border: 'none',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          fontWeight: 500,
+                          fontSize: '0.875rem',
+                          height: '40px',
+                          transition: 'background-color 0.2s',
+                        }}
+                        onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#047857'}
+                        onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#059669'}
+                      >
+                        Export to CSV <FaFileExcel />
+                      </button>
+                    )}
+                    <button
+                      onClick={() => {
+                        setIsSelectMode(!isSelectMode);
+                        if (isSelectMode) setSelectedItems(new Set());
+                      }}
+                      style={{
+                        backgroundColor: isSelectMode ? '#dc2626' : '#3b82f6',
+                        color: 'white',
+                        padding: '0.5rem 1rem',
+                        borderRadius: '0.375rem',
+                        border: 'none',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        fontWeight: 500,
+                        fontSize: '0.875rem',
+                        height: '40px',
+                        transition: 'background-color 0.2s',
+                      }}
+                      onMouseOver={(e) => e.currentTarget.style.backgroundColor = isSelectMode ? '#b91c1c' : '#2563eb'}
+                      onMouseOut={(e) => e.currentTarget.style.backgroundColor = isSelectMode ? '#dc2626' : '#3b82f6'}
+                    >
+                      {isSelectMode ? 'Cancel' : 'Select'}
+                    </button>
                   </div>
-
-                  {/* Clear Filters Button */}
-                  <button
-                    onClick={() => {
-                      setStartDate('');
-                      setEndDate('');
-                      setTransactionType('');
-                      setMinPrice('');
-                      setMaxPrice('');
-                    }}
-                    disabled={!startDate && !endDate && !transactionType && !minPrice && !maxPrice}
-                    style={{
-                      flex: 1,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      padding: '0.5rem',
-                      borderRadius: '0.5rem',
-                      backgroundColor: (!startDate && !endDate && !transactionType && !minPrice && !maxPrice) ? '#e5e7eb' : '#6b7280',
-                      color: (!startDate && !endDate && !transactionType && !minPrice && !maxPrice) ? '#9ca3af' : 'white',
-                      border: 'none',
-                      cursor: (!startDate && !endDate && !transactionType && !minPrice && !maxPrice) ? 'not-allowed' : 'pointer',
-                      fontSize: '0.95rem',
-                      fontWeight: 600,
-                      transition: 'all 0.2s',
-                      height: '40px',
-                      opacity: (!startDate && !endDate && !transactionType && !minPrice && !maxPrice) ? 0.7 : 1
-                    }}
-                    onMouseOver={(e) => {
-                      if (startDate || endDate || transactionType || minPrice || maxPrice) {
-                        e.currentTarget.style.backgroundColor = '#4b5563';
-                      }
-                    }}
-                    onMouseOut={(e) => {
-                      if (startDate || endDate || transactionType || minPrice || maxPrice) {
-                        e.currentTarget.style.backgroundColor = '#6b7280';
-                      }
-                    }}
-                  >
-                    Clear Filters
-                  </button>
+                  
+                  {/* Right side buttons */}
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button
+                      onClick={() => setShowFilters(!showFilters)}
+                      style={{
+                        backgroundColor: '#1e40af',
+                        color: 'white',
+                        padding: '0.5rem 1rem',
+                        borderRadius: '0.375rem',
+                        border: 'none',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        fontWeight: 500,
+                        fontSize: '0.875rem',
+                        height: '40px',
+                        transition: 'background-color 0.2s',
+                      }}
+                      onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#1e3a8a'}
+                      onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#1e40af'}
+                    >
+                      Filters <FaFilter />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setStartDate('');
+                        setEndDate('');
+                        setTransactionType('');
+                        setMinPrice('');
+                        setMaxPrice('');
+                        setStatusFilter('');
+                      }}
+                      style={{
+                        backgroundColor: '#6b7280',
+                        color: 'white',
+                        padding: '0.5rem 1rem',
+                        borderRadius: '0.375rem',
+                        border: 'none',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        fontWeight: 500,
+                        fontSize: '0.875rem',
+                        height: '40px',
+                        transition: 'background-color 0.2s',
+                      }}
+                      onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#4b5563'}
+                      onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#6b7280'}
+                    >
+                      Clear Filters
+                    </button>
+                  </div>
                 </div>
 
                 {showFilters && (
@@ -674,44 +749,167 @@ export function Transactions() {
                     justifyContent: 'center',
                     textAlign: 'center'
                   }}>
-                    {/* Start Date */}
-                    <div>
+                    {/* Timeframe with Calendar Picker */}
+                    <div style={{ position: 'relative', gridColumn: 'span 2' }}>
                       <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'rgb(75, 85, 99)' }}>
-                        Start Date
+                        Timeframe
                       </label>
-                      <input
-                        type="date"
-                        value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '0.5rem',
-                          borderRadius: '0.375rem',
-                          border: '1px solid #d1d5db',
-                          backgroundColor: 'white',
-                          color: '#111827'
-                        }}
-                      />
-                    </div>
-
-                    {/* End Date */}
-                    <div>
-                      <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'rgb(75, 85, 99)' }}>
-                        End Date
-                      </label>
-                      <input
-                        type="date"
-                        value={endDate}
-                        onChange={(e) => setEndDate(e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '0.5rem',
-                          borderRadius: '0.375rem',
-                          border: '1px solid #d1d5db',
-                          backgroundColor: 'white',
-                          color: '#111827'
-                        }}
-                      />
+                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        <button
+                          type="button"
+                          onClick={() => { setSelectingDate('start'); setShowCalendarPicker(!showCalendarPicker); setShowMonthPicker(false); setShowYearPicker(false); }}
+                          style={{
+                            flex: 1,
+                            padding: '0.5rem',
+                            borderRadius: '0.375rem',
+                            border: '1px solid #d1d5db',
+                            backgroundColor: selectingDate === 'start' && showCalendarPicker ? '#dbeafe' : 'white',
+                            color: '#111827',
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            fontSize: '0.875rem'
+                          }}
+                        >
+                          {startDate ? new Date(startDate).toLocaleDateString() : 'Start Date'}
+                        </button>
+                        <span style={{ color: '#6b7280' }}>to</span>
+                        <button
+                          type="button"
+                          onClick={() => { setSelectingDate('end'); setShowCalendarPicker(!showCalendarPicker); setShowMonthPicker(false); setShowYearPicker(false); }}
+                          style={{
+                            flex: 1,
+                            padding: '0.5rem',
+                            borderRadius: '0.375rem',
+                            border: '1px solid #d1d5db',
+                            backgroundColor: selectingDate === 'end' && showCalendarPicker ? '#dbeafe' : 'white',
+                            color: '#111827',
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            fontSize: '0.875rem'
+                          }}
+                        >
+                          {endDate ? new Date(endDate).toLocaleDateString() : 'End Date'}
+                        </button>
+                      </div>
+                      
+                      {/* Calendar Picker Dropdown */}
+                      {showCalendarPicker && (() => {
+                        const minDate = new Date('2020-01-01');
+                        const maxDate = new Date();
+                        const year = calendarViewDate.getFullYear();
+                        const month = calendarViewDate.getMonth();
+                        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                        
+                        const firstDay = new Date(year, month, 1).getDay();
+                        const daysInMonth = new Date(year, month + 1, 0).getDate();
+                        const days: (number | null)[] = [];
+                        for (let i = 0; i < firstDay; i++) days.push(null);
+                        for (let d = 1; d <= daysInMonth; d++) days.push(d);
+                        
+                        const canGoPrev = new Date(year, month - 1, 1) >= new Date(minDate.getFullYear(), minDate.getMonth(), 1);
+                        const canGoNext = new Date(year, month + 1, 1) <= new Date(maxDate.getFullYear(), maxDate.getMonth(), 1);
+                        
+                        return (
+                          <div style={{
+                            position: 'absolute',
+                            top: '100%',
+                            left: 0,
+                            zIndex: 1000,
+                            backgroundColor: 'white',
+                            borderRadius: '0.5rem',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                            border: '1px solid #e5e7eb',
+                            padding: '1rem',
+                            marginTop: '0.25rem',
+                            minWidth: '280px'
+                          }}>
+                            {/* Calendar Header */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', position: 'relative' }}>
+                              <button type="button" onClick={() => canGoPrev && setCalendarViewDate(new Date(year, month - 1, 1))} disabled={!canGoPrev}
+                                style={{ background: 'none', border: 'none', cursor: canGoPrev ? 'pointer' : 'not-allowed', color: canGoPrev ? '#374151' : '#d1d5db', fontSize: '1rem', padding: '0.25rem 0.5rem' }}>{'<'}</button>
+                              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                <span onClick={() => { setShowMonthPicker(!showMonthPicker); setShowYearPicker(false); }}
+                                  style={{ fontWeight: 600, color: '#1e40af', fontSize: '0.9rem', cursor: 'pointer', padding: '0.25rem 0.5rem', borderRadius: '0.25rem' }}>{monthNames[month]}</span>
+                                <span onClick={() => { setShowYearPicker(!showYearPicker); setShowMonthPicker(false); }}
+                                  style={{ fontWeight: 600, color: '#1e40af', fontSize: '0.9rem', cursor: 'pointer', padding: '0.25rem 0.5rem', borderRadius: '0.25rem' }}>{year}</span>
+                              </div>
+                              <button type="button" onClick={() => canGoNext && setCalendarViewDate(new Date(year, month + 1, 1))} disabled={!canGoNext}
+                                style={{ background: 'none', border: 'none', cursor: canGoNext ? 'pointer' : 'not-allowed', color: canGoNext ? '#374151' : '#d1d5db', fontSize: '1rem', padding: '0.25rem 0.5rem' }}>{'>'}</button>
+                              
+                              {/* Month Picker */}
+                              {showMonthPicker && (
+                                <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', zIndex: 1001, backgroundColor: 'white', borderRadius: '0.5rem', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', border: '1px solid #e5e7eb', padding: '0.5rem', marginTop: '0.25rem', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.25rem', minWidth: '180px' }}>
+                                  {monthNames.map((m, idx) => {
+                                    const isDisabled = (year === minDate.getFullYear() && idx < minDate.getMonth()) || (year === maxDate.getFullYear() && idx > maxDate.getMonth());
+                                    return (
+                                      <div key={m} onClick={() => { if (!isDisabled) { setCalendarViewDate(new Date(year, idx, 1)); setShowMonthPicker(false); } }}
+                                        style={{ padding: '0.5rem', textAlign: 'center', fontSize: '0.8rem', borderRadius: '0.25rem', cursor: isDisabled ? 'not-allowed' : 'pointer', backgroundColor: idx === month ? '#1e40af' : 'transparent', color: isDisabled ? '#d1d5db' : idx === month ? 'white' : '#111827', fontWeight: idx === month ? 600 : 400 }}>{m}</div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                              
+                              {/* Year Picker */}
+                              {showYearPicker && (() => {
+                                const years: number[] = [];
+                                for (let y = minDate.getFullYear(); y <= maxDate.getFullYear(); y++) years.push(y);
+                                return (
+                                  <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', zIndex: 1001, backgroundColor: 'white', borderRadius: '0.5rem', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', border: '1px solid #e5e7eb', padding: '0.5rem', marginTop: '0.25rem', maxHeight: '200px', overflowY: 'auto', minWidth: '100px' }}>
+                                    {years.map(y => (
+                                      <div key={y} onClick={() => { setCalendarViewDate(new Date(y, month, 1)); setShowYearPicker(false); }}
+                                        style={{ padding: '0.5rem 1rem', textAlign: 'center', fontSize: '0.85rem', borderRadius: '0.25rem', cursor: 'pointer', backgroundColor: y === year ? '#1e40af' : 'transparent', color: y === year ? 'white' : '#111827', fontWeight: y === year ? 600 : 400 }}>{y}</div>
+                                    ))}
+                                  </div>
+                                );
+                              })()}
+                            </div>
+                            
+                            {/* Day Names */}
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.25rem', marginBottom: '0.5rem' }}>
+                              {dayNames.map(d => (
+                                <div key={d} style={{ textAlign: 'center', fontSize: '0.7rem', color: '#6b7280', fontWeight: 600 }}>{d}</div>
+                              ))}
+                            </div>
+                            
+                            {/* Days Grid */}
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.25rem' }}>
+                              {days.map((day, idx) => {
+                                if (day === null) return <div key={`empty-${idx}`} />;
+                                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                                const dateObj = new Date(year, month, day);
+                                const isDisabled = dateObj < minDate || dateObj > maxDate;
+                                const isSelected = dateStr === startDate || dateStr === endDate;
+                                const isInRange = startDate && endDate && dateStr > startDate && dateStr < endDate;
+                                
+                                return (
+                                  <div key={day} onClick={() => {
+                                    if (isDisabled) return;
+                                    if (selectingDate === 'start') {
+                                      setStartDate(dateStr);
+                                      if (endDate && dateStr > endDate) setEndDate('');
+                                    } else {
+                                      setEndDate(dateStr);
+                                      if (startDate && dateStr < startDate) setStartDate('');
+                                    }
+                                    setShowCalendarPicker(false);
+                                  }}
+                                    style={{
+                                      padding: '0.5rem',
+                                      textAlign: 'center',
+                                      fontSize: '0.85rem',
+                                      borderRadius: '0.25rem',
+                                      cursor: isDisabled ? 'not-allowed' : 'pointer',
+                                      backgroundColor: isSelected ? '#1e40af' : isInRange ? '#dbeafe' : 'transparent',
+                                      color: isDisabled ? '#d1d5db' : isSelected ? 'white' : '#111827',
+                                      fontWeight: isSelected ? 600 : 400
+                                    }}>{day}</div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     {/* Transaction Type */}
@@ -917,66 +1115,38 @@ export function Transactions() {
                 }}>
                   Transaction Records
                 </h2>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <button
-                    onClick={handleExportCsv}
-                    style={{
-                      backgroundColor: 'white',
-                      color: '#1f2937',
-                      padding: '0.5rem 0.9rem',
-                      borderRadius: '0.375rem',
-                      border: '1px solid #d1d5db',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.4rem',
-                      transition: 'background-color 0.2s, color 0.2s, border-color 0.2s',
-                      fontWeight: '500',
-                      fontSize: '0.875rem',
-                    }}
-                    onMouseOver={(e) => {
-                      e.currentTarget.style.backgroundColor = '#eff6ff';
-                      e.currentTarget.style.borderColor = '#3b82f6';
-                      e.currentTarget.style.color = '#1d4ed8';
-                    }}
-                    onMouseOut={(e) => {
-                      e.currentTarget.style.backgroundColor = 'white';
-                      e.currentTarget.style.borderColor = '#d1d5db';
-                      e.currentTarget.style.color = '#1f2937';
-                    }}
-                  >
-                    <FaFileExcel /> Export
-                  </button>
-                  <button
-                    onClick={() => {
-                      setSearchTerm('');
-                      setStartDate('');
-                      setEndDate('');
-                      setTransactionType('');
-                      setMinPrice('');
-                      setMaxPrice('');
-                      loadTransactions();
-                    }}
-                    style={{
-                      backgroundColor: '#3b82f6',
-                      color: 'white',
-                      padding: '0.5rem 1rem',
-                      borderRadius: '0.375rem',
-                      border: 'none',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                      transition: 'background-color 0.2s',
-                      fontWeight: '500',
-                      fontSize: '0.875rem'
-                    }}
-                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
-                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#3b82f6'}
-                  >
-                    <FaRedo /> Refresh
-                  </button>
-                </div>
+                {isSelectMode && selectedItems.size > 0 && (
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.875rem', color: '#374151' }}>
+                      {selectedItems.size} selected
+                    </span>
+                    {canArchiveTransactions && (
+                      <button
+                        onClick={() => {
+                          // Archive selected transactions
+                          selectedItems.forEach(async (id) => {
+                            const txRef = doc(db, 'transactions', id);
+                            await updateDoc(txRef, { archived: true });
+                          });
+                          setSelectedItems(new Set());
+                          setIsSelectMode(false);
+                        }}
+                        style={{
+                          backgroundColor: '#dc2626',
+                          color: 'white',
+                          padding: '0.5rem 1rem',
+                          borderRadius: '0.375rem',
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontSize: '0.875rem',
+                          fontWeight: 500,
+                        }}
+                      >
+                        Archive Selected
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div style={{
@@ -995,6 +1165,22 @@ export function Transactions() {
                       backgroundColor: '#f9fafb',
                       borderBottom: '1px solid #e5e7eb'
                     }}>
+                      {isSelectMode && (
+                        <th style={{ padding: '0.75rem 0.5rem', textAlign: 'center', width: '40px' }}>
+                          <input
+                            type="checkbox"
+                            checked={selectedItems.size === getFilteredTransactionsForTable().length && getFilteredTransactionsForTable().length > 0}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedItems(new Set(getFilteredTransactionsForTable().map(tx => tx.id)));
+                              } else {
+                                setSelectedItems(new Set());
+                              }
+                            }}
+                            style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                          />
+                        </th>
+                      )}
                       {['Transaction ID', 'Date', 'Customer', 'Type', 'Items', 'Grand Total', 'Payment Type', 'Status', 'Actions'].map(header => {
                         // Set text alignment based on column
                         const textAlign =
@@ -1036,10 +1222,31 @@ export function Transactions() {
                             e.currentTarget.style.backgroundColor = index % 2 === 0 ? 'white' : '#f9fafb';
                           }}
                           onClick={() => {
-                            setSelectedTransaction(tx);
-                            setIsModalOpen(true);
+                            if (isSelectMode) {
+                              const newSet = new Set(selectedItems);
+                              if (newSet.has(tx.id)) {
+                                newSet.delete(tx.id);
+                              } else {
+                                newSet.add(tx.id);
+                              }
+                              setSelectedItems(newSet);
+                            } else {
+                              setSelectedTransaction(tx);
+                              setIsModalOpen(true);
+                            }
                           }}
                         >
+                          {isSelectMode && (
+                            <td style={{ padding: '1rem 0.5rem', textAlign: 'center' }}>
+                              <input
+                                type="checkbox"
+                                checked={selectedItems.has(tx.id)}
+                                onChange={() => {}}
+                                onClick={(e) => e.stopPropagation()}
+                                style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                              />
+                            </td>
+                          )}
                           <td style={{
                             padding: '1rem 1.5rem',
                             fontSize: '0.875rem',
@@ -1206,7 +1413,7 @@ export function Transactions() {
                                 Delete
                               </button>
                             )}
-                            {canDeleteTransactions && tx.archived && isSuperadmin && (
+                            {canViewArchived && tx.archived && (
                               <span style={{
                                 fontSize: '0.75rem',
                                 color: '#9ca3af'

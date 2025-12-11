@@ -2707,8 +2707,39 @@ export function Inventory() {
                     width: '100%',
                     marginBottom: showFilters ? '1rem' : 0
                   }}>
-                    {/* Left side: Select/Cancel + conditional Add Stock/Delete + Export */}
+                    {/* Left side: Export + Select/Cancel + conditional Add Stock/Delete */}
                     <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                      {/* Export to CSV Button - only show if user has export permission */}
+                      {canExportInventory && (
+                        <button
+                          type="button"
+                          onClick={handleExportInventoryCsv}
+                          style={{
+                            backgroundColor: '#059669',
+                            color: 'white',
+                            padding: '0.5rem 1rem',
+                            borderRadius: '0.375rem',
+                            border: 'none',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            fontWeight: 500,
+                            fontSize: '0.875rem',
+                            height: '40px',
+                            transition: 'background-color 0.2s',
+                          }}
+                          onMouseOver={(e) => {
+                            e.currentTarget.style.backgroundColor = '#047857';
+                          }}
+                          onMouseOut={(e) => {
+                            e.currentTarget.style.backgroundColor = '#059669';
+                          }}
+                        >
+                          Export to CSV <FaFileExcel />
+                        </button>
+                      )}
+
                       {/* Select / Cancel Button - only show if user can add stock multiple OR archive */}
                       {(canAddStockMultiple || canArchiveInventory) && (
                         <button
@@ -3024,37 +3055,6 @@ export function Inventory() {
                           </>
                         );
                       })()}
-
-                      {/* Export to CSV Button - only show if user has export permission */}
-                      {canExportInventory && (
-                        <button
-                          type="button"
-                          onClick={handleExportInventoryCsv}
-                          style={{
-                            backgroundColor: '#10b981',
-                            color: 'white',
-                            padding: '0.5rem 1rem',
-                            borderRadius: '0.375rem',
-                            border: 'none',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.5rem',
-                            fontWeight: 500,
-                            fontSize: '0.875rem',
-                            height: '40px',
-                            transition: 'background-color 0.2s',
-                          }}
-                          onMouseOver={(e) => {
-                            e.currentTarget.style.backgroundColor = '#059669';
-                          }}
-                          onMouseOut={(e) => {
-                            e.currentTarget.style.backgroundColor = '#10b981';
-                          }}
-                        >
-                          <FaFileExcel /> Export to CSV
-                        </button>
-                      )}
                     </div>
 
                     {/* Right side: Filters + Clear Filters */}
@@ -3278,6 +3278,13 @@ export function Inventory() {
                   )}
                 </div>
 
+                {/* Selected count display */}
+                {isSelectMode && selectedItems.size > 0 && (
+                  <div style={{ marginBottom: '0.75rem', fontSize: '0.875rem', color: '#374151', fontWeight: 500 }}>
+                    {selectedItems.size} selected
+                  </div>
+                )}
+
                 {/* Your existing table component goes here */}
                 <div style={{ overflowX: 'auto' }}>
                   <div style={{
@@ -3297,6 +3304,22 @@ export function Inventory() {
                         <thead>
                           {isCompactTable ? (
                             <tr style={{ backgroundColor: '#f3f4f6', borderBottom: '1px solid #e5e7eb', textAlign: 'left', fontSize: '0.875rem', fontWeight: 600, color: '#4b5563' }}>
+                              {isSelectMode && (
+                                <th style={{ padding: '0.75rem 0.5rem', textAlign: 'center', width: '40px' }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedItems.size === filteredAndSortedItems.length && filteredAndSortedItems.length > 0}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        setSelectedItems(new Set(filteredAndSortedItems.map((item: any) => item.docId)));
+                                      } else {
+                                        setSelectedItems(new Set());
+                                      }
+                                    }}
+                                    style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                                  />
+                                </th>
+                              )}
                               <th style={{ padding: '0.75rem 1.5rem' }}>ITEM</th>
                               <th style={{ padding: '0.75rem 1.5rem', textAlign: 'center' }}>SRP</th>
                               <th style={{ padding: '0.75rem 1.5rem', textAlign: 'center' }}>STATUS</th>
@@ -3305,6 +3328,22 @@ export function Inventory() {
                             </tr>
                           ) : (
                             <tr style={{ backgroundColor: '#f3f4f6', borderBottom: '1px solid #e5e7eb', textAlign: 'left', fontSize: '0.875rem', fontWeight: 600, color: '#4b5563' }}>
+                              {isSelectMode && (
+                                <th style={{ padding: '0.75rem 0.5rem', textAlign: 'center', width: '40px' }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedItems.size === filteredAndSortedItems.length && filteredAndSortedItems.length > 0}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        setSelectedItems(new Set(filteredAndSortedItems.map((item: any) => item.docId)));
+                                      } else {
+                                        setSelectedItems(new Set());
+                                      }
+                                    }}
+                                    style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                                  />
+                                </th>
+                              )}
                               <th
                                 style={{ padding: '0.75rem 1.5rem', cursor: 'pointer' }}
                                 onClick={() => handleHeaderSort('brand')}
@@ -3456,6 +3495,16 @@ export function Inventory() {
                                   setHasUnsavedChanges(false);
                                 }}
                               >
+                                {isSelectMode && (
+                                  <td style={{ padding: '0.5rem', textAlign: 'center' }}>
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedItems.has(item.docId)}
+                                      onChange={() => {}}
+                                      style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                                    />
+                                  </td>
+                                )}
                                 {isCompactTable ? (
                                   <>
                                     {/* ITEM */}

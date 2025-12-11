@@ -1,4 +1,4 @@
-import { FaHome, FaGripLinesVertical, FaBars, FaWarehouse, FaTag, FaWrench, FaFileInvoice, FaPlus, FaUser, FaSearch, FaTimes, FaChevronDown, FaFilter, FaUndoAlt, FaCog, FaFileExcel } from 'react-icons/fa';
+import { FaHome, FaGripLinesVertical, FaBars, FaWarehouse, FaTag, FaWrench, FaFileInvoice, FaPlus, FaUser, FaSearch, FaTimes, FaChevronDown, FaFilter, FaUndoAlt, FaCog, FaFileExcel, FaTrash } from 'react-icons/fa';
 
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
@@ -33,10 +33,8 @@ export function Inventory() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
-  const currentRole = (user?.role || '').toString();
-  const canEditInventory = can(currentRole, 'inventory.add');
-
   const userRoles = user?.roles?.length ? user.roles : (user?.role ? [user.role] : []);
+  const canEditInventory = can(userRoles, 'inventory.add');
 
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [isNavExpanded, setIsNavExpanded] = useState(false);
@@ -45,6 +43,10 @@ export function Inventory() {
 
   const [isInventorySettingsOpen, setIsInventorySettingsOpen] = useState(false);
   const [isCompactTable, setIsCompactTable] = useState(window.innerWidth < 1200);
+
+  // Select mode state (iOS gallery-style selection)
+  const [isSelectMode, setIsSelectMode] = useState(false);
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
 
   // Persist inline remarks edits for a given inventory row to Firestore
   const handlePersistRemarks = async (item: any) => {
@@ -226,6 +228,25 @@ export function Inventory() {
 
   const closeBulkAddStock = () => {
     setIsBulkAddStockOpen(false);
+  };
+
+  // Toggle selection of an item (for iOS-style multi-select)
+  const toggleItemSelection = (docId: string) => {
+    setSelectedItems(prev => {
+      const next = new Set(prev);
+      if (next.has(docId)) {
+        next.delete(docId);
+      } else {
+        next.add(docId);
+      }
+      return next;
+    });
+  };
+
+  // Exit select mode and clear selections
+  const exitSelectMode = () => {
+    setIsSelectMode(false);
+    setSelectedItems(new Set());
   };
 
   const handleBulkRowChange = (index: number, field: 'inventoryDocId' | 'quantity', value: string) => {
@@ -2385,76 +2406,267 @@ export function Inventory() {
                 }}>
                   <div style={{
                     display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
                     gap: '0.5rem',
                     width: '100%',
                     marginBottom: showFilters ? '1rem' : 0
                   }}>
-                    {/* Filters Button */}
-                    <div
-                      style={{
-                        flex: 1, // This will make it take up half the space
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center', // Center the content
-                        cursor: 'pointer',
-                        padding: '0.5rem',
-                        borderRadius: '0.5rem',
-                        backgroundColor: '#1e40af',
-                        color: 'white',
-                        transition: 'all 0.2s',
-                        height: '40px'
-                      }}
-                      onClick={() => setShowFilters(!showFilters)}
-                      onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#1e3a8a'}
-                      onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#1e40af'}
-                    >
-                      <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 600 }}>Filters</h3>
-                      <FaFilter style={{ marginLeft: '0.5rem' }} />
+                    {/* Left side: Select/Cancel + conditional Add Stock/Delete + Export */}
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                      {/* Select / Cancel Button */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (isSelectMode) {
+                            exitSelectMode();
+                          } else {
+                            setIsSelectMode(true);
+                          }
+                        }}
+                        style={{
+                          backgroundColor: isSelectMode ? '#6b7280' : '#1d4ed8',
+                          color: 'white',
+                          padding: '0.5rem 1rem',
+                          borderRadius: '0.375rem',
+                          border: 'none',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.4rem',
+                          fontWeight: 500,
+                          fontSize: '0.875rem',
+                          height: '40px',
+                          transition: 'background-color 0.2s',
+                        }}
+                        onMouseOver={(e) => {
+                          e.currentTarget.style.backgroundColor = isSelectMode ? '#4b5563' : '#1e40af';
+                        }}
+                        onMouseOut={(e) => {
+                          e.currentTarget.style.backgroundColor = isSelectMode ? '#6b7280' : '#1d4ed8';
+                        }}
+                      >
+                        {isSelectMode ? 'Cancel' : 'Select'}
+                      </button>
+
+                      {/* Add Stock Button - only visible when Select mode is active */}
+                      {isSelectMode && canEditInventory && (
+                        <button
+                          type="button"
+                          onClick={openBulkAddStock}
+                          style={{
+                            backgroundColor: '#1d4ed8',
+                            color: 'white',
+                            padding: '0.5rem 0.9rem',
+                            borderRadius: '0.375rem',
+                            border: 'none',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.4rem',
+                            fontWeight: 500,
+                            fontSize: '0.875rem',
+                            height: '40px',
+                            transition: 'background-color 0.2s',
+                          }}
+                          onMouseOver={(e) => {
+                            e.currentTarget.style.backgroundColor = '#1e40af';
+                          }}
+                          onMouseOut={(e) => {
+                            e.currentTarget.style.backgroundColor = '#1d4ed8';
+                          }}
+                        >
+                          <FaPlus /> Add Stock
+                        </button>
+                      )}
+
+                      {/* Delete Button - only visible when Select mode is active */}
+                      {isSelectMode && canEditInventory && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (selectedItems.size === 0) {
+                              setModalState({
+                                open: true,
+                                title: 'No Items Selected',
+                                message: 'Please select at least one item to delete.',
+                                variant: 'info',
+                              });
+                              return;
+                            }
+                            setModalState({
+                              open: true,
+                              title: 'Confirm Delete',
+                              message: `Are you sure you want to archive ${selectedItems.size} item(s)? This action can be undone from the archived items view.`,
+                              variant: 'confirm',
+                              onConfirm: () => {
+                                setModalState({
+                                  open: true,
+                                  title: 'Final Confirmation',
+                                  message: `This will archive ${selectedItems.size} item(s). Are you absolutely sure?`,
+                                  variant: 'confirm',
+                                  onConfirm: async () => {
+                                    try {
+                                      for (const docId of selectedItems) {
+                                        const ref = doc(inventoryCollection, docId);
+                                        await updateDoc(ref, {
+                                          archived: true,
+                                          updatedAt: new Date().toISOString(),
+                                        });
+                                      }
+                                      await loadInventory();
+                                      exitSelectMode();
+                                      setModalState({
+                                        open: true,
+                                        title: 'Items Archived',
+                                        message: `${selectedItems.size} item(s) have been archived successfully.`,
+                                        variant: 'info',
+                                      });
+                                    } catch (err) {
+                                      console.error('Error archiving items', err);
+                                      setModalState({
+                                        open: true,
+                                        title: 'Archive Failed',
+                                        message: 'There was an error archiving the items. Please try again.',
+                                        variant: 'error',
+                                      });
+                                    }
+                                  },
+                                });
+                              },
+                            });
+                          }}
+                          style={{
+                            backgroundColor: '#dc2626',
+                            color: 'white',
+                            padding: '0.5rem 0.9rem',
+                            borderRadius: '0.375rem',
+                            border: 'none',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.4rem',
+                            fontWeight: 500,
+                            fontSize: '0.875rem',
+                            height: '40px',
+                            transition: 'background-color 0.2s',
+                          }}
+                          onMouseOver={(e) => {
+                            e.currentTarget.style.backgroundColor = '#b91c1c';
+                          }}
+                          onMouseOut={(e) => {
+                            e.currentTarget.style.backgroundColor = '#dc2626';
+                          }}
+                        >
+                          <FaTrash /> Delete
+                        </button>
+                      )}
+
+                      {/* Export to CSV Button */}
+                      <button
+                        type="button"
+                        onClick={handleExportInventoryCsv}
+                        style={{
+                          backgroundColor: '#10b981',
+                          color: 'white',
+                          padding: '0.5rem 1rem',
+                          borderRadius: '0.375rem',
+                          border: 'none',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          fontWeight: 500,
+                          fontSize: '0.875rem',
+                          height: '40px',
+                          transition: 'background-color 0.2s',
+                        }}
+                        onMouseOver={(e) => {
+                          e.currentTarget.style.backgroundColor = '#059669';
+                        }}
+                        onMouseOut={(e) => {
+                          e.currentTarget.style.backgroundColor = '#10b981';
+                        }}
+                      >
+                        <FaFileExcel /> Export to CSV
+                      </button>
                     </div>
 
-                    {/* Clear Filters Button */}
-                    <button
-                      onClick={() => {
-                        setFilters({
-                          minPrice: '',
-                          maxPrice: '',
-                          sortBy: 'name-asc',
-                          brand: '',
-                          type: '',
-                          status: ''
-                        });
-                      }}
-                      disabled={!isAnyFilterActive()}
-                      style={{
-                        flex: 1, // This will make it take up the other half
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center', // Center the content
-                        padding: '0.5rem',
-                        borderRadius: '0.5rem',
-                        backgroundColor: isAnyFilterActive() ? '#6b7280' : '#e5e7eb',
-                        color: isAnyFilterActive() ? 'white' : '#9ca3af',
-                        border: 'none',
-                        cursor: isAnyFilterActive() ? 'pointer' : 'not-allowed',
-                        fontSize: '0.95rem',
-                        fontWeight: 600,
-                        transition: 'all 0.2s',
-                        height: '40px',
-                        opacity: isAnyFilterActive() ? 1 : 0.7
-                      }}
-                      onMouseOver={(e) => {
-                        if (isAnyFilterActive()) {
-                          e.currentTarget.style.backgroundColor = '#4b5563';
-                        }
-                      }}
-                      onMouseOut={(e) => {
-                        if (isAnyFilterActive()) {
-                          e.currentTarget.style.backgroundColor = '#6b7280';
-                        }
-                      }}
-                    >
-                      Clear Filters
-                    </button>
+                    {/* Right side: Filters + Clear Filters */}
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                      {/* Filters Button */}
+                      <button
+                        type="button"
+                        onClick={() => setShowFilters(!showFilters)}
+                        style={{
+                          backgroundColor: '#1e40af',
+                          color: 'white',
+                          padding: '0.5rem 1rem',
+                          borderRadius: '0.375rem',
+                          border: 'none',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          fontWeight: 500,
+                          fontSize: '0.875rem',
+                          height: '40px',
+                          transition: 'background-color 0.2s',
+                        }}
+                        onMouseOver={(e) => {
+                          e.currentTarget.style.backgroundColor = '#1e3a8a';
+                        }}
+                        onMouseOut={(e) => {
+                          e.currentTarget.style.backgroundColor = '#1e40af';
+                        }}
+                      >
+                        Filters <FaFilter />
+                      </button>
+
+                      {/* Clear Filters Button */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFilters({
+                            minPrice: '',
+                            maxPrice: '',
+                            sortBy: 'name-asc',
+                            brand: '',
+                            type: '',
+                            status: ''
+                          });
+                        }}
+                        disabled={!isAnyFilterActive()}
+                        style={{
+                          backgroundColor: isAnyFilterActive() ? '#6b7280' : '#e5e7eb',
+                          color: isAnyFilterActive() ? 'white' : '#9ca3af',
+                          padding: '0.5rem 1rem',
+                          borderRadius: '0.375rem',
+                          border: 'none',
+                          cursor: isAnyFilterActive() ? 'pointer' : 'not-allowed',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          fontWeight: 500,
+                          fontSize: '0.875rem',
+                          height: '40px',
+                          transition: 'background-color 0.2s',
+                          opacity: isAnyFilterActive() ? 1 : 0.7,
+                        }}
+                        onMouseOver={(e) => {
+                          if (isAnyFilterActive()) {
+                            e.currentTarget.style.backgroundColor = '#4b5563';
+                          }
+                        }}
+                        onMouseOut={(e) => {
+                          if (isAnyFilterActive()) {
+                            e.currentTarget.style.backgroundColor = '#6b7280';
+                          }
+                        }}
+                      >
+                        Clear Filters
+                      </button>
+                    </div>
                   </div>
 
                   {showFilters && (
@@ -2581,67 +2793,6 @@ export function Inventory() {
                   )}
                 </div>
 
-                {/* Actions: Bulk Add Stock + Export */}
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                  {canEditInventory && (
-                    <button
-                      type="button"
-                      onClick={openBulkAddStock}
-                      style={{
-                        backgroundColor: '#1d4ed8',
-                        color: 'white',
-                        padding: '0.5rem 0.9rem',
-                        borderRadius: '0.375rem',
-                        border: '1px solid #1d4ed8',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.4rem',
-                        transition: 'background-color 0.2s, color 0.2s, border-color 0.2s',
-                        fontWeight: 500,
-                        fontSize: '0.875rem',
-                      }}
-                      onMouseOver={(e) => {
-                        e.currentTarget.style.backgroundColor = '#1e40af';
-                        e.currentTarget.style.borderColor = '#1e40af';
-                      }}
-                      onMouseOut={(e) => {
-                        e.currentTarget.style.backgroundColor = '#1d4ed8';
-                        e.currentTarget.style.borderColor = '#1d4ed8';
-                      }}
-                    >
-                      <FaPlus /> Add Stock
-                    </button>
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={handleExportInventoryCsv}
-                    style={{
-                      backgroundColor: '#10b981',
-                      color: 'white',
-                      padding: '0.5rem 1rem',
-                      borderRadius: '0.375rem',
-                      border: 'none',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                      transition: 'background-color 0.2s',
-                      fontWeight: 500,
-                      fontSize: '0.875rem',
-                    }}
-                    onMouseOver={(e) => {
-                      e.currentTarget.style.backgroundColor = '#059669';
-                    }}
-                    onMouseOut={(e) => {
-                      e.currentTarget.style.backgroundColor = '#10b981';
-                    }}
-                  >
-                    <FaFileExcel /> Export to CSV
-                  </button>
-                </div>
-
                 {/* Your existing table component goes here */}
                 <div style={{ overflowX: 'auto' }}>
                   <div style={{
@@ -2748,16 +2899,32 @@ export function Inventory() {
                                 style={{
                                   borderTop: '1px solid rgba(0, 0, 0, 0.1)',
                                   transition: 'background-color 0.2s',
-                                  backgroundColor: 'white',
-                                  color: '#1f2937'
+                                  backgroundColor: isSelectMode && selectedItems.has(item.docId) ? '#dbeafe' : 'white',
+                                  color: '#1f2937',
+                                  cursor: isSelectMode ? 'pointer' : 'default',
                                 }}
                                 onMouseOver={e => {
-                                  e.currentTarget.style.backgroundColor = '#f0f0f0';
+                                  if (isSelectMode && selectedItems.has(item.docId)) {
+                                    e.currentTarget.style.backgroundColor = '#bfdbfe';
+                                  } else {
+                                    e.currentTarget.style.backgroundColor = '#f0f0f0';
+                                  }
                                 }}
                                 onMouseOut={e => {
-                                  e.currentTarget.style.backgroundColor = 'white';
+                                  if (isSelectMode && selectedItems.has(item.docId)) {
+                                    e.currentTarget.style.backgroundColor = '#dbeafe';
+                                  } else {
+                                    e.currentTarget.style.backgroundColor = 'white';
+                                  }
                                 }}
                                 onClick={() => {
+                                  // In select mode, toggle selection instead of opening details
+                                  if (isSelectMode) {
+                                    toggleItemSelection(item.docId);
+                                    return;
+                                  }
+
+                                  // Normal mode: open item details
                                   setSelectedInventoryItem(item);
                                   setFormItem({
                                     id: (item.itemId ?? item.id ?? '').toString(),

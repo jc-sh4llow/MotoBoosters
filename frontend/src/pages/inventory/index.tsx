@@ -1349,12 +1349,12 @@ export function Inventory() {
         flex: 1
       }}>
         <header style={{
-          backgroundColor: 'rgba(255, 255, 255, 0.15)',
+          backgroundColor: 'rgba(255, 255, 255, 0.92)',
           backdropFilter: 'blur(12px)',
           borderRadius: '1rem',
-          padding: '1rem 2.25rem',
-          boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.15)',
-          border: '1px solid rgba(255, 255, 255, 0.18)',
+          padding: '1rem 2rem',
+          boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.25)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
           marginBottom: '1.25rem',
           position: 'sticky',
           top: '1rem',
@@ -1394,15 +1394,15 @@ export function Inventory() {
                 <h1 style={{
                   fontSize: '1.875rem',
                   fontWeight: 'bold',
-                  color: 'white',
+                  color: '#1e40af',
                   margin: 0,
-                  textShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
                 }}>
                   Inventory
                 </h1>
                 <span style={{
-                  color: 'rgba(255, 255, 255, 0.9)',
-                  fontSize: '0.9rem'
+                  color: '#374151',
+                  fontSize: '0.9rem',
+                  marginLeft: '1rem',
                 }}>
                   Welcome, {user?.name || 'Guest'}
                 </span>
@@ -1581,12 +1581,13 @@ export function Inventory() {
 
                   style={{
                     backgroundColor: 'transparent',
-                    border: '1px solid white',
-                    color: 'white',
+                    border: '1px solid #1e40af',
+                    color: '#1e40af',
                     padding: '0.25rem 0.75rem',
                     borderRadius: '0.25rem',
                     cursor: 'pointer',
-                    fontSize: '0.875rem'
+                    fontSize: '0.875rem',
+                    marginRight: '0.75rem',
                   }}
                 >
                   Logout
@@ -1613,7 +1614,7 @@ export function Inventory() {
                 style={{
                   background: 'transparent',
                   border: 'none',
-                  color: 'white',
+                  color: '#1e40af',
                   fontSize: '1.5rem',
                   cursor: 'pointer',
                   padding: '0.5rem',

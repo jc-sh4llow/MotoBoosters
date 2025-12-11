@@ -572,12 +572,12 @@ export function Users() {
       }}>
 
         <header style={{
-          backgroundColor: 'rgba(255, 255, 255, 0.15)',
+          backgroundColor: 'rgba(255, 255, 255, 0.92)',
           backdropFilter: 'blur(12px)',
           borderRadius: '1rem',
           padding: '1rem 2rem',
-          boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.15)',
-          border: '1px solid rgba(255, 255, 255, 0.18)',
+          boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.25)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
           marginBottom: '1rem',
           position: 'sticky',
           top: '1rem',
@@ -616,35 +616,15 @@ export function Users() {
               <h1 style={{
                 fontSize: '1.875rem',
                 fontWeight: 'bold',
-                color: 'white',
+                color: '#1e40af',
                 margin: 0,
-                textShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
               }}>
                 Users
               </h1>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <span style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: '0.9rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginLeft: '1rem' }}>
+                <span style={{ color: '#374151', fontSize: '0.9rem' }}>
                   Welcome, {user?.name || 'Guest'}
                 </span>
-                {user && (
-                  <button
-                    onClick={() => {
-                      // simple logout: clear context and go to login
-                      window.location.href = '/login';
-                    }}
-                    style={{
-                      backgroundColor: 'transparent',
-                      border: '1px solid white',
-                      color: 'white',
-                      padding: '0.25rem 0.75rem',
-                      borderRadius: '0.25rem',
-                      cursor: 'pointer',
-                      fontSize: '0.875rem'
-                    }}
-                  >
-                    Logout
-                  </button>
-                )}
               </div>
             </div>
 
@@ -670,10 +650,10 @@ export function Users() {
                 style={{
                   padding: '0.5rem 2.5rem 0.5rem 2.5rem', // Added right padding for the clear button
                   borderRadius: '0.5rem',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  border: '1px solid #d1d5db',
                   backgroundColor: 'rgba(255, 255, 255)',
-                  color: '#1f2937', // Darker color for better contrast
-                  width: '350px', // Slightly reduced width
+                  color: '#1f2937',
+                  width: '320px',
                   outline: 'none'
                 }}
               />
@@ -700,6 +680,27 @@ export function Users() {
               )}
             </div>
 
+            {user && (
+              <button
+                onClick={() => {
+                  logout();
+                  navigate('/login');
+                }}
+                style={{
+                  backgroundColor: 'transparent',
+                  border: '1px solid #1e40af',
+                  color: '#1e40af',
+                  padding: '0.25rem 0.75rem',
+                  borderRadius: '0.25rem',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem',
+                  marginRight: '0.75rem',
+                }}
+              >
+                Logout
+              </button>
+            )}
+
             {/* Navbar Toggle Button */}
             <button
               onClick={() => setIsNavExpanded(!isNavExpanded)}
@@ -721,7 +722,7 @@ export function Users() {
               style={{
                 background: 'transparent',
                 border: 'none',
-                color: 'white',
+                color: '#1e40af',
                 fontSize: '1.5rem',
                 cursor: 'pointer',
                 padding: '0.5rem',
@@ -731,7 +732,6 @@ export function Users() {
               }}
             >
               <FaBars />
-              <span style={{ fontSize: '1rem' }}></span>
             </button>
 
             {/* Dropdown Menu */}

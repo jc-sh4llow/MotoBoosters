@@ -20,13 +20,14 @@ import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
 import { useAuth } from '../../contexts/AuthContext';
+import logo from '../../assets/logo.png';
 import { can } from '../../config/permissions';
 import { db } from '../../lib/firebase';
 import { HeaderDropdown } from '../../components/HeaderDropdown';
 
 export function Sales() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   const [isNavExpanded, setIsNavExpanded] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -355,12 +356,12 @@ export function Sales() {
         zIndex: 5
       }}>
         <header style={{
-          backgroundColor: 'rgba(255, 255, 255, 0.15)',
+          backgroundColor: 'rgba(255, 255, 255, 0.92)',
           backdropFilter: 'blur(12px)',
           borderRadius: '1rem',
           padding: '1rem 2rem',
-          boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.15)',
-          border: '1px solid rgba(255, 255, 255, 0.18)',
+          boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.25)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
           marginBottom: '1rem',
           position: 'sticky',
           top: '1rem',
@@ -370,125 +371,176 @@ export function Sales() {
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            maxWidth: '1400px',
+            maxWidth: '1560px',
             margin: '0 auto',
             width: '100%',
             position: 'relative'
           }}>
-            <h1 style={{
-              fontSize: '1.875rem',
-              fontWeight: 'bold',
-              color: 'white',
-              margin: 0,
-              textShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
-            }}>
-              Sales Records
-            </h1>
-            <div style={{
-              position: 'relative',
-              display: 'flex',
-              alignItems: 'center',
-              marginLeft: 'auto', // This will push it to the right
-              marginRight: '1rem' // Add some space before the hamburger button
-            }}>
-              <FaSearch style={{
-                position: 'absolute',
-                left: '12px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                color: '#9ca3af'
-              }} />
-              <input
-                type="text"
-                placeholder="Search by Customer or Item Name..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+            {/* Left: logo, title, welcome */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+              <div
                 style={{
-                  padding: '0.5rem 2.5rem 0.5rem 2.5rem', // Added right padding for the clear button
-                  borderRadius: '0.5rem',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
-                  backgroundColor: 'rgba(255, 255, 255)',
-                  color: '#1f2937', // Darker color for better contrast
-                  width: '350px', // Slightly reduced width
-                  outline: 'none'
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: '1.875rem',
+                  cursor: 'pointer',
                 }}
-              />
-              {searchTerm && (
-                <button
-                  onClick={() => setSearchTerm('')}
+                onClick={() => navigate('/')}
+              >
+                <img
+                  src={logo}
+                  alt="Business Logo"
+                  title="Back to Dashboard"
                   style={{
-                    position: 'absolute',
-                    right: '8px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'transparent',
-                    border: 'none',
-                    color: '#9ca3af',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '4px'
+                    height: '100%',
+                    width: 'auto',
+                    objectFit: 'contain',
                   }}
-                >
-                  <FaTimes size={14} />
-                </button>
-              )}
+                />
+              </div>
+              <h1 style={{
+                fontSize: '1.875rem',
+                fontWeight: 'bold',
+                color: '#1e40af',
+                margin: 0,
+              }}>
+                Sales Records
+              </h1>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginLeft: '1rem' }}>
+                <span style={{ color: '#374151', fontSize: '0.9rem' }}>
+                  Welcome, {user?.name || 'Guest'}
+                </span>
+              </div>
             </div>
 
-            {/* Navbar Toggle Button */}
-            <button
-              onClick={() => setIsNavExpanded(!isNavExpanded)}
-              onMouseEnter={() => {
-                if (!isMobile) {
-                  if (closeMenuTimeout) {
-                    clearTimeout(closeMenuTimeout);
-                  }
-                  setIsNavExpanded(true);
-                }
-              }}
-              onMouseLeave={() => {
-                if (!isMobile) {
-                  closeMenuTimeout = window.setTimeout(() => {
-                    setIsNavExpanded(false);
-                  }, 200);
-                }
-              }}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: 'white',
-                fontSize: '1.5rem',
-                cursor: 'pointer',
-                padding: '0.5rem',
+            {/* Right: search bar, Logout, navbar toggle */}
+            <div style={{ display: 'flex', alignItems: 'center', marginLeft: 'auto' }}>
+              <div style={{
+                position: 'relative',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.5rem'
-              }}
-            >
-              <FaBars />
-              <span style={{ fontSize: '1rem' }}></span>
-            </button>
+                marginRight: '1rem'
+              }}>
+                <FaSearch style={{
+                  position: 'absolute',
+                  left: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: '#9ca3af'
+                }} />
+                <input
+                  type="text"
+                  placeholder="Search sales..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  style={{
+                    padding: '0.5rem 2.5rem 0.5rem 2.5rem',
+                    borderRadius: '0.5rem',
+                    border: '1px solid #d1d5db',
+                    backgroundColor: 'rgba(255, 255, 255)',
+                    color: '#1f2937',
+                    width: '320px',
+                    outline: 'none'
+                  }}
+                />
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm('')}
+                    style={{
+                      position: 'absolute',
+                      right: '8px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'transparent',
+                      border: 'none',
+                      color: '#9ca3af',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '4px'
+                    }}
+                  >
+                    <FaTimes size={14} />
+                  </button>
+                )}
+              </div>
 
-            {/* Dropdown Menu */}
-            <HeaderDropdown
-              isNavExpanded={isNavExpanded}
-              setIsNavExpanded={setIsNavExpanded}
-              isMobile={isMobile}
-              userRoles={userRoles}
-              onMouseEnter={() => {
-                if (!isMobile && closeMenuTimeout) {
-                  clearTimeout(closeMenuTimeout);
-                }
-              }}
-              onMouseLeave={() => {
-                if (!isMobile) {
-                  closeMenuTimeout = window.setTimeout(() => {
-                    setIsNavExpanded(false);
-                  }, 200);
-                }
-              }}
-            />
+              {user && (
+                <button
+                  onClick={() => {
+                    logout();
+                    navigate('/login');
+                  }}
+                  style={{
+                    backgroundColor: 'transparent',
+                    border: '1px solid #1e40af',
+                    color: '#1e40af',
+                    padding: '0.25rem 0.75rem',
+                    borderRadius: '0.25rem',
+                    cursor: 'pointer',
+                    fontSize: '0.875rem',
+                    marginRight: '0.75rem',
+                  }}
+                >
+                  Logout
+                </button>
+              )}
+
+              {/* Navbar Toggle Button */}
+              <button
+                onClick={() => setIsNavExpanded(!isNavExpanded)}
+                onMouseEnter={() => {
+                  if (!isMobile) {
+                    if (closeMenuTimeout) {
+                      clearTimeout(closeMenuTimeout);
+                    }
+                    setIsNavExpanded(true);
+                  }
+                }}
+                onMouseLeave={() => {
+                  if (!isMobile) {
+                    closeMenuTimeout = window.setTimeout(() => {
+                      setIsNavExpanded(false);
+                    }, 200);
+                  }
+                }}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#1e40af',
+                  fontSize: '1.5rem',
+                  cursor: 'pointer',
+                  padding: '0.5rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}
+              >
+                <FaBars />
+              </button>
+
+              {/* Dropdown Menu */}
+              <HeaderDropdown
+                isNavExpanded={isNavExpanded}
+                setIsNavExpanded={setIsNavExpanded}
+                isMobile={isMobile}
+                userRoles={userRoles}
+                onMouseEnter={() => {
+                  if (!isMobile && closeMenuTimeout) {
+                    clearTimeout(closeMenuTimeout);
+                  }
+                }}
+                onMouseLeave={() => {
+                  if (!isMobile) {
+                    closeMenuTimeout = window.setTimeout(() => {
+                      setIsNavExpanded(false);
+                    }, 200);
+                  }
+                }}
+              />
+            </div>
           </div>
         </header>
 

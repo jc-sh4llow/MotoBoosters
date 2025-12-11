@@ -49,6 +49,7 @@ export function Transactions() {
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [showArchivedFilter, setShowArchivedFilter] = useState(true); // Toggle to show/hide archived records
   const [selectedTransaction, setSelectedTransaction] = useState<TransactionRow | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [transactions, setTransactions] = useState<TransactionRow[]>([]);
@@ -84,6 +85,7 @@ export function Transactions() {
   const userRoles = user?.roles?.length ? user.roles : (user?.role ? [user.role] : []);
   const canDeleteTransactions = can(userRoles, 'transactions.delete');
   const canArchiveTransactions = can(userRoles, 'transactions.archive');
+  const canUnarchiveTransactions = can(userRoles, 'transactions.unarchive');
   const canExportTransactions = can(userRoles, 'transactions.export');
   const canViewArchived = can(userRoles, 'transactions.view.archived');
 
@@ -330,8 +332,9 @@ export function Transactions() {
       const matchesPrice = (!minPrice || tx.grandTotal >= Number(minPrice)) &&
         (!maxPrice || tx.grandTotal <= Number(maxPrice));
       const matchesStatus = !statusFilter || tx.status === statusFilter;
+      const matchesArchived = showArchivedFilter || !tx.archived;
 
-      return matchesSearch && matchesDate && matchesType && matchesPrice && matchesStatus;
+      return matchesSearch && matchesDate && matchesType && matchesPrice && matchesStatus && matchesArchived;
     });
   };
 
@@ -997,6 +1000,21 @@ export function Transactions() {
                         <option value="Cancelled">Cancelled</option>
                       </select>
                     </div>
+
+                    {/* Show Archived Toggle - only visible if user has permission */}
+                    {canViewArchived && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <label style={{ fontSize: '0.875rem', color: 'rgb(75, 85, 99)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <input
+                            type="checkbox"
+                            checked={showArchivedFilter}
+                            onChange={(e) => setShowArchivedFilter(e.target.checked)}
+                            style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                          />
+                          Show Archived
+                        </label>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -1115,38 +1133,72 @@ export function Transactions() {
                 }}>
                   Transaction Records
                 </h2>
-                {isSelectMode && selectedItems.size > 0 && (
-                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.875rem', color: '#374151' }}>
-                      {selectedItems.size} selected
-                    </span>
-                    {canArchiveTransactions && (
-                      <button
-                        onClick={() => {
-                          // Archive selected transactions
-                          selectedItems.forEach(async (id) => {
-                            const txRef = doc(db, 'transactions', id);
-                            await updateDoc(txRef, { archived: true });
-                          });
-                          setSelectedItems(new Set());
-                          setIsSelectMode(false);
-                        }}
-                        style={{
-                          backgroundColor: '#dc2626',
-                          color: 'white',
-                          padding: '0.5rem 1rem',
-                          borderRadius: '0.375rem',
-                          border: 'none',
-                          cursor: 'pointer',
-                          fontSize: '0.875rem',
-                          fontWeight: 500,
-                        }}
-                      >
-                        Archive Selected
-                      </button>
-                    )}
-                  </div>
-                )}
+                {isSelectMode && selectedItems.size > 0 && (() => {
+                  // Determine which selected items are archived vs unarchived
+                  const selectedTxs = getFilteredTransactionsForTable().filter(tx => selectedItems.has(tx.id));
+                  const hasUnarchived = selectedTxs.some(tx => !tx.archived);
+                  const hasArchived = selectedTxs.some(tx => tx.archived);
+
+                  return (
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.875rem', color: '#374151' }}>
+                        {selectedItems.size} selected
+                      </span>
+                      {/* Show Archive button if any unarchived items are selected */}
+                      {canArchiveTransactions && hasUnarchived && (
+                        <button
+                          onClick={() => {
+                            // Archive only unarchived selected transactions
+                            selectedTxs.filter(tx => !tx.archived).forEach(async (tx) => {
+                              const txRef = doc(db, 'transactions', tx.id);
+                              await updateDoc(txRef, { archived: true });
+                            });
+                            setSelectedItems(new Set());
+                            setIsSelectMode(false);
+                          }}
+                          style={{
+                            backgroundColor: '#f59e0b',
+                            color: 'white',
+                            padding: '0.5rem 1rem',
+                            borderRadius: '0.375rem',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: '0.875rem',
+                            fontWeight: 500,
+                          }}
+                        >
+                          Archive Selected
+                        </button>
+                      )}
+                      {/* Show Unarchive button if any archived items are selected */}
+                      {canUnarchiveTransactions && hasArchived && (
+                        <button
+                          onClick={() => {
+                            // Unarchive only archived selected transactions
+                            selectedTxs.filter(tx => tx.archived).forEach(async (tx) => {
+                              const txRef = doc(db, 'transactions', tx.id);
+                              await updateDoc(txRef, { archived: false });
+                            });
+                            setSelectedItems(new Set());
+                            setIsSelectMode(false);
+                          }}
+                          style={{
+                            backgroundColor: '#3b82f6',
+                            color: 'white',
+                            padding: '0.5rem 1rem',
+                            borderRadius: '0.375rem',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: '0.875rem',
+                            fontWeight: 500,
+                          }}
+                        >
+                          Unarchive Selected
+                        </button>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
 
               <div style={{
@@ -1394,7 +1446,7 @@ export function Transactions() {
                                 Mark as Complete
                               </button>
                             )}
-                            {canDeleteTransactions && !tx.archived && (
+                            {canArchiveTransactions && !tx.archived && (
                               <button
                                 style={{
                                   padding: '0.25rem 0.75rem',
@@ -1402,24 +1454,68 @@ export function Transactions() {
                                   borderRadius: '9999px',
                                   border: 'none',
                                   cursor: 'pointer',
-                                  backgroundColor: '#ef4444',
+                                  backgroundColor: '#f59e0b',
                                   color: 'white'
                                 }}
-                                onClick={(e) => {
+                                onClick={async (e) => {
                                   e.stopPropagation();
-                                  setActionConfirm({ mode: 'delete', transaction: tx });
+                                  const txRef = doc(db, 'transactions', tx.id);
+                                  await updateDoc(txRef, { archived: true });
                                 }}
                               >
-                                Delete
+                                Archive
                               </button>
                             )}
-                            {canViewArchived && tx.archived && (
-                              <span style={{
-                                fontSize: '0.75rem',
-                                color: '#9ca3af'
-                              }}>
-                                Archived
-                              </span>
+                            {tx.archived && (
+                              <>
+                                <span style={{
+                                  fontSize: '0.75rem',
+                                  color: '#9ca3af',
+                                  marginRight: canUnarchiveTransactions ? '0.5rem' : 0
+                                }}>
+                                  Archived
+                                </span>
+                                {canUnarchiveTransactions && (
+                                  <button
+                                    style={{
+                                      padding: '0.25rem 0.75rem',
+                                      fontSize: '0.75rem',
+                                      borderRadius: '9999px',
+                                      border: 'none',
+                                      cursor: 'pointer',
+                                      backgroundColor: '#3b82f6',
+                                      color: 'white',
+                                      marginRight: canDeleteTransactions ? '0.5rem' : 0
+                                    }}
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      const txRef = doc(db, 'transactions', tx.id);
+                                      await updateDoc(txRef, { archived: false });
+                                    }}
+                                  >
+                                    Unarchive
+                                  </button>
+                                )}
+                                {canDeleteTransactions && (
+                                  <button
+                                    style={{
+                                      padding: '0.25rem 0.75rem',
+                                      fontSize: '0.75rem',
+                                      borderRadius: '9999px',
+                                      border: 'none',
+                                      cursor: 'pointer',
+                                      backgroundColor: '#ef4444',
+                                      color: 'white'
+                                    }}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setActionConfirm({ mode: 'delete', transaction: tx });
+                                    }}
+                                  >
+                                    Delete
+                                  </button>
+                                )}
+                              </>
                             )}
                           </td>
                         </tr>

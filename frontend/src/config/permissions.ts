@@ -34,10 +34,11 @@ export type PermissionKey =
   | 'services.delete'
   | 'services.toggle.status'
   | 'services.export'
-  // Transactions Permissions (5)
+  // Transactions Permissions (6)
   | 'transactions.create'
   | 'transactions.view.archived'
   | 'transactions.archive'
+  | 'transactions.unarchive'
   | 'transactions.delete'
   | 'transactions.export'
   // Returns Permissions (6)
@@ -138,6 +139,7 @@ export const permissionGroups: { category: string; permissions: { key: Permissio
       { key: 'transactions.create', label: 'Create Transactions' },
       { key: 'transactions.view.archived', label: 'View Archived' },
       { key: 'transactions.archive', label: 'Archive Transactions' },
+      { key: 'transactions.unarchive', label: 'Unarchive Transactions' },
       { key: 'transactions.delete', label: 'Permanently Delete' },
       { key: 'transactions.export', label: 'Export to CSV' },
     ],

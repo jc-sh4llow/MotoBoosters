@@ -441,6 +441,31 @@ export function Inventory() {
     loadInventory();
   }, []);
 
+  // Load required fields settings from Firestore
+  useEffect(() => {
+    const loadRequiredFields = async () => {
+      try {
+        const settingsDoc = await getDoc(doc(db, 'settings', 'requiredFields'));
+        if (settingsDoc.exists() && settingsDoc.data().inventory) {
+          const inv = settingsDoc.data().inventory;
+          setItemDetailsRequired(prev => ({
+            ...prev,
+            brand: inv.brand ?? prev.brand,
+            itemName: inv.itemName ?? prev.itemName,
+            itemType: inv.itemType ?? prev.itemType,
+            purchasePrice: inv.purchasePrice ?? prev.purchasePrice,
+            sellingPrice: inv.sellingPrice ?? prev.sellingPrice,
+            addedStock: inv.addedStock ?? prev.addedStock,
+            restockLevel: inv.restockLevel ?? prev.restockLevel,
+          }));
+        }
+      } catch (err) {
+        console.error('Failed to load required fields settings:', err);
+      }
+    };
+    loadRequiredFields();
+  }, []);
+
   const handleSaveItem = async () => {
     const isEditingExisting = !!(selectedInventoryItem as any)?.docId;
     

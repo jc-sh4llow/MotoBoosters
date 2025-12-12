@@ -2,7 +2,7 @@ import { FaBars, FaSearch, FaTimes, FaFilter, FaFileExcel, FaTrash, FaUndoAlt } 
 
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy, getDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import logo from '../../assets/logo.png';
@@ -63,6 +63,14 @@ export function Services() {
   const [services, setServices] = useState<ServiceRow[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Required fields settings (loaded from Firestore)
+  const [servicesRequiredFields, setServicesRequiredFields] = useState({
+    serviceName: true,
+    servicePrice: true,
+    description: false,
+    vehicleType: false,
+  });
 
   // Select mode state
   const [isSelectMode, setIsSelectMode] = useState(false);
@@ -171,6 +179,28 @@ export function Services() {
     loadServices();
   }, []);
 
+  // Load required fields settings from Firestore
+  useEffect(() => {
+    const loadRequiredFields = async () => {
+      try {
+        const settingsDoc = await getDoc(doc(db, 'settings', 'requiredFields'));
+        if (settingsDoc.exists() && settingsDoc.data().services) {
+          const svc = settingsDoc.data().services;
+          setServicesRequiredFields(prev => ({
+            ...prev,
+            serviceName: svc.serviceName ?? prev.serviceName,
+            servicePrice: svc.servicePrice ?? prev.servicePrice,
+            description: svc.description ?? prev.description,
+            vehicleType: svc.vehicleType ?? prev.vehicleType,
+          }));
+        }
+      } catch (err) {
+        console.error('Failed to load required fields settings:', err);
+      }
+    };
+    loadRequiredFields();
+  }, []);
+
   const [selectedService, setSelectedService] = useState<ServiceRow | null>(null);
   const [serviceForm, setServiceForm] = useState({
     id: '',
@@ -203,11 +233,49 @@ export function Services() {
 
   const handleSaveService = async () => {
     if (!canEditServices) return;
-    if (!serviceForm.name || !serviceForm.price) {
+    
+    // Validate required fields based on settings
+    if (servicesRequiredFields.serviceName && !serviceForm.name.trim()) {
       setModalState({
         open: true,
-        title: 'Missing Information',
-        message: 'Please fill in both Service Name and Service Price before saving.',
+        title: 'Missing Required Field',
+        message: 'Service Name is required.',
+        confirmLabel: 'Close',
+        cancelLabel: undefined,
+        tone: 'info',
+        onConfirm: undefined,
+      });
+      return;
+    }
+    if (servicesRequiredFields.servicePrice && !serviceForm.price) {
+      setModalState({
+        open: true,
+        title: 'Missing Required Field',
+        message: 'Service Price is required.',
+        confirmLabel: 'Close',
+        cancelLabel: undefined,
+        tone: 'info',
+        onConfirm: undefined,
+      });
+      return;
+    }
+    if (servicesRequiredFields.description && !serviceForm.description.trim()) {
+      setModalState({
+        open: true,
+        title: 'Missing Required Field',
+        message: 'Description is required.',
+        confirmLabel: 'Close',
+        cancelLabel: undefined,
+        tone: 'info',
+        onConfirm: undefined,
+      });
+      return;
+    }
+    if (servicesRequiredFields.vehicleType && selectedTypes.size === 0) {
+      setModalState({
+        open: true,
+        title: 'Missing Required Field',
+        message: 'At least one Vehicle Type is required.',
         confirmLabel: 'Close',
         cancelLabel: undefined,
         tone: 'info',

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FaHome, FaGripLinesVertical, FaBars, FaWarehouse, FaTag, FaWrench, FaFileInvoice, FaPlus, FaUser, FaSearch, FaTimes, FaFilter, FaChevronDown, FaEye, FaEyeSlash, FaRedo, FaUndoAlt } from 'react-icons/fa';
+import { FaHome, FaBars, FaWarehouse, FaTag, FaWrench, FaFileInvoice, FaUser, FaSearch, FaTimes, FaFilter, FaChevronDown, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db, auth } from '../../lib/firebase';
@@ -1321,29 +1321,6 @@ export function Users() {
                 }}>
                   System Users
                 </h2>
-                <div style={{ display: 'flex', gap: '0.75rem' }}>
-                  <button
-                    onClick={() => window.location.reload()}
-                    style={{
-                      backgroundColor: '#3b82f6',
-                      color: 'white',
-                      padding: '0.5rem 1rem',
-                      borderRadius: '0.375rem',
-                      border: 'none',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                      transition: 'background-color 0.2s',
-                      fontWeight: '500',
-                      fontSize: '0.875rem'
-                    }}
-                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
-                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#3b82f6'}
-                  >
-                    <FaRedo /> Refresh
-                  </button>
-                </div>
               </div>
 
               <div style={{

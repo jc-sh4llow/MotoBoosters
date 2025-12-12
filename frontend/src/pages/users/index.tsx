@@ -1509,9 +1509,24 @@ export function Users() {
                           padding: '1rem',
                           fontSize: '0.875rem',
                           color: '#111827',
-                          whiteSpace: 'nowrap'
+                          whiteSpace: 'nowrap',
+                          display: 'flex',
+                          gap: '0.5rem',
+                          flexWrap: 'wrap'
                         }}>
-                          {user.role}
+                          {user.role && (
+                            <span style={{
+                              display: 'inline-block',
+                              padding: '0.25rem 0.75rem',
+                              borderRadius: '9999px',
+                              fontSize: '0.75rem',
+                              fontWeight: 600,
+                              backgroundColor: '#dbeafe',
+                              color: '#1d4ed8'
+                            }}>
+                              {user.role}
+                            </span>
+                          )}
                         </td>
                         <td
                           style={{

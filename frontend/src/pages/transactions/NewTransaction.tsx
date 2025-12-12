@@ -174,6 +174,21 @@ export function NewTransaction() {
     loadEmployees();
   }, []);
 
+  // Load GCash QR code from settings
+  useEffect(() => {
+    const loadGcashQr = async () => {
+      try {
+        const gcashDoc = await getDoc(doc(db, 'settings', 'gcash'));
+        if (gcashDoc.exists() && gcashDoc.data().qrUrl) {
+          setGcashQrDataUrl(gcashDoc.data().qrUrl);
+        }
+      } catch (err) {
+        console.error('Failed to load GCash QR:', err);
+      }
+    };
+    loadGcashQr();
+  }, []);
+
   // Load products (from inventory) and services for Step 2 lists
   useEffect(() => {
     const loadProductsAndServices = async () => {

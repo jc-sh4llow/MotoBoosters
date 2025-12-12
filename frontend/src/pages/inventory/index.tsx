@@ -2072,7 +2072,7 @@ export function Inventory() {
                       {/* Brand */}
                       <div style={{ marginBottom: '1rem' }}>
                         <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#4b5563' }}>
-                          Brand *
+                          Brand{itemDetailsRequired.brand ? ' *' : ''}
                         </label>
                         <select
                           value={newItem.brand}
@@ -2126,7 +2126,7 @@ export function Inventory() {
                           fontWeight: '500',
                           color: '#4b5563'
                         }}>
-                          Item Name *
+                          Item Name{itemDetailsRequired.itemName ? ' *' : ''}
                         </label>
                         <input
                           type="text"
@@ -2157,7 +2157,7 @@ export function Inventory() {
                           fontWeight: '500',
                           color: '#4b5563'
                         }}>
-                          Item Type *
+                          Item Type{itemDetailsRequired.itemType ? ' *' : ''}
                         </label>
                         <select
                           value={newItem.type}
@@ -2214,7 +2214,7 @@ export function Inventory() {
                           fontWeight: '500',
                           color: '#4b5563'
                         }}>
-                          Purchase Price (₱) *
+                          Purchase Price (₱){itemDetailsRequired.purchasePrice ? ' *' : ''}
                         </label>
                         <input
                           type="number"
@@ -2247,7 +2247,7 @@ export function Inventory() {
                           fontWeight: '500',
                           color: '#4b5563'
                         }}>
-                          SRP (₱) *
+                          SRP (₱){itemDetailsRequired.sellingPrice ? ' *' : ''}
                         </label>
                         <input
                           type="number"
@@ -2301,7 +2301,7 @@ export function Inventory() {
                           fontWeight: '500',
                           color: '#4b5563'
                         }}>
-                          {isEditMode ? 'Added Stock *' : 'Available Stock'}
+                          {isEditMode ? `Added Stock${itemDetailsRequired.addedStock ? ' *' : ''}` : 'Available Stock'}
                         </label>
                         <input
                           type="number"
@@ -2335,7 +2335,7 @@ export function Inventory() {
                           fontWeight: '500',
                           color: '#4b5563'
                         }}>
-                          Restock Level *
+                          Restock Level{itemDetailsRequired.restockLevel ? ' *' : ''}
                         </label>
                         <input
                           type="number"

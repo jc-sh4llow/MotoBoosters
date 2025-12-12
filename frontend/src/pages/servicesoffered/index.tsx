@@ -1071,11 +1071,11 @@ export function Services() {
                           fontWeight: '500',
                           color: '#374151'
                         }}>
-                          Service Name *
+                          Service Name{servicesRequiredFields.serviceName ? ' *' : ''}
                         </label>
                         <input
                           type="text"
-                          required
+                          required={servicesRequiredFields.serviceName}
                           placeholder="Enter service name"
                           value={serviceForm.name}
                           onChange={(e) => {
@@ -1102,13 +1102,13 @@ export function Services() {
                           fontWeight: '500',
                           color: '#374151'
                         }}>
-                          Service Price (₱) *
+                          Service Price (₱){servicesRequiredFields.servicePrice ? ' *' : ''}
                         </label>
                         <input
                           type="number"
                           min="0"
                           step="0.01"
-                          required
+                          required={servicesRequiredFields.servicePrice}
                           placeholder="0.00"
                           value={serviceForm.price}
                           onChange={(e) => {
@@ -1135,7 +1135,7 @@ export function Services() {
                           fontWeight: '500',
                           color: '#374151'
                         }}>
-                          Description
+                          Description{servicesRequiredFields.description ? ' *' : ''}
                         </label>
                         <textarea
                           placeholder="Enter service description"
@@ -1167,7 +1167,7 @@ export function Services() {
                           fontWeight: '500',
                           color: '#374151'
                         }}>
-                          Vehicle Type(s) *
+                          Vehicle Type(s){servicesRequiredFields.vehicleType ? ' *' : ''}
                         </label>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                           {vehicleTypeOptions.map((type) => (
@@ -1447,11 +1447,11 @@ export function Services() {
                               fontWeight: '500',
                               color: '#374151'
                             }}>
-                              Service Name *
+                              Service Name{servicesRequiredFields.serviceName ? ' *' : ''}
                             </label>
                             <input
                               type="text"
-                              required
+                              required={servicesRequiredFields.serviceName}
                               placeholder="Enter service name"
                               value={serviceForm.name}
                               onChange={(e) => {

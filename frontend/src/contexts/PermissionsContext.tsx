@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocsFromServer } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { setCachedRoles, getCachedRoles, type Role, type PermissionKey } from '../config/permissions';
 
@@ -19,7 +19,8 @@ const RolesContext = createContext<RolesContextValue | undefined>(undefined);
  */
 async function loadRolesFromFirestore(): Promise<Role[]> {
   try {
-    const snap = await getDocs(collection(db, 'roles'));
+    // Use getDocsFromServer to bypass Firestore cache and get fresh data
+    const snap = await getDocsFromServer(collection(db, 'roles'));
     if (snap.empty) {
       console.warn('No roles found in Firestore');
       return [];
@@ -85,7 +86,8 @@ export function RolesProvider({ children }: { children: ReactNode }) {
         loadRolesSettings(),
       ]);
 
-      setRoles(loadedRoles);
+      console.log('Setting roles in context:', JSON.stringify(loadedRoles.map(r => ({ id: r.id, permissions: r.permissions })), null, 2));
+      setRoles([...loadedRoles]); // Create new array reference to ensure re-render
       setCachedRoles(loadedRoles); // Update global cache for can() function
       setMaxRolesPerUser(settings.maxRolesPerUser);
     } catch (err) {

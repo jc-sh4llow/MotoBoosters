@@ -1081,7 +1081,7 @@ export function Customers() {
                           color: '#374151',
                         }}
                       >
-                        Customer Name *
+                        Customer Name{customersRequiredFields.customerName ? ' *' : ''}
                       </label>
                       <input
                         type="text"
@@ -1115,7 +1115,7 @@ export function Customers() {
                           color: '#374151',
                         }}
                       >
-                        Contact Number
+                        Contact Number{customersRequiredFields.contactNumber ? ' *' : ''}
                       </label>
                       <input
                         type="text"
@@ -1148,7 +1148,7 @@ export function Customers() {
                           color: '#374151',
                         }}
                       >
-                        Email
+                        Email{customersRequiredFields.email ? ' *' : ''}
                       </label>
                       <input
                         type="email"
@@ -1181,7 +1181,7 @@ export function Customers() {
                           color: '#374151',
                         }}
                       >
-                        Address
+                        Address{customersRequiredFields.address ? ' *' : ''}
                       </label>
                       <textarea
                         placeholder="Enter address"
@@ -1216,7 +1216,7 @@ export function Customers() {
                           color: '#374151',
                         }}
                       >
-                        Vehicle Type(s)
+                        Vehicle Type(s){customersRequiredFields.vehicleType ? ' *' : ''}
                       </label>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                         {vehicleTypeOptions.map((type) => (

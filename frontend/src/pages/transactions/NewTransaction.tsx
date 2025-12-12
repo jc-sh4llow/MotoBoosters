@@ -189,6 +189,27 @@ export function NewTransaction() {
     loadGcashQr();
   }, []);
 
+  // Load required fields settings from Firestore
+  useEffect(() => {
+    const loadRequiredFields = async () => {
+      try {
+        const settingsDoc = await getDoc(doc(db, 'settings', 'requiredFields'));
+        if (settingsDoc.exists() && settingsDoc.data().newTransaction) {
+          const nt = settingsDoc.data().newTransaction;
+          setRequiredFields({
+            name: nt.customerName ?? false,
+            contact: nt.contactNumber ?? false,
+            email: nt.email ?? false,
+            handledBy: nt.handledBy ?? true,
+          });
+        }
+      } catch (err) {
+        console.error('Failed to load required fields:', err);
+      }
+    };
+    loadRequiredFields();
+  }, []);
+
   // Load products (from inventory) and services for Step 2 lists
   useEffect(() => {
     const loadProductsAndServices = async () => {
@@ -584,8 +605,8 @@ export function NewTransaction() {
         const dataUrl = reader.result;
         setGcashQrDataUrl(dataUrl);
         try {
-          const settingsRef = doc(db, 'settings', 'newTransaction');
-          await setDoc(settingsRef, { gcashQrDataUrl: dataUrl }, { merge: true });
+          const settingsRef = doc(db, 'settings', 'gcash');
+          await setDoc(settingsRef, { qrUrl: dataUrl }, { merge: true });
         } catch (err) {
           console.error('Error saving GCash QR to settings', err);
         }

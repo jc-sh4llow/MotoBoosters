@@ -6,13 +6,69 @@ import logo from '../assets/logo.png';
 import { can, permissionGroups, DEVELOPER_ROLE_ID, type PermissionKey, type Role } from '../config/permissions';
 import { collection, doc, setDoc, deleteDoc, updateDoc, serverTimestamp, getDoc, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useRoles } from '../contexts/PermissionsContext';
 import { RoleBadge } from '../components/RoleBadge';
 import { HeaderDropdown } from '../components/HeaderDropdown';
 
 // Section title color (consistent with other pages)
 const SECTION_TITLE_COLOR = '#1e40af';
+
+// Cache key for GCash QR URL
+const GCASH_QR_CACHE_KEY = 'gcashQrCache';
+
+// Image compression utility for QR codes
+const compressImage = (file: File, maxWidth = 400, maxHeight = 400, quality = 0.8): Promise<Blob> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('Failed to load image'));
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        // Scale down if needed while maintaining aspect ratio
+        if (width > height) {
+          if (width > maxWidth) {
+            height = Math.round(height * (maxWidth / width));
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = Math.round(width * (maxHeight / height));
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('Failed to get canvas context'));
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              resolve(blob);
+            } else {
+              // Fallback to original file if compression fails
+              resolve(new Blob([file], { type: file.type }));
+            }
+          },
+          'image/jpeg',
+          quality
+        );
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  });
+};
 
 // Permission groups for each settings section
 const inventoryPermissions: PermissionKey[] = [
@@ -68,6 +124,11 @@ export const Settings: React.FC = () => {
   const { user, logout } = useAuth();
   const { roles, loading: rolesLoading, refreshRoles, maxRolesPerUser } = useRoles();
 
+  // Debug: log when roles change
+  useEffect(() => {
+    console.log('Settings component: roles updated', roles.length, 'roles');
+  }, [roles]);
+
   const [isNavExpanded, setIsNavExpanded] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [searchTerm, setSearchTerm] = useState('');
@@ -118,7 +179,9 @@ export const Settings: React.FC = () => {
 
   // GCash QR Code state
   const [gcashQrUrl, setGcashQrUrl] = useState<string | null>(null);
-  const [isUploadingQr, setIsUploadingQr] = useState(false);
+  const [gcashQrInput, setGcashQrInput] = useState('');
+  const [isSavingQrUrl, setIsSavingQrUrl] = useState(false);
+  const [qrUrlError, setQrUrlError] = useState<string | null>(null);
 
   // Use roles array with fallback to legacy single role
   const userRoles = user?.roles?.length ? user.roles : (user?.role ? [user.role] : []);
@@ -172,7 +235,9 @@ export const Settings: React.FC = () => {
         // Load GCash QR URL
         const gcashDoc = await getDoc(doc(db, 'settings', 'gcash'));
         if (gcashDoc.exists() && gcashDoc.data().qrUrl) {
-          setGcashQrUrl(gcashDoc.data().qrUrl);
+          const qrUrl = gcashDoc.data().qrUrl;
+          setGcashQrUrl(qrUrl);
+          setGcashQrInput(qrUrl);
         }
       } catch (err) {
         console.error('Failed to load settings:', err);
@@ -228,24 +293,59 @@ export const Settings: React.FC = () => {
     }
   };
 
-  // GCash QR upload handler
-  const handleGcashQrUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  // GCash QR URL save handler
+  const handleSaveGcashQrUrl = async () => {
+    const url = gcashQrInput.trim();
+    if (!url) {
+      setQrUrlError('Please enter a URL');
+      return;
+    }
 
-    setIsUploadingQr(true);
+    // Basic URL validation
     try {
-      const storage = getStorage();
-      const storageRef = ref(storage, `settings/gcash-qr-${Date.now()}`);
-      await uploadBytes(storageRef, file);
-      const url = await getDownloadURL(storageRef);
+      new URL(url);
+    } catch {
+      setQrUrlError('Please enter a valid URL');
+      return;
+    }
 
-      await setDoc(doc(db, 'settings', 'gcash'), { qrUrl: url }, { merge: true });
+    setIsSavingQrUrl(true);
+    setQrUrlError(null);
+    try {
+      await setDoc(doc(db, 'settings', 'gcash'), {
+        qrUrl: url,
+        updatedAt: serverTimestamp()
+      }, { merge: true });
       setGcashQrUrl(url);
+
+      // Update local cache
+      localStorage.setItem(GCASH_QR_CACHE_KEY, JSON.stringify({
+        url,
+        timestamp: Date.now()
+      }));
     } catch (err) {
-      console.error('Failed to upload GCash QR:', err);
+      console.error('Failed to save GCash QR URL:', err);
+      setQrUrlError('Failed to save. Please try again.');
     } finally {
-      setIsUploadingQr(false);
+      setIsSavingQrUrl(false);
+    }
+  };
+
+  // Clear GCash QR URL
+  const handleClearGcashQrUrl = async () => {
+    setIsSavingQrUrl(true);
+    try {
+      await setDoc(doc(db, 'settings', 'gcash'), {
+        qrUrl: null,
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+      setGcashQrUrl(null);
+      setGcashQrInput('');
+      localStorage.removeItem(GCASH_QR_CACHE_KEY);
+    } catch (err) {
+      console.error('Failed to clear GCash QR URL:', err);
+    } finally {
+      setIsSavingQrUrl(false);
     }
   };
 
@@ -261,16 +361,38 @@ export const Settings: React.FC = () => {
 
   // Add a role to a permission
   const handleAddRoleToPermission = async (roleId: string, permKey: PermissionKey) => {
-    if (!canEditRoles) return;
+    console.log('handleAddRoleToPermission called:', { roleId, permKey, canEditRoles });
+    if (!canEditRoles) {
+      console.log('Cannot edit roles - permission denied');
+      return;
+    }
     const role = roles.find(r => r.id === roleId);
-    if (!role || role.isProtected) return;
+    if (!role || role.isProtected) {
+      console.log('Role not found or is protected:', { role, isProtected: role?.isProtected });
+      return;
+    }
 
     try {
-      await updateDoc(doc(db, 'roles', roleId), {
-        [`permissions.${permKey}`]: true,
+      console.log('Updating Firestore for role:', roleId, 'permission:', permKey);
+      const roleRef = doc(db, 'roles', roleId);
+      
+      // Read current permissions, update the specific key, and write back
+      // This avoids Firestore creating nested objects from dot-notation keys
+      const { getDoc } = await import('firebase/firestore');
+      const roleDoc = await getDoc(roleRef);
+      const currentPermissions = roleDoc.data()?.permissions || {};
+      
+      // Update the flat key directly
+      const updatedPermissions = { ...currentPermissions, [permKey]: true };
+      
+      await updateDoc(roleRef, {
+        permissions: updatedPermissions,
         updatedAt: serverTimestamp(),
       });
+      
+      console.log('Firestore updated, refreshing roles...');
       await refreshRoles();
+      console.log('Roles refreshed successfully');
     } catch (err) {
       console.error('Failed to add role to permission:', err);
     }
@@ -278,16 +400,37 @@ export const Settings: React.FC = () => {
 
   // Remove a role from a permission
   const handleRemoveRoleFromPermission = async (roleId: string, permKey: PermissionKey) => {
-    if (!canEditRoles) return;
+    console.log('handleRemoveRoleFromPermission called:', { roleId, permKey, canEditRoles });
+    if (!canEditRoles) {
+      console.log('Cannot edit roles - permission denied');
+      return;
+    }
     const role = roles.find(r => r.id === roleId);
-    if (!role || role.isProtected) return;
+    if (!role || role.isProtected) {
+      console.log('Role not found or is protected:', { role, isProtected: role?.isProtected });
+      return;
+    }
 
     try {
-      await updateDoc(doc(db, 'roles', roleId), {
-        [`permissions.${permKey}`]: false,
+      console.log('Updating Firestore for role:', roleId, 'permission:', permKey);
+      const roleRef = doc(db, 'roles', roleId);
+      
+      // Read current permissions, update the specific key, and write back
+      const { getDoc } = await import('firebase/firestore');
+      const roleDoc = await getDoc(roleRef);
+      const currentPermissions = roleDoc.data()?.permissions || {};
+      
+      // Update the flat key directly
+      const updatedPermissions = { ...currentPermissions, [permKey]: false };
+      
+      await updateDoc(roleRef, {
+        permissions: updatedPermissions,
         updatedAt: serverTimestamp(),
       });
+      
+      console.log('Firestore updated, refreshing roles...');
       await refreshRoles();
+      console.log('Roles refreshed successfully');
     } catch (err) {
       console.error('Failed to remove role from permission:', err);
     }
@@ -823,8 +966,8 @@ export const Settings: React.FC = () => {
                 </div>
               )}
 
-              {/* Inventory Section - Accordion */}
-              {canViewInventory && (
+              {/* New Transaction Section - Accordion */}
+              {canViewNewTransaction && (
                 <div
                   style={{
                     backgroundColor: 'rgba(255, 255, 255, 0.9)',
@@ -836,7 +979,7 @@ export const Settings: React.FC = () => {
                 >
                   <button
                     type="button"
-                    onClick={() => toggleSection('inventory')}
+                    onClick={() => toggleSection('newTransaction')}
                     style={{
                       width: '100%',
                       display: 'flex',
@@ -850,46 +993,144 @@ export const Settings: React.FC = () => {
                     }}
                   >
                     <h2 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0, color: SECTION_TITLE_COLOR }}>
-                      Inventory
+                      New Transaction
                     </h2>
                     <FaChevronDown style={{
                       color: SECTION_TITLE_COLOR,
                       transition: 'transform 0.2s',
-                      transform: expandedSections.includes('inventory') ? 'rotate(180deg)' : 'rotate(0)',
+                      transform: expandedSections.includes('newTransaction') ? 'rotate(180deg)' : 'rotate(0)',
                     }} />
                   </button>
 
-                  {expandedSections.includes('inventory') && (
+                  {expandedSections.includes('newTransaction') && (
                     <div style={{ padding: '0 1.75rem 1.75rem 1.75rem' }}>
                       {/* Required Fields Subsection */}
                       <div style={{ marginBottom: '1.5rem' }}>
                         <p style={{ fontSize: '0.9rem', color: '#4b5563', marginBottom: '0.75rem', marginTop: 0 }}>
-                          Entering new item: choose which fields are required when adding inventory.
+                          Step 1: Customer information — choose which fields are required when starting a new transaction.
                         </p>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.5rem 1.5rem' }}>
                           {[
-                            { key: 'brand', label: 'Brand' },
-                            { key: 'itemName', label: 'Item Name' },
-                            { key: 'itemType', label: 'Item Type' },
-                            { key: 'purchasePrice', label: 'Purchase Price' },
-                            { key: 'sellingPrice', label: 'Selling Price' },
-                            { key: 'addedStock', label: 'Added Stock' },
-                            { key: 'restockLevel', label: 'Restock Level' },
-                            { key: 'discount', label: 'Discount' },
+                            { key: 'customerName', label: 'Customer Name' },
+                            { key: 'contactNumber', label: 'Contact Number' },
+                            { key: 'email', label: 'Email' },
+                            { key: 'handledBy', label: 'Handled By' },
                           ].map(({ key, label }) => (
                             <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.9rem', color: '#111827', cursor: 'pointer' }}>
                               <input
                                 type="checkbox"
-                                checked={inventoryRequiredFields[key] ?? false}
+                                checked={newTransactionRequiredFields[key] ?? false}
                                 onChange={(e) => {
-                                  const newFields = { ...inventoryRequiredFields, [key]: e.target.checked };
-                                  setInventoryRequiredFields(newFields);
-                                  saveRequiredFields('inventory', newFields);
+                                  const newFields = { ...newTransactionRequiredFields, [key]: e.target.checked };
+                                  setNewTransactionRequiredFields(newFields);
+                                  saveRequiredFields('newTransaction', newFields);
                                 }}
                               />
                               <span>{label}</span>
                             </label>
                           ))}
+                        </div>
+                      </div>
+
+                      {/* GCash QR Code Subsection */}
+                      <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '1rem', marginBottom: '1.5rem' }}>
+                        <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#111827', marginBottom: '0.5rem' }}>
+                          GCash QR Code
+                        </div>
+                        <p style={{ fontSize: '0.85rem', color: '#6b7280', marginTop: 0, marginBottom: '0.75rem' }}>
+                          Paste a URL to your GCash QR code image (e.g., from Imgur, PostImages, etc.) to display during the payment step.
+                        </p>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem' }}>
+                          {gcashQrUrl && (
+                            <div style={{
+                              width: '120px',
+                              height: '120px',
+                              border: '1px solid #e5e7eb',
+                              borderRadius: '0.5rem',
+                              overflow: 'hidden',
+                              flexShrink: 0,
+                              backgroundColor: '#f9fafb',
+                            }}>
+                              <img
+                                src={gcashQrUrl}
+                                alt="GCash QR Code"
+                                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                                onError={() => {
+                                  setGcashQrUrl(null);
+                                  setGcashQrInput('');
+                                  localStorage.removeItem(GCASH_QR_CACHE_KEY);
+                                }}
+                              />
+                            </div>
+                          )}
+                          <div style={{ flex: 1 }}>
+                            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                              <input
+                                type="url"
+                                value={gcashQrInput}
+                                onChange={(e) => {
+                                  setGcashQrInput(e.target.value);
+                                  setQrUrlError(null);
+                                }}
+                                placeholder="https://i.imgur.com/example.jpg"
+                                style={{
+                                  flex: 1,
+                                  padding: '0.5rem 0.75rem',
+                                  border: qrUrlError ? '1px solid #ef4444' : '1px solid #d1d5db',
+                                  borderRadius: '0.375rem',
+                                  fontSize: '0.85rem',
+                                  backgroundColor: '#ffffff',
+                                  color: '#111827',
+                                }}
+                              />
+                              <button
+                                type="button"
+                                onClick={handleSaveGcashQrUrl}
+                                disabled={isSavingQrUrl || !gcashQrInput.trim()}
+                                style={{
+                                  padding: '0.5rem 1rem',
+                                  backgroundColor: isSavingQrUrl || !gcashQrInput.trim() ? '#9ca3af' : '#3b82f6',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '0.375rem',
+                                  fontSize: '0.85rem',
+                                  fontWeight: 500,
+                                  cursor: isSavingQrUrl || !gcashQrInput.trim() ? 'not-allowed' : 'pointer',
+                                }}
+                              >
+                                {isSavingQrUrl ? 'Saving...' : 'Save'}
+                              </button>
+                            </div>
+                            {qrUrlError && (
+                              <p style={{ fontSize: '0.8rem', color: '#ef4444', margin: 0 }}>
+                                {qrUrlError}
+                              </p>
+                            )}
+                            {gcashQrUrl && (
+                              <button
+                                type="button"
+                                onClick={handleClearGcashQrUrl}
+                                disabled={isSavingQrUrl}
+                                style={{
+                                  padding: '0.25rem 0.5rem',
+                                  backgroundColor: 'transparent',
+                                  color: '#ef4444',
+                                  border: '1px solid #ef4444',
+                                  borderRadius: '0.25rem',
+                                  fontSize: '0.75rem',
+                                  cursor: isSavingQrUrl ? 'not-allowed' : 'pointer',
+                                  marginTop: '0.25rem',
+                                }}
+                              >
+                                Remove QR Code
+                              </button>
+                            )}
+                            {!gcashQrUrl && !qrUrlError && (
+                              <p style={{ fontSize: '0.8rem', color: '#9ca3af', margin: 0 }}>
+                                No QR code URL set
+                              </p>
+                            )}
+                          </div>
                         </div>
                       </div>
 
@@ -899,10 +1140,10 @@ export const Settings: React.FC = () => {
                           Permissions
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                          {inventoryPermissions.map((permKey) => {
+                          {newTransactionPermissions.map((permKey) => {
                             const rolesWithPerm = getRolesWithPermission(permKey);
                             const rolesWithoutPerm = getRolesWithoutPermission(permKey);
-                            const dropdownKey = `inventory-${permKey}`;
+                            const dropdownKey = `newTransaction-${permKey}`;
                             return (
                               <div key={permKey} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem' }}>
                                 <span style={{ fontSize: '0.85rem', color: '#374151', minWidth: '180px' }}>
@@ -930,7 +1171,10 @@ export const Settings: React.FC = () => {
                                       {canEditRoles && !role.isProtected && (
                                         <button
                                           type="button"
-                                          onClick={() => handleRemoveRoleFromPermission(role.id, permKey)}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleRemoveRoleFromPermission(role.id, permKey);
+                                          }}
                                           style={{
                                             background: 'none',
                                             border: 'none',
@@ -981,7 +1225,178 @@ export const Settings: React.FC = () => {
                                             <button
                                               key={role.id}
                                               type="button"
-                                              onClick={() => {
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleAddRoleToPermission(role.id, permKey);
+                                                setOpenPermissionDropdown(null);
+                                              }}
+                                              style={{
+                                                display: 'block',
+                                                width: '100%',
+                                                padding: '0.5rem 0.75rem',
+                                                textAlign: 'left',
+                                                border: 'none',
+                                                backgroundColor: 'transparent',
+                                                fontSize: '0.8rem',
+                                                color: '#374151',
+                                                cursor: 'pointer'
+                                              }}
+                                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+                                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                            >
+                                              <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: role.color, marginRight: '0.5rem' }} />
+                                              {role.name}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                  {rolesWithPerm.length === 0 && (!canEditRoles || rolesWithoutPerm.length === 0) && (
+                                    <span style={{ fontSize: '0.75rem', color: '#9ca3af', fontStyle: 'italic' }}>No roles</span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Transactions Section - Accordion */}
+              {canViewTransactions && (
+                <div
+                  style={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    borderRadius: '1rem',
+                    boxShadow: '0 8px 32px rgba(15, 23, 42, 0.15)',
+                    overflow: 'hidden',
+                    marginBottom: '1.25rem',
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => toggleSection('transactions')}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '1.25rem 1.75rem',
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                    }}
+                  >
+                    <h2 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0, color: SECTION_TITLE_COLOR }}>
+                      Transactions
+                    </h2>
+                    <FaChevronDown style={{
+                      color: SECTION_TITLE_COLOR,
+                      transition: 'transform 0.2s',
+                      transform: expandedSections.includes('transactions') ? 'rotate(180deg)' : 'rotate(0)',
+                    }} />
+                  </button>
+
+                  {expandedSections.includes('transactions') && (
+                    <div style={{ padding: '0 1.75rem 1.75rem 1.75rem' }}>
+                      {/* Permissions Subsection */}
+                      <div style={{ paddingTop: '0.5rem' }}>
+                        <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#111827', marginBottom: '0.75rem' }}>
+                          Permissions
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                          {transactionsPermissions.map((permKey) => {
+                            const rolesWithPerm = getRolesWithPermission(permKey);
+                            const rolesWithoutPerm = getRolesWithoutPermission(permKey);
+                            const dropdownKey = `transactions-${permKey}`;
+                            return (
+                              <div key={permKey} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem' }}>
+                                <span style={{ fontSize: '0.85rem', color: '#374151', minWidth: '180px' }}>
+                                  {getPermissionLabel(permKey)}
+                                </span>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', alignItems: 'center' }}>
+                                  {rolesWithPerm.map(role => (
+                                    <span
+                                      key={role.id}
+                                      style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '0.25rem',
+                                        padding: '0.125rem 0.5rem',
+                                        borderRadius: '9999px',
+                                        fontSize: '0.75rem',
+                                        fontWeight: 500,
+                                        backgroundColor: `${role.color}20`,
+                                        color: role.color,
+                                        border: `1px solid ${role.color}40`
+                                      }}
+                                    >
+                                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: role.color }} />
+                                      {role.name}
+                                      {canEditRoles && !role.isProtected && (
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleRemoveRoleFromPermission(role.id, permKey);
+                                          }}
+                                          style={{
+                                            background: 'none',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            padding: '0 0.125rem',
+                                            color: role.color,
+                                            fontSize: '0.875rem',
+                                            lineHeight: 1
+                                          }}
+                                        >
+                                          ×
+                                        </button>
+                                      )}
+                                    </span>
+                                  ))}
+                                  {canEditRoles && rolesWithoutPerm.length > 0 && (
+                                    <div style={{ position: 'relative' }}>
+                                      <button
+                                        type="button"
+                                        onClick={() => setOpenPermissionDropdown(openPermissionDropdown === dropdownKey ? null : dropdownKey)}
+                                        style={{
+                                          padding: '0.125rem 0.5rem',
+                                          borderRadius: '9999px',
+                                          border: '1px dashed #3b82f6',
+                                          backgroundColor: 'transparent',
+                                          fontSize: '0.75rem',
+                                          color: '#3b82f6',
+                                          cursor: 'pointer',
+                                          fontWeight: 500
+                                        }}
+                                      >
+                                        + Add Role
+                                      </button>
+                                      {openPermissionDropdown === dropdownKey && (
+                                        <div style={{
+                                          position: 'absolute',
+                                          top: '100%',
+                                          left: 0,
+                                          marginTop: '0.25rem',
+                                          backgroundColor: 'white',
+                                          border: '1px solid #e5e7eb',
+                                          borderRadius: '0.375rem',
+                                          boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                                          zIndex: 50,
+                                          minWidth: '120px'
+                                        }}>
+                                          {rolesWithoutPerm.map(role => (
+                                            <button
+                                              key={role.id}
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
                                                 handleAddRoleToPermission(role.id, permKey);
                                                 setOpenPermissionDropdown(null);
                                               }}
@@ -1096,7 +1511,10 @@ export const Settings: React.FC = () => {
                                       {canEditRoles && !role.isProtected && (
                                         <button
                                           type="button"
-                                          onClick={() => handleRemoveRoleFromPermission(role.id, permKey)}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleRemoveRoleFromPermission(role.id, permKey);
+                                          }}
                                           style={{
                                             background: 'none',
                                             border: 'none',
@@ -1147,7 +1565,210 @@ export const Settings: React.FC = () => {
                                             <button
                                               key={role.id}
                                               type="button"
-                                              onClick={() => {
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleAddRoleToPermission(role.id, permKey);
+                                                setOpenPermissionDropdown(null);
+                                              }}
+                                              style={{
+                                                display: 'block',
+                                                width: '100%',
+                                                padding: '0.5rem 0.75rem',
+                                                textAlign: 'left',
+                                                border: 'none',
+                                                backgroundColor: 'transparent',
+                                                fontSize: '0.8rem',
+                                                color: '#374151',
+                                                cursor: 'pointer'
+                                              }}
+                                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+                                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                            >
+                                              <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: role.color, marginRight: '0.5rem' }} />
+                                              {role.name}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                  {rolesWithPerm.length === 0 && (!canEditRoles || rolesWithoutPerm.length === 0) && (
+                                    <span style={{ fontSize: '0.75rem', color: '#9ca3af', fontStyle: 'italic' }}>No roles</span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Inventory Section - Accordion */}
+              {canViewInventory && (
+                <div
+                  style={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    borderRadius: '1rem',
+                    boxShadow: '0 8px 32px rgba(15, 23, 42, 0.15)',
+                    overflow: 'hidden',
+                    marginBottom: '1.25rem',
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => toggleSection('inventory')}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '1.25rem 1.75rem',
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                    }}
+                  >
+                    <h2 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0, color: SECTION_TITLE_COLOR }}>
+                      Inventory
+                    </h2>
+                    <FaChevronDown style={{
+                      color: SECTION_TITLE_COLOR,
+                      transition: 'transform 0.2s',
+                      transform: expandedSections.includes('inventory') ? 'rotate(180deg)' : 'rotate(0)',
+                    }} />
+                  </button>
+
+                  {expandedSections.includes('inventory') && (
+                    <div style={{ padding: '0 1.75rem 1.75rem 1.75rem' }}>
+                      {/* Required Fields Subsection */}
+                      <div style={{ marginBottom: '1.5rem' }}>
+                        <p style={{ fontSize: '0.9rem', color: '#4b5563', marginBottom: '0.75rem', marginTop: 0 }}>
+                          Entering new item: choose which fields are required when adding inventory.
+                        </p>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.5rem 1.5rem' }}>
+                          {[
+                            { key: 'brand', label: 'Brand' },
+                            { key: 'itemName', label: 'Item Name' },
+                            { key: 'itemType', label: 'Item Type' },
+                            { key: 'purchasePrice', label: 'Purchase Price' },
+                            { key: 'sellingPrice', label: 'Selling Price' },
+                            { key: 'addedStock', label: 'Added Stock' },
+                            { key: 'restockLevel', label: 'Restock Level' },
+                            { key: 'discount', label: 'Discount' },
+                          ].map(({ key, label }) => (
+                            <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.9rem', color: '#111827', cursor: 'pointer' }}>
+                              <input
+                                type="checkbox"
+                                checked={inventoryRequiredFields[key] ?? false}
+                                onChange={(e) => {
+                                  const newFields = { ...inventoryRequiredFields, [key]: e.target.checked };
+                                  setInventoryRequiredFields(newFields);
+                                  saveRequiredFields('inventory', newFields);
+                                }}
+                              />
+                              <span>{label}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Permissions Subsection */}
+                      <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '1rem' }}>
+                        <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#111827', marginBottom: '0.75rem' }}>
+                          Permissions
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                          {inventoryPermissions.map((permKey) => {
+                            const rolesWithPerm = getRolesWithPermission(permKey);
+                            const rolesWithoutPerm = getRolesWithoutPermission(permKey);
+                            const dropdownKey = `inventory-${permKey}`;
+                            return (
+                              <div key={permKey} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem' }}>
+                                <span style={{ fontSize: '0.85rem', color: '#374151', minWidth: '180px' }}>
+                                  {getPermissionLabel(permKey)}
+                                </span>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', alignItems: 'center' }}>
+                                  {rolesWithPerm.map(role => (
+                                    <span
+                                      key={role.id}
+                                      style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '0.25rem',
+                                        padding: '0.125rem 0.5rem',
+                                        borderRadius: '9999px',
+                                        fontSize: '0.75rem',
+                                        fontWeight: 500,
+                                        backgroundColor: `${role.color}20`,
+                                        color: role.color,
+                                        border: `1px solid ${role.color}40`
+                                      }}
+                                    >
+                                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: role.color }} />
+                                      {role.name}
+                                      {canEditRoles && !role.isProtected && (
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleRemoveRoleFromPermission(role.id, permKey);
+                                          }}
+                                          style={{
+                                            background: 'none',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            padding: '0 0.125rem',
+                                            color: role.color,
+                                            fontSize: '0.875rem',
+                                            lineHeight: 1
+                                          }}
+                                        >
+                                          ×
+                                        </button>
+                                      )}
+                                    </span>
+                                  ))}
+                                  {canEditRoles && rolesWithoutPerm.length > 0 && (
+                                    <div style={{ position: 'relative' }}>
+                                      <button
+                                        type="button"
+                                        onClick={() => setOpenPermissionDropdown(openPermissionDropdown === dropdownKey ? null : dropdownKey)}
+                                        style={{
+                                          padding: '0.125rem 0.5rem',
+                                          borderRadius: '9999px',
+                                          border: '1px dashed #3b82f6',
+                                          backgroundColor: 'transparent',
+                                          fontSize: '0.75rem',
+                                          color: '#3b82f6',
+                                          cursor: 'pointer',
+                                          fontWeight: 500
+                                        }}
+                                      >
+                                        + Add Role
+                                      </button>
+                                      {openPermissionDropdown === dropdownKey && (
+                                        <div style={{
+                                          position: 'absolute',
+                                          top: '100%',
+                                          left: 0,
+                                          marginTop: '0.25rem',
+                                          backgroundColor: 'white',
+                                          border: '1px solid #e5e7eb',
+                                          borderRadius: '0.375rem',
+                                          boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                                          zIndex: 50,
+                                          minWidth: '120px'
+                                        }}>
+                                          {rolesWithoutPerm.map(role => (
+                                            <button
+                                              key={role.id}
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
                                                 handleAddRoleToPermission(role.id, permKey);
                                                 setOpenPermissionDropdown(null);
                                               }}
@@ -1415,7 +2036,10 @@ export const Settings: React.FC = () => {
                                       {canEditRoles && !role.isProtected && (
                                         <button
                                           type="button"
-                                          onClick={() => handleRemoveRoleFromPermission(role.id, permKey)}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleRemoveRoleFromPermission(role.id, permKey);
+                                          }}
                                           style={{
                                             background: 'none',
                                             border: 'none',
@@ -1466,593 +2090,8 @@ export const Settings: React.FC = () => {
                                             <button
                                               key={role.id}
                                               type="button"
-                                              onClick={() => {
-                                                handleAddRoleToPermission(role.id, permKey);
-                                                setOpenPermissionDropdown(null);
-                                              }}
-                                              style={{
-                                                display: 'block',
-                                                width: '100%',
-                                                padding: '0.5rem 0.75rem',
-                                                textAlign: 'left',
-                                                border: 'none',
-                                                backgroundColor: 'transparent',
-                                                fontSize: '0.8rem',
-                                                color: '#374151',
-                                                cursor: 'pointer'
-                                              }}
-                                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
-                                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                                            >
-                                              <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: role.color, marginRight: '0.5rem' }} />
-                                              {role.name}
-                                            </button>
-                                          ))}
-                                        </div>
-                                      )}
-                                    </div>
-                                  )}
-                                  {rolesWithPerm.length === 0 && (!canEditRoles || rolesWithoutPerm.length === 0) && (
-                                    <span style={{ fontSize: '0.75rem', color: '#9ca3af', fontStyle: 'italic' }}>No roles</span>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* New Transaction Section - Accordion */}
-              {canViewNewTransaction && (
-                <div
-                  style={{
-                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                    borderRadius: '1rem',
-                    boxShadow: '0 8px 32px rgba(15, 23, 42, 0.15)',
-                    overflow: 'hidden',
-                    marginBottom: '1.25rem',
-                  }}
-                >
-                  <button
-                    type="button"
-                    onClick={() => toggleSection('newTransaction')}
-                    style={{
-                      width: '100%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '1.25rem 1.75rem',
-                      backgroundColor: 'transparent',
-                      border: 'none',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                    }}
-                  >
-                    <h2 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0, color: SECTION_TITLE_COLOR }}>
-                      New Transaction
-                    </h2>
-                    <FaChevronDown style={{
-                      color: SECTION_TITLE_COLOR,
-                      transition: 'transform 0.2s',
-                      transform: expandedSections.includes('newTransaction') ? 'rotate(180deg)' : 'rotate(0)',
-                    }} />
-                  </button>
-
-                  {expandedSections.includes('newTransaction') && (
-                    <div style={{ padding: '0 1.75rem 1.75rem 1.75rem' }}>
-                      {/* Required Fields Subsection */}
-                      <div style={{ marginBottom: '1.5rem' }}>
-                        <p style={{ fontSize: '0.9rem', color: '#4b5563', marginBottom: '0.75rem', marginTop: 0 }}>
-                          Step 1: Customer information — choose which fields are required when starting a new transaction.
-                        </p>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.5rem 1.5rem' }}>
-                          {[
-                            { key: 'customerName', label: 'Customer Name' },
-                            { key: 'contactNumber', label: 'Contact Number' },
-                            { key: 'email', label: 'Email' },
-                            { key: 'handledBy', label: 'Handled By' },
-                          ].map(({ key, label }) => (
-                            <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.9rem', color: '#111827', cursor: 'pointer' }}>
-                              <input
-                                type="checkbox"
-                                checked={newTransactionRequiredFields[key] ?? false}
-                                onChange={(e) => {
-                                  const newFields = { ...newTransactionRequiredFields, [key]: e.target.checked };
-                                  setNewTransactionRequiredFields(newFields);
-                                  saveRequiredFields('newTransaction', newFields);
-                                }}
-                              />
-                              <span>{label}</span>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* GCash QR Code Subsection */}
-                      <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '1rem', marginBottom: '1.5rem' }}>
-                        <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#111827', marginBottom: '0.5rem' }}>
-                          GCash QR Code
-                        </div>
-                        <p style={{ fontSize: '0.85rem', color: '#6b7280', marginTop: 0, marginBottom: '0.75rem' }}>
-                          Upload a GCash QR code image to display during the payment step of new transactions.
-                        </p>
-                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem' }}>
-                          {gcashQrUrl && (
-                            <div style={{
-                              width: '120px',
-                              height: '120px',
-                              border: '1px solid #e5e7eb',
-                              borderRadius: '0.5rem',
-                              overflow: 'hidden',
-                              flexShrink: 0,
-                            }}>
-                              <img
-                                src={gcashQrUrl}
-                                alt="GCash QR Code"
-                                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                              />
-                            </div>
-                          )}
-                          <div>
-                            <label
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '0.5rem',
-                                padding: '0.5rem 1rem',
-                                backgroundColor: '#3b82f6',
-                                color: 'white',
-                                borderRadius: '0.375rem',
-                                cursor: isUploadingQr ? 'not-allowed' : 'pointer',
-                                fontSize: '0.85rem',
-                                fontWeight: 500,
-                                opacity: isUploadingQr ? 0.6 : 1,
-                              }}
-                            >
-                              <FaUpload />
-                              {isUploadingQr ? 'Uploading...' : gcashQrUrl ? 'Change QR Code' : 'Upload QR Code'}
-                              <input
-                                type="file"
-                                accept="image/*"
-                                onChange={handleGcashQrUpload}
-                                disabled={isUploadingQr}
-                                style={{ display: 'none' }}
-                              />
-                            </label>
-                            {!gcashQrUrl && (
-                              <p style={{ fontSize: '0.8rem', color: '#9ca3af', marginTop: '0.5rem', marginBottom: 0 }}>
-                                No QR code uploaded yet
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Permissions Subsection */}
-                      <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '1rem' }}>
-                        <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#111827', marginBottom: '0.75rem' }}>
-                          Permissions
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                          {newTransactionPermissions.map((permKey) => {
-                            const rolesWithPerm = getRolesWithPermission(permKey);
-                            const rolesWithoutPerm = getRolesWithoutPermission(permKey);
-                            const dropdownKey = `newTransaction-${permKey}`;
-                            return (
-                              <div key={permKey} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem' }}>
-                                <span style={{ fontSize: '0.85rem', color: '#374151', minWidth: '180px' }}>
-                                  {getPermissionLabel(permKey)}
-                                </span>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', alignItems: 'center' }}>
-                                  {rolesWithPerm.map(role => (
-                                    <span
-                                      key={role.id}
-                                      style={{
-                                        display: 'inline-flex',
-                                        alignItems: 'center',
-                                        gap: '0.25rem',
-                                        padding: '0.125rem 0.5rem',
-                                        borderRadius: '9999px',
-                                        fontSize: '0.75rem',
-                                        fontWeight: 500,
-                                        backgroundColor: `${role.color}20`,
-                                        color: role.color,
-                                        border: `1px solid ${role.color}40`
-                                      }}
-                                    >
-                                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: role.color }} />
-                                      {role.name}
-                                      {canEditRoles && !role.isProtected && (
-                                        <button
-                                          type="button"
-                                          onClick={() => handleRemoveRoleFromPermission(role.id, permKey)}
-                                          style={{
-                                            background: 'none',
-                                            border: 'none',
-                                            cursor: 'pointer',
-                                            padding: '0 0.125rem',
-                                            color: role.color,
-                                            fontSize: '0.875rem',
-                                            lineHeight: 1
-                                          }}
-                                        >
-                                          ×
-                                        </button>
-                                      )}
-                                    </span>
-                                  ))}
-                                  {canEditRoles && rolesWithoutPerm.length > 0 && (
-                                    <div style={{ position: 'relative' }}>
-                                      <button
-                                        type="button"
-                                        onClick={() => setOpenPermissionDropdown(openPermissionDropdown === dropdownKey ? null : dropdownKey)}
-                                        style={{
-                                          padding: '0.125rem 0.5rem',
-                                          borderRadius: '9999px',
-                                          border: '1px dashed #3b82f6',
-                                          backgroundColor: 'transparent',
-                                          fontSize: '0.75rem',
-                                          color: '#3b82f6',
-                                          cursor: 'pointer',
-                                          fontWeight: 500
-                                        }}
-                                      >
-                                        + Add Role
-                                      </button>
-                                      {openPermissionDropdown === dropdownKey && (
-                                        <div style={{
-                                          position: 'absolute',
-                                          top: '100%',
-                                          left: 0,
-                                          marginTop: '0.25rem',
-                                          backgroundColor: 'white',
-                                          border: '1px solid #e5e7eb',
-                                          borderRadius: '0.375rem',
-                                          boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
-                                          zIndex: 50,
-                                          minWidth: '120px'
-                                        }}>
-                                          {rolesWithoutPerm.map(role => (
-                                            <button
-                                              key={role.id}
-                                              type="button"
-                                              onClick={() => {
-                                                handleAddRoleToPermission(role.id, permKey);
-                                                setOpenPermissionDropdown(null);
-                                              }}
-                                              style={{
-                                                display: 'block',
-                                                width: '100%',
-                                                padding: '0.5rem 0.75rem',
-                                                textAlign: 'left',
-                                                border: 'none',
-                                                backgroundColor: 'transparent',
-                                                fontSize: '0.8rem',
-                                                color: '#374151',
-                                                cursor: 'pointer'
-                                              }}
-                                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
-                                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                                            >
-                                              <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: role.color, marginRight: '0.5rem' }} />
-                                              {role.name}
-                                            </button>
-                                          ))}
-                                        </div>
-                                      )}
-                                    </div>
-                                  )}
-                                  {rolesWithPerm.length === 0 && (!canEditRoles || rolesWithoutPerm.length === 0) && (
-                                    <span style={{ fontSize: '0.75rem', color: '#9ca3af', fontStyle: 'italic' }}>No roles</span>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Transactions Section - Accordion */}
-              {canViewTransactions && (
-                <div
-                  style={{
-                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                    borderRadius: '1rem',
-                    boxShadow: '0 8px 32px rgba(15, 23, 42, 0.15)',
-                    overflow: 'hidden',
-                    marginBottom: '1.25rem',
-                  }}
-                >
-                  <button
-                    type="button"
-                    onClick={() => toggleSection('transactions')}
-                    style={{
-                      width: '100%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '1.25rem 1.75rem',
-                      backgroundColor: 'transparent',
-                      border: 'none',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                    }}
-                  >
-                    <h2 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0, color: SECTION_TITLE_COLOR }}>
-                      Transactions
-                    </h2>
-                    <FaChevronDown style={{
-                      color: SECTION_TITLE_COLOR,
-                      transition: 'transform 0.2s',
-                      transform: expandedSections.includes('transactions') ? 'rotate(180deg)' : 'rotate(0)',
-                    }} />
-                  </button>
-
-                  {expandedSections.includes('transactions') && (
-                    <div style={{ padding: '0 1.75rem 1.75rem 1.75rem' }}>
-                      {/* Permissions Subsection */}
-                      <div style={{ paddingTop: '0.5rem' }}>
-                        <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#111827', marginBottom: '0.75rem' }}>
-                          Permissions
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                          {transactionsPermissions.map((permKey) => {
-                            const rolesWithPerm = getRolesWithPermission(permKey);
-                            const rolesWithoutPerm = getRolesWithoutPermission(permKey);
-                            const dropdownKey = `transactions-${permKey}`;
-                            return (
-                              <div key={permKey} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem' }}>
-                                <span style={{ fontSize: '0.85rem', color: '#374151', minWidth: '180px' }}>
-                                  {getPermissionLabel(permKey)}
-                                </span>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', alignItems: 'center' }}>
-                                  {rolesWithPerm.map(role => (
-                                    <span
-                                      key={role.id}
-                                      style={{
-                                        display: 'inline-flex',
-                                        alignItems: 'center',
-                                        gap: '0.25rem',
-                                        padding: '0.125rem 0.5rem',
-                                        borderRadius: '9999px',
-                                        fontSize: '0.75rem',
-                                        fontWeight: 500,
-                                        backgroundColor: `${role.color}20`,
-                                        color: role.color,
-                                        border: `1px solid ${role.color}40`
-                                      }}
-                                    >
-                                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: role.color }} />
-                                      {role.name}
-                                      {canEditRoles && !role.isProtected && (
-                                        <button
-                                          type="button"
-                                          onClick={() => handleRemoveRoleFromPermission(role.id, permKey)}
-                                          style={{
-                                            background: 'none',
-                                            border: 'none',
-                                            cursor: 'pointer',
-                                            padding: '0 0.125rem',
-                                            color: role.color,
-                                            fontSize: '0.875rem',
-                                            lineHeight: 1
-                                          }}
-                                        >
-                                          ×
-                                        </button>
-                                      )}
-                                    </span>
-                                  ))}
-                                  {canEditRoles && rolesWithoutPerm.length > 0 && (
-                                    <div style={{ position: 'relative' }}>
-                                      <button
-                                        type="button"
-                                        onClick={() => setOpenPermissionDropdown(openPermissionDropdown === dropdownKey ? null : dropdownKey)}
-                                        style={{
-                                          padding: '0.125rem 0.5rem',
-                                          borderRadius: '9999px',
-                                          border: '1px dashed #3b82f6',
-                                          backgroundColor: 'transparent',
-                                          fontSize: '0.75rem',
-                                          color: '#3b82f6',
-                                          cursor: 'pointer',
-                                          fontWeight: 500
-                                        }}
-                                      >
-                                        + Add Role
-                                      </button>
-                                      {openPermissionDropdown === dropdownKey && (
-                                        <div style={{
-                                          position: 'absolute',
-                                          top: '100%',
-                                          left: 0,
-                                          marginTop: '0.25rem',
-                                          backgroundColor: 'white',
-                                          border: '1px solid #e5e7eb',
-                                          borderRadius: '0.375rem',
-                                          boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
-                                          zIndex: 50,
-                                          minWidth: '120px'
-                                        }}>
-                                          {rolesWithoutPerm.map(role => (
-                                            <button
-                                              key={role.id}
-                                              type="button"
-                                              onClick={() => {
-                                                handleAddRoleToPermission(role.id, permKey);
-                                                setOpenPermissionDropdown(null);
-                                              }}
-                                              style={{
-                                                display: 'block',
-                                                width: '100%',
-                                                padding: '0.5rem 0.75rem',
-                                                textAlign: 'left',
-                                                border: 'none',
-                                                backgroundColor: 'transparent',
-                                                fontSize: '0.8rem',
-                                                color: '#374151',
-                                                cursor: 'pointer'
-                                              }}
-                                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
-                                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                                            >
-                                              <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: role.color, marginRight: '0.5rem' }} />
-                                              {role.name}
-                                            </button>
-                                          ))}
-                                        </div>
-                                      )}
-                                    </div>
-                                  )}
-                                  {rolesWithPerm.length === 0 && (!canEditRoles || rolesWithoutPerm.length === 0) && (
-                                    <span style={{ fontSize: '0.75rem', color: '#9ca3af', fontStyle: 'italic' }}>No roles</span>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Returns Section - Accordion */}
-              {canViewReturns && (
-                <div
-                  style={{
-                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                    borderRadius: '1rem',
-                    boxShadow: '0 8px 32px rgba(15, 23, 42, 0.15)',
-                    overflow: 'hidden',
-                    marginBottom: '1.25rem',
-                  }}
-                >
-                  <button
-                    type="button"
-                    onClick={() => toggleSection('returns')}
-                    style={{
-                      width: '100%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '1.25rem 1.75rem',
-                      backgroundColor: 'transparent',
-                      border: 'none',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                    }}
-                  >
-                    <h2 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0, color: SECTION_TITLE_COLOR }}>
-                      Returns
-                    </h2>
-                    <FaChevronDown style={{
-                      color: SECTION_TITLE_COLOR,
-                      transition: 'transform 0.2s',
-                      transform: expandedSections.includes('returns') ? 'rotate(180deg)' : 'rotate(0)',
-                    }} />
-                  </button>
-
-                  {expandedSections.includes('returns') && (
-                    <div style={{ padding: '0 1.75rem 1.75rem 1.75rem' }}>
-                      {/* Permissions Subsection */}
-                      <div style={{ paddingTop: '0.5rem' }}>
-                        <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#111827', marginBottom: '0.75rem' }}>
-                          Permissions
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                          {returnsPermissions.map((permKey) => {
-                            const rolesWithPerm = getRolesWithPermission(permKey);
-                            const rolesWithoutPerm = getRolesWithoutPermission(permKey);
-                            const dropdownKey = `returns-${permKey}`;
-                            return (
-                              <div key={permKey} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem' }}>
-                                <span style={{ fontSize: '0.85rem', color: '#374151', minWidth: '180px' }}>
-                                  {getPermissionLabel(permKey)}
-                                </span>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', alignItems: 'center' }}>
-                                  {rolesWithPerm.map(role => (
-                                    <span
-                                      key={role.id}
-                                      style={{
-                                        display: 'inline-flex',
-                                        alignItems: 'center',
-                                        gap: '0.25rem',
-                                        padding: '0.125rem 0.5rem',
-                                        borderRadius: '9999px',
-                                        fontSize: '0.75rem',
-                                        fontWeight: 500,
-                                        backgroundColor: `${role.color}20`,
-                                        color: role.color,
-                                        border: `1px solid ${role.color}40`
-                                      }}
-                                    >
-                                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: role.color }} />
-                                      {role.name}
-                                      {canEditRoles && !role.isProtected && (
-                                        <button
-                                          type="button"
-                                          onClick={() => handleRemoveRoleFromPermission(role.id, permKey)}
-                                          style={{
-                                            background: 'none',
-                                            border: 'none',
-                                            cursor: 'pointer',
-                                            padding: '0 0.125rem',
-                                            color: role.color,
-                                            fontSize: '0.875rem',
-                                            lineHeight: 1
-                                          }}
-                                        >
-                                          ×
-                                        </button>
-                                      )}
-                                    </span>
-                                  ))}
-                                  {canEditRoles && rolesWithoutPerm.length > 0 && (
-                                    <div style={{ position: 'relative' }}>
-                                      <button
-                                        type="button"
-                                        onClick={() => setOpenPermissionDropdown(openPermissionDropdown === dropdownKey ? null : dropdownKey)}
-                                        style={{
-                                          padding: '0.125rem 0.5rem',
-                                          borderRadius: '9999px',
-                                          border: '1px dashed #3b82f6',
-                                          backgroundColor: 'transparent',
-                                          fontSize: '0.75rem',
-                                          color: '#3b82f6',
-                                          cursor: 'pointer',
-                                          fontWeight: 500
-                                        }}
-                                      >
-                                        + Add Role
-                                      </button>
-                                      {openPermissionDropdown === dropdownKey && (
-                                        <div style={{
-                                          position: 'absolute',
-                                          top: '100%',
-                                          left: 0,
-                                          marginTop: '0.25rem',
-                                          backgroundColor: 'white',
-                                          border: '1px solid #e5e7eb',
-                                          borderRadius: '0.375rem',
-                                          boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
-                                          zIndex: 50,
-                                          minWidth: '120px'
-                                        }}>
-                                          {rolesWithoutPerm.map(role => (
-                                            <button
-                                              key={role.id}
-                                              type="button"
-                                              onClick={() => {
+                                              onClick={(e) => {
+                                                e.stopPropagation();
                                                 handleAddRoleToPermission(role.id, permKey);
                                                 setOpenPermissionDropdown(null);
                                               }}
@@ -2196,7 +2235,10 @@ export const Settings: React.FC = () => {
                                       {canEditRoles && !role.isProtected && (
                                         <button
                                           type="button"
-                                          onClick={() => handleRemoveRoleFromPermission(role.id, permKey)}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleRemoveRoleFromPermission(role.id, permKey);
+                                          }}
                                           style={{
                                             background: 'none',
                                             border: 'none',
@@ -2247,7 +2289,178 @@ export const Settings: React.FC = () => {
                                             <button
                                               key={role.id}
                                               type="button"
-                                              onClick={() => {
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleAddRoleToPermission(role.id, permKey);
+                                                setOpenPermissionDropdown(null);
+                                              }}
+                                              style={{
+                                                display: 'block',
+                                                width: '100%',
+                                                padding: '0.5rem 0.75rem',
+                                                textAlign: 'left',
+                                                border: 'none',
+                                                backgroundColor: 'transparent',
+                                                fontSize: '0.8rem',
+                                                color: '#374151',
+                                                cursor: 'pointer'
+                                              }}
+                                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+                                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                            >
+                                              <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: role.color, marginRight: '0.5rem' }} />
+                                              {role.name}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                  {rolesWithPerm.length === 0 && (!canEditRoles || rolesWithoutPerm.length === 0) && (
+                                    <span style={{ fontSize: '0.75rem', color: '#9ca3af', fontStyle: 'italic' }}>No roles</span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Returns Section - Accordion */}
+              {canViewReturns && (
+                <div
+                  style={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    borderRadius: '1rem',
+                    boxShadow: '0 8px 32px rgba(15, 23, 42, 0.15)',
+                    overflow: 'hidden',
+                    marginBottom: '1.25rem',
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => toggleSection('returns')}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '1.25rem 1.75rem',
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                    }}
+                  >
+                    <h2 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0, color: SECTION_TITLE_COLOR }}>
+                      Returns
+                    </h2>
+                    <FaChevronDown style={{
+                      color: SECTION_TITLE_COLOR,
+                      transition: 'transform 0.2s',
+                      transform: expandedSections.includes('returns') ? 'rotate(180deg)' : 'rotate(0)',
+                    }} />
+                  </button>
+
+                  {expandedSections.includes('returns') && (
+                    <div style={{ padding: '0 1.75rem 1.75rem 1.75rem' }}>
+                      {/* Permissions Subsection */}
+                      <div style={{ paddingTop: '0.5rem' }}>
+                        <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#111827', marginBottom: '0.75rem' }}>
+                          Permissions
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                          {returnsPermissions.map((permKey) => {
+                            const rolesWithPerm = getRolesWithPermission(permKey);
+                            const rolesWithoutPerm = getRolesWithoutPermission(permKey);
+                            const dropdownKey = `returns-${permKey}`;
+                            return (
+                              <div key={permKey} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem' }}>
+                                <span style={{ fontSize: '0.85rem', color: '#374151', minWidth: '180px' }}>
+                                  {getPermissionLabel(permKey)}
+                                </span>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', alignItems: 'center' }}>
+                                  {rolesWithPerm.map(role => (
+                                    <span
+                                      key={role.id}
+                                      style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '0.25rem',
+                                        padding: '0.125rem 0.5rem',
+                                        borderRadius: '9999px',
+                                        fontSize: '0.75rem',
+                                        fontWeight: 500,
+                                        backgroundColor: `${role.color}20`,
+                                        color: role.color,
+                                        border: `1px solid ${role.color}40`
+                                      }}
+                                    >
+                                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: role.color }} />
+                                      {role.name}
+                                      {canEditRoles && !role.isProtected && (
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleRemoveRoleFromPermission(role.id, permKey);
+                                          }}
+                                          style={{
+                                            background: 'none',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            padding: '0 0.125rem',
+                                            color: role.color,
+                                            fontSize: '0.875rem',
+                                            lineHeight: 1
+                                          }}
+                                        >
+                                          ×
+                                        </button>
+                                      )}
+                                    </span>
+                                  ))}
+                                  {canEditRoles && rolesWithoutPerm.length > 0 && (
+                                    <div style={{ position: 'relative' }}>
+                                      <button
+                                        type="button"
+                                        onClick={() => setOpenPermissionDropdown(openPermissionDropdown === dropdownKey ? null : dropdownKey)}
+                                        style={{
+                                          padding: '0.125rem 0.5rem',
+                                          borderRadius: '9999px',
+                                          border: '1px dashed #3b82f6',
+                                          backgroundColor: 'transparent',
+                                          fontSize: '0.75rem',
+                                          color: '#3b82f6',
+                                          cursor: 'pointer',
+                                          fontWeight: 500
+                                        }}
+                                      >
+                                        + Add Role
+                                      </button>
+                                      {openPermissionDropdown === dropdownKey && (
+                                        <div style={{
+                                          position: 'absolute',
+                                          top: '100%',
+                                          left: 0,
+                                          marginTop: '0.25rem',
+                                          backgroundColor: 'white',
+                                          border: '1px solid #e5e7eb',
+                                          borderRadius: '0.375rem',
+                                          boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                                          zIndex: 50,
+                                          minWidth: '120px'
+                                        }}>
+                                          {rolesWithoutPerm.map(role => (
+                                            <button
+                                              key={role.id}
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
                                                 handleAddRoleToPermission(role.id, permKey);
                                                 setOpenPermissionDropdown(null);
                                               }}
@@ -2361,7 +2574,10 @@ export const Settings: React.FC = () => {
                                       {canEditRoles && !role.isProtected && (
                                         <button
                                           type="button"
-                                          onClick={() => handleRemoveRoleFromPermission(role.id, permKey)}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleRemoveRoleFromPermission(role.id, permKey);
+                                          }}
                                           style={{
                                             background: 'none',
                                             border: 'none',
@@ -2412,7 +2628,8 @@ export const Settings: React.FC = () => {
                                             <button
                                               key={role.id}
                                               type="button"
-                                              onClick={() => {
+                                              onClick={(e) => {
+                                                e.stopPropagation();
                                                 handleAddRoleToPermission(role.id, permKey);
                                                 setOpenPermissionDropdown(null);
                                               }}

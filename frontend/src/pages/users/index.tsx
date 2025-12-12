@@ -211,6 +211,8 @@ export function Users() {
       status: row.status.toLowerCase() === 'active' ? 'active' : 'inactive',
       role: row.role || prev.role,
     }));
+    // Populate selectedRolesForUser from the user's roles array
+    setSelectedRolesForUser(row.roles || (row.role ? [row.role] : []));
     setIsUserDetailsExpanded(true);
     setIsEditing(false);
     setPasswordDirty(false);
@@ -234,6 +236,7 @@ export function Users() {
       role: 'employee',
       dateCreated: today,
     });
+    setSelectedRolesForUser([]); // Reset roles for new user
     setIsUserDetailsExpanded(true);
     setIsEditing(true);
     setPasswordDirty(false);
@@ -393,13 +396,15 @@ export function Users() {
       const existing = users.find(u => u.id === docId) || selectedUserRow;
 
       if (isAdminLike) {
+        const primaryRole = selectedRolesForUser.length > 0 ? selectedRolesForUser[0] : role;
         const updateData: any = {
           userId,
           username,
           fullName,
           contactNumber,
           status: status === 'active' ? 'Active' : 'Inactive',
-          role,
+          role: primaryRole,
+          roles: selectedRolesForUser,
         };
 
         if (password && confirmPassword && password === confirmPassword) {
@@ -443,6 +448,7 @@ export function Users() {
       }
 
       const newHash = await hashPassword(finalPassword);
+      const primaryRole = selectedRolesForUser.length > 0 ? selectedRolesForUser[0] : role;
 
       await addDoc(userRef, {
         userId,
@@ -450,7 +456,8 @@ export function Users() {
         fullName,
         contactNumber,
         status: status === 'active' ? 'Active' : 'Inactive',
-        role,
+        role: primaryRole,
+        roles: selectedRolesForUser.length > 0 ? selectedRolesForUser : [role],
         password: finalPassword,
         passwordHash: newHash,
       });
@@ -1251,7 +1258,7 @@ export function Users() {
                         <div />
                       </>
                     )}
-                    {/* Row: User Role - Account Status */}
+                    {/* Row: User Roles - Account Status */}
                     <div>
                       <label style={{
                         display: 'block',
@@ -1259,27 +1266,98 @@ export function Users() {
                         fontSize: '0.875rem',
                         color: '#4b5563'
                       }}>
-                        User Role *
+                        User Roles *
                       </label>
-                      <select
-                        name="role"
-                        value={formData.role}
-                        onChange={handleRoleSelectChange}
-                        disabled={!can(userRoles, 'users.edit.any') || !canEditUserDetails}
-                        style={{
-                          width: '100%',
-                          padding: '0.5rem 0.75rem',
-                          borderRadius: '0.375rem',
-                          border: '1px solid #d1d5db',
-                          backgroundColor: '#fff',
-                          color: '#111827',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        {firestoreRoles.map(role => (
-                          <option key={role.id} value={role.id}>{role.name}</option>
-                        ))}
-                      </select>
+                      <div style={{
+                        border: '1px solid #d1d5db',
+                        borderRadius: '0.375rem',
+                        padding: '0.5rem',
+                        backgroundColor: '#fff',
+                        minHeight: '42px'
+                      }}>
+                        {/* Selected roles as badges */}
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem', marginBottom: selectedRolesForUser.length > 0 ? '0.5rem' : 0 }}>
+                          {selectedRolesForUser.map(roleId => {
+                            const roleData = firestoreRoles.find(r => r.id === roleId);
+                            if (!roleData) return null;
+                            return (
+                              <span
+                                key={roleId}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.25rem',
+                                  padding: '0.125rem 0.5rem',
+                                  borderRadius: '9999px',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 500,
+                                  backgroundColor: `${roleData.color}20`,
+                                  color: roleData.color,
+                                  border: `1px solid ${roleData.color}40`
+                                }}
+                              >
+                                <span style={{
+                                  width: '6px',
+                                  height: '6px',
+                                  borderRadius: '50%',
+                                  backgroundColor: roleData.color
+                                }} />
+                                {roleData.name}
+                                {canEditUserDetails && can(userRoles, 'users.edit.any') && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setSelectedRolesForUser(prev => prev.filter(r => r !== roleId))}
+                                    style={{
+                                      background: 'none',
+                                      border: 'none',
+                                      cursor: 'pointer',
+                                      padding: '0 0.125rem',
+                                      color: roleData.color,
+                                      fontSize: '0.875rem',
+                                      lineHeight: 1
+                                    }}
+                                  >
+                                    ×
+                                  </button>
+                                )}
+                              </span>
+                            );
+                          })}
+                        </div>
+                        {/* Role selection dropdown */}
+                        {canEditUserDetails && can(userRoles, 'users.edit.any') && (
+                          <select
+                            value=""
+                            onChange={(e) => {
+                              const roleId = e.target.value;
+                              if (roleId && !selectedRolesForUser.includes(roleId)) {
+                                setSelectedRolesForUser(prev => [...prev, roleId]);
+                                // Also update formData.role to primary role
+                                if (selectedRolesForUser.length === 0) {
+                                  setFormData(prev => ({ ...prev, role: roleId }));
+                                }
+                              }
+                            }}
+                            style={{
+                              width: '100%',
+                              padding: '0.25rem 0.5rem',
+                              borderRadius: '0.25rem',
+                              border: '1px solid #e5e7eb',
+                              backgroundColor: '#f9fafb',
+                              color: '#6b7280',
+                              fontSize: '0.75rem',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            <option value="">+ Add role...</option>
+                            {firestoreRoles
+                              .filter(role => !selectedRolesForUser.includes(role.id))
+                              .map(role => (
+                                <option key={role.id} value={role.id}>{role.name}</option>
+                              ))}
+                          </select>
+                        )}
+                      </div>
                     </div>
 
                     <div>

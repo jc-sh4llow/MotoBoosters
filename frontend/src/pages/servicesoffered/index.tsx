@@ -1123,7 +1123,7 @@ export function Services() {
                           ))}
                         </div>
                       </div>
-                      {/* Form Actions (only for admins/superadmins) */}
+                      {/* Form Actions (only for users with edit permission) */}
                       {canEditServices && (
                         <>
                           <div style={{
@@ -1499,7 +1499,7 @@ export function Services() {
                               ))}
                             </div>
                           </div>
-                          {/* Form Actions (only for admins/superadmins) */}
+                          {/* Form Actions (only for users with edit permission) */}
                           {canEditServices && (
                             <div
                               style={{

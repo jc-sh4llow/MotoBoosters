@@ -102,7 +102,7 @@ export function Users() {
   const [isEditing, setIsEditing] = useState(false);
   const isAdminLike = can(userRoles, 'users.edit.any');
 
-  const canEditUserDetailsBase = isAdminLike; // Admin/superadmin capabilities
+  const canEditUserDetailsBase = isAdminLike; // Users with edit.any permission
   // Non-admins can edit only their own details when in edit mode
   const isSelfEditing = !isAdminLike &&
     isEditing &&
@@ -110,7 +110,7 @@ export function Users() {
     (selectedUserRow.username === currentUsername || selectedUserRow.fullName === currentUsername);
   const canEditUserDetails = (isAdminLike && isEditing) || !!isSelfEditing;
 
-  const canSeePasswords = isAdminLike || !!isSelfEditing; // Admin/superadmin or self-editing user see password fields
+  const canSeePasswords = isAdminLike || !!isSelfEditing; // Users with edit.any permission or self-editing user see password fields
   const isOtherUserRowForAdmin =
     isAdminLike &&
     !!selectedUserRow &&
@@ -367,7 +367,7 @@ export function Users() {
       selectedUserRow.id === docId &&
       (selectedUserRow.username === currentUsername || selectedUserRow.fullName === currentUsername);
 
-    // Only admin/superadmin or self-editing employees/mechanics may save
+    // Only users with edit.any permission or self-editing users may save
     if (!isAdminLike && !isSelfBasicEdit) return;
 
     // Non-admins cannot change passwords; only validate passwords for admin-like users
@@ -432,7 +432,7 @@ export function Users() {
         await updateDoc(userRef, updateData);
       }
     } else {
-      // Only admin/superadmin can create new users
+      // Only users with edit.any permission can create new users
       if (!isAdminLike) return;
 
       const userRef = collection(db, 'users');
@@ -2047,7 +2047,7 @@ export function Users() {
                             fontSize: '0.875rem',
                             whiteSpace: 'nowrap'
                           }}>
-                            {/* Admin/superadmin: can edit/delete any non-superadmin (subject to existing filters) */}
+                            {/* Users with edit.any permission: can edit/archive any user (subject to existing filters) */}
                             {can(userRoles, 'users.edit.any') && (
                               <>
                                 <button

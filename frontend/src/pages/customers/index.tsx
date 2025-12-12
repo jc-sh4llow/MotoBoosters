@@ -23,7 +23,6 @@ export function Customers() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const userRoles = user?.roles?.length ? user.roles : (user?.role ? [user.role] : []);
-  const currentRole = (user?.role || '').toString();
 
   // Permission checks using the can utility
   const canViewArchived = can(userRoles, 'customers.view.archived');
@@ -334,7 +333,7 @@ export function Customers() {
     try {
       const customerRef = doc(db, 'customers', selectedCustomer.id);
 
-      if (deleteMode === 'hard' && currentRole === 'superadmin') {
+      if (deleteMode === 'hard' && canDeleteCustomers) {
         await deleteDoc(customerRef);
       } else if (deleteMode === 'unarchive') {
         await updateDoc(customerRef, {
@@ -1169,7 +1168,7 @@ export function Customers() {
                       </div>
                     </div>
 
-                    {/* Form Actions (only for admins/superadmins) */}
+                    {/* Form Actions (only for users with edit permission) */}
                     {canEditCustomers && (
                       <>
                         <div style={{
@@ -1453,7 +1452,7 @@ export function Customers() {
                           >
                             Vehicle Type(s)
                           </th>
-                          {currentRole === 'superadmin' && (
+                          {canViewArchived && (
                             <th
                               style={{
                                 padding: '0.75rem 1rem',
@@ -1474,7 +1473,7 @@ export function Customers() {
                         {loading ? (
                           <tr>
                             <td
-                              colSpan={currentRole === 'superadmin' ? 7 : 6}
+                              colSpan={canViewArchived ? 7 : 6}
                               style={{
                                 padding: '1.5rem',
                                 textAlign: 'center',
@@ -1614,7 +1613,7 @@ export function Customers() {
                                   ? customer.vehicleTypes.join(', ')
                                   : '-'}
                               </td>
-                              {currentRole === 'superadmin' && (
+                              {canViewArchived && (
                                 <td
                                   style={{
                                     padding: '0.75rem 1rem',
@@ -1722,7 +1721,7 @@ export function Customers() {
         </div>
       )}
 
-      {/* Delete / Archive Customer Confirmation Modal (admins/superadmins only) */}
+      {/* Delete / Archive Customer Confirmation Modal (users with delete permission) */}
       {canDeleteCustomers && isDeleteConfirmOpen && selectedCustomer && (
         <div
           style={{

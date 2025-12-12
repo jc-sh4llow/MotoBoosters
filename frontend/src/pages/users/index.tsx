@@ -85,10 +85,9 @@ export function Users() {
     fullNameMode: 'first',
   });
 
-  const currentRole = user?.role ?? 'employee';
   const currentUsername = user?.name ?? '';
   const [isEditing, setIsEditing] = useState(false);
-  const isAdminLike = can(currentRole, 'users.edit.any');
+  const isAdminLike = can(userRoles, 'users.edit.any');
 
   const canEditUserDetailsBase = isAdminLike; // Admin/superadmin capabilities
   // Non-admins can edit only their own details when in edit mode
@@ -1179,7 +1178,7 @@ export function Users() {
                         name="role"
                         value={formData.role}
                         onChange={handleRoleSelectChange}
-                        disabled={!can(currentRole, 'users.edit.any') || !canEditUserDetails}
+                        disabled={!can(userRoles, 'users.edit.any') || !canEditUserDetails}
                         style={{
                           width: '100%',
                           padding: '0.5rem 0.75rem',
@@ -1210,7 +1209,7 @@ export function Users() {
                         name="status"
                         value={formData.status}
                         onChange={handleInputChange}
-                        disabled={!can(currentRole, 'users.edit.any') || !canEditUserDetails}
+                        disabled={!can(userRoles, 'users.edit.any') || !canEditUserDetails}
                         style={{
                           width: '100%',
                           padding: '0.5rem 0.75rem',
@@ -1544,7 +1543,7 @@ export function Users() {
                             return (
                               <button
                                 type="button"
-                                disabled={!can(currentRole, 'users.edit.any')}
+                                disabled={!can(userRoles, 'users.edit.any')}
                                 onClick={() => {
                                   setStatusConfirmState({
                                     mode: 'table',
@@ -1560,7 +1559,7 @@ export function Users() {
                                   color,
                                   fontSize: '0.75rem',
                                   fontWeight: 600,
-                                  cursor: can(currentRole, 'users.edit.any') ? 'pointer' : 'default',
+                                  cursor: can(userRoles, 'users.edit.any') ? 'pointer' : 'default',
                                   textTransform: 'none',
                                   minWidth: '72px',
                                 }}
@@ -1585,7 +1584,7 @@ export function Users() {
                             whiteSpace: 'nowrap'
                           }}>
                             {/* Admin/superadmin: can edit/delete any non-superadmin (subject to existing filters) */}
-                            {can(currentRole, 'users.edit.any') && (
+                            {can(userRoles, 'users.edit.any') && (
                               <>
                                 <button
                                   onClick={(e) => {
@@ -1603,7 +1602,7 @@ export function Users() {
                                 >
                                   Edit
                                 </button>
-                                {can(currentRole, 'users.archive') && (
+                                {can(userRoles, 'users.archive') && (
                                   <button
                                     onClick={async (e) => {
                                       e.stopPropagation();
@@ -1635,7 +1634,7 @@ export function Users() {
                             )}
 
                             {/* Non-admin roles: can only edit their own row, no delete */}
-                            {!can(currentRole, 'users.edit.any') && (user.username === currentUsername || user.fullName === currentUsername) && (
+                            {!can(userRoles, 'users.edit.any') && (user.username === currentUsername || user.fullName === currentUsername) && (
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();

@@ -8,6 +8,7 @@ import { db } from '../../lib/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import logo from '../../assets/logo.png';
 import { can } from '../../config/permissions';
+import Switch from '../../components/ui/Switch';
 
 type TransactionRow = {
   id: string;
@@ -1039,15 +1040,14 @@ export function Transactions() {
                     {/* Show Archived Toggle - only visible if user has permission */}
                     {canViewArchived && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <label style={{ fontSize: '0.875rem', color: 'rgb(75, 85, 99)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <input
-                            type="checkbox"
+                        <div style={{ fontSize: '0.875rem', color: 'rgb(75, 85, 99)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <Switch
                             checked={showArchivedFilter}
-                            onChange={(e) => setShowArchivedFilter(e.target.checked)}
-                            style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                            onChange={(checked) => setShowArchivedFilter(checked)}
+                            size="sm"
                           />
                           Show Archived
-                        </label>
+                        </div>
                       </div>
                     )}
                   </div>

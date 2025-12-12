@@ -8,6 +8,7 @@ import { can } from '../../config/permissions';
 import { db } from '../../lib/firebase';
 import logo from '../../assets/logo.png';
 import { HeaderDropdown } from '../../components/HeaderDropdown';
+import Switch from '../../components/ui/Switch';
 
 type TransactionRow = {
   id: string; // Firestore document ID
@@ -1048,8 +1049,8 @@ export const Returns: React.FC = () => {
                     </div>
                     {canViewArchivedReturns && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <input type="checkbox" id="showArchived" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
-                        <label htmlFor="showArchived" style={{ fontSize: '0.875rem', color: '#4b5563', cursor: 'pointer' }}>Show Archived</label>
+                        <Switch checked={showArchived} onChange={(checked) => setShowArchived(checked)} size="sm" />
+                        <span style={{ fontSize: '0.875rem', color: '#4b5563' }}>Show Archived</span>
                       </div>
                     )}
                   </div>
@@ -2060,18 +2061,17 @@ export const Returns: React.FC = () => {
                           {refundMethod === 'cash' && (
                             <div
                               style={{
-                                marginTop: '0.4rem',
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: '0.4rem',
+                                gap: '0.5rem',
                                 fontSize: '0.8rem',
                                 color: '#4b5563',
                               }}
                             >
-                              <input
-                                type="checkbox"
+                              <Switch
                                 checked={cashConfirmed}
-                                onChange={(e) => setCashConfirmed(e.target.checked)}
+                                onChange={(checked) => setCashConfirmed(checked)}
+                                size="sm"
                               />
                               <span>Confirmed cash refund was handed to customer</span>
                             </div>

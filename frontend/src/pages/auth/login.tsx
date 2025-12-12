@@ -1,5 +1,5 @@
 import { useState } from 'react';
-
+import Switch from '../../components/ui/Switch';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { FaUser, FaLock } from 'react-icons/fa';
@@ -315,18 +315,14 @@ export function Login() {
               marginBottom: '1.5rem',
               fontSize: '0.9rem'
             }}>
-              <label style={{ display: 'flex', alignItems: 'center' }}>
-                <input
-                  type="checkbox"
-                  style={{
-                    marginRight: '0.5rem',
-                    width: '1rem',
-                    height: '1rem',
-                    color: '#1e88e5',
-                  }}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Switch
+                  checked={false}
+                  onChange={() => {}}
+                  size="sm"
                 />
-                Remember me
-              </label>
+                <span>Remember me</span>
+              </div>
               <button
                 type="button"
                 onClick={handleForgotPassword}

@@ -26,6 +26,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { can } from '../../config/permissions';
 import logo from '../../assets/logo.png';
 import { HeaderDropdown } from '../../components/HeaderDropdown';
+import Switch from '../../components/ui/Switch';
 import { collection, getDocs, doc, updateDoc, getDoc, setDoc, writeBatch, query, where } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 
@@ -1129,23 +1130,20 @@ export function NewTransaction() {
                   </div>
                   {canAddCustomer && (
                     <div className="mt-2 flex items-center gap-2 text-sm text-gray-700">
-                      <input
-                        id="new-customer-checkbox"
-                        type="checkbox"
+                      <Switch
                         checked={isNewCustomer}
-                        onChange={(e) => {
-                          const next = e.target.checked;
-                          setIsNewCustomer(next);
-                          if (next) {
+                        onChange={(checked) => {
+                          setIsNewCustomer(checked);
+                          if (checked) {
                             // switching back to new customer mode, clear any selected existing id
                             setSelectedCustomerId(null);
                           }
                         }}
-                        className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+                        size="sm"
                       />
-                      <label htmlFor="new-customer-checkbox" className="select-none cursor-pointer">
+                      <span className="select-none">
                         New customer
-                      </label>
+                      </span>
                     </div>
                   )}
                   <div className="flex justify-end mt-6">
@@ -1670,15 +1668,14 @@ export function NewTransaction() {
                           ₱{Math.max(payment.amountPaid - calculateTotal(), 0).toFixed(2)}
                         </span>
                       </div>
-                      <label className="flex items-center space-x-2 text-sm text-gray-700">
-                        <input
-                          type="checkbox"
+                      <div className="flex items-center space-x-2 text-sm text-gray-700">
+                        <Switch
                           checked={isChangeGivenConfirmed}
-                          onChange={(e) => setIsChangeGivenConfirmed(e.target.checked)}
-                          className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+                          onChange={(checked) => setIsChangeGivenConfirmed(checked)}
+                          size="sm"
                         />
                         <span>Change given to customer</span>
-                      </label>
+                      </div>
                     </div>
                   )}
 
@@ -2612,8 +2609,8 @@ export function NewTransaction() {
             <h3 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0, marginBottom: '0.75rem', color: '#111827' }}>
               New Transaction Settings
             </h3>
-            <p style={{ fontSize: '0.9rem', color: '#4b5563', marginBottom: '1rem' }}>
-              Choose which customer fields in Step 1 are required before proceeding.
+            <p style={{ fontSize: '0.85rem', color: '#6b7280', marginBottom: '0.75rem' }}>
+              Configure which fields are required when creating a new transaction.
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
@@ -2623,29 +2620,22 @@ export function NewTransaction() {
                 { key: 'email' as const, label: 'Email' },
                 { key: 'handledBy' as const, label: 'Handled By' },
               ].map(field => (
-                <label
+                <div
                   key={field.key}
-                  style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
                 >
-                  <input
-                    type="checkbox"
+                  <Switch
                     checked={requiredFields[field.key]}
-                    onChange={(e) =>
+                    onChange={(checked) =>
                       setRequiredFields(prev => ({
                         ...prev,
-                        [field.key]: e.target.checked,
+                        [field.key]: checked,
                       }))
                     }
-                    style={{
-                      width: '1rem',
-                      height: '1rem',
-                      borderRadius: '0.25rem',
-                      border: '1px solid #d1d5db',
-                      cursor: 'pointer',
-                    }}
+                    size="sm"
                   />
                   <span style={{ fontSize: '0.9rem', color: '#111827' }}>{field.label}</span>
-                </label>
+                </div>
               ))}
             </div>
 

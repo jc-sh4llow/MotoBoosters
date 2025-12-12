@@ -10,6 +10,7 @@ import logo from '../../assets/logo.png';
 import bcrypt from 'bcryptjs';
 import { HeaderDropdown } from '../../components/HeaderDropdown';
 import { RoleBadge } from '../../components/RoleBadge';
+import Switch from '../../components/ui/Switch';
 
 async function hashPassword(raw: string): Promise<string> {
   const normalized = raw.trim();
@@ -1632,16 +1633,14 @@ export function Users() {
                     {/* Show Archived Toggle */}
                     {canViewArchived && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', paddingTop: '1.5rem' }}>
-                        <input
-                          type="checkbox"
-                          id="showArchived"
+                        <Switch
                           checked={showArchivedFilter}
-                          onChange={(e) => setShowArchivedFilter(e.target.checked)}
-                          style={{ width: '1rem', height: '1rem' }}
+                          onChange={(checked) => setShowArchivedFilter(checked)}
+                          size="sm"
                         />
-                        <label htmlFor="showArchived" style={{ fontSize: '0.875rem', color: '#4b5563' }}>
+                        <span style={{ fontSize: '0.875rem', color: '#4b5563' }}>
                           Show Archived
-                        </label>
+                        </span>
                       </div>
                     )}
                   </div>

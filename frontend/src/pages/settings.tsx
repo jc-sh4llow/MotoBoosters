@@ -9,6 +9,7 @@ import { db } from '../lib/firebase';
 import { useRoles } from '../contexts/PermissionsContext';
 import { RoleBadge } from '../components/RoleBadge';
 import { HeaderDropdown } from '../components/HeaderDropdown';
+import Switch from '../components/ui/Switch';
 
 // Section title color (consistent with other pages)
 const SECTION_TITLE_COLOR = '#1e40af';
@@ -1016,18 +1017,18 @@ export const Settings: React.FC = () => {
                             { key: 'email', label: 'Email' },
                             { key: 'handledBy', label: 'Handled By' },
                           ].map(({ key, label }) => (
-                            <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.9rem', color: '#111827', cursor: 'pointer' }}>
-                              <input
-                                type="checkbox"
+                            <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', color: '#111827' }}>
+                              <Switch
                                 checked={newTransactionRequiredFields[key] ?? false}
-                                onChange={(e) => {
-                                  const newFields = { ...newTransactionRequiredFields, [key]: e.target.checked };
+                                onChange={(checked) => {
+                                  const newFields = { ...newTransactionRequiredFields, [key]: checked };
                                   setNewTransactionRequiredFields(newFields);
                                   saveRequiredFields('newTransaction', newFields);
                                 }}
+                                size="sm"
                               />
                               <span>{label}</span>
-                            </label>
+                            </div>
                           ))}
                         </div>
                       </div>
@@ -1660,18 +1661,18 @@ export const Settings: React.FC = () => {
                             { key: 'restockLevel', label: 'Restock Level' },
                             { key: 'discount', label: 'Discount' },
                           ].map(({ key, label }) => (
-                            <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.9rem', color: '#111827', cursor: 'pointer' }}>
-                              <input
-                                type="checkbox"
+                            <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', color: '#111827' }}>
+                              <Switch
                                 checked={inventoryRequiredFields[key] ?? false}
-                                onChange={(e) => {
-                                  const newFields = { ...inventoryRequiredFields, [key]: e.target.checked };
+                                onChange={(checked) => {
+                                  const newFields = { ...inventoryRequiredFields, [key]: checked };
                                   setInventoryRequiredFields(newFields);
                                   saveRequiredFields('inventory', newFields);
                                 }}
+                                size="sm"
                               />
                               <span>{label}</span>
-                            </label>
+                            </div>
                           ))}
                         </div>
                       </div>
@@ -1858,18 +1859,18 @@ export const Settings: React.FC = () => {
                             { key: 'description', label: 'Description' },
                             { key: 'vehicleType', label: 'Vehicle Type' },
                           ].map(({ key, label }) => (
-                            <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.9rem', color: '#111827', cursor: 'pointer' }}>
-                              <input
-                                type="checkbox"
+                            <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', color: '#111827' }}>
+                              <Switch
                                 checked={servicesRequiredFields[key] ?? false}
-                                onChange={(e) => {
-                                  const newFields = { ...servicesRequiredFields, [key]: e.target.checked };
+                                onChange={(checked) => {
+                                  const newFields = { ...servicesRequiredFields, [key]: checked };
                                   setServicesRequiredFields(newFields);
                                   saveRequiredFields('services', newFields);
                                 }}
+                                size="sm"
                               />
                               <span>{label}</span>
-                            </label>
+                            </div>
                           ))}
                         </div>
                       </div>
@@ -2182,18 +2183,18 @@ export const Settings: React.FC = () => {
                             { key: 'address', label: 'Address' },
                             { key: 'vehicleType', label: 'Vehicle Type' },
                           ].map(({ key, label }) => (
-                            <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.9rem', color: '#111827', cursor: 'pointer' }}>
-                              <input
-                                type="checkbox"
+                            <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', color: '#111827' }}>
+                              <Switch
                                 checked={customersRequiredFields[key] ?? false}
-                                onChange={(e) => {
-                                  const newFields = { ...customersRequiredFields, [key]: e.target.checked };
+                                onChange={(checked) => {
+                                  const newFields = { ...customersRequiredFields, [key]: checked };
                                   setCustomersRequiredFields(newFields);
                                   saveRequiredFields('customers', newFields);
                                 }}
+                                size="sm"
                               />
                               <span>{label}</span>
-                            </label>
+                            </div>
                           ))}
                         </div>
                       </div>
@@ -2988,7 +2989,7 @@ export const Settings: React.FC = () => {
                       {isExpanded && (
                         <div style={{ backgroundColor: 'white' }}>
                           {group.permissions.map((perm) => (
-                            <label
+                            <div
                               key={perm.key}
                               style={{
                                 display: 'flex',
@@ -2998,17 +2999,18 @@ export const Settings: React.FC = () => {
                                 cursor: 'pointer',
                                 borderBottom: '1px solid #f3f4f6',
                               }}
+                              onClick={() => togglePermission(perm.key)}
                             >
-                              <input
-                                type="checkbox"
+                              <Switch
                                 checked={editingRole.permissions[perm.key] === true}
                                 onChange={() => togglePermission(perm.key)}
+                                size="sm"
                               />
                               <div>
                                 <div style={{ fontSize: '0.85rem', color: '#111827' }}>{perm.label}</div>
                                 <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>{perm.key}</div>
                               </div>
-                            </label>
+                            </div>
                           ))}
                         </div>
                       )}

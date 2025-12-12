@@ -9,6 +9,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import logo from '../../assets/logo.png';
 import { can } from '../../config/permissions';
 import { HeaderDropdown } from '../../components/HeaderDropdown';
+import Switch from '../../components/ui/Switch';
 
 export function Inventory() {
   // Sample data - replace with actual data from your backend
@@ -3279,24 +3280,17 @@ export function Inventory() {
                           <option value="out-of-stock">Out of Stock</option>
                         </select>
                       </div>
-                      {/* Show Archived checkbox - only visible if user has permission */}
+                      {/* Show Archived switch - only visible if user has permission */}
                       {canViewArchived && (
                         <div style={{ display: 'flex', alignItems: 'center', paddingTop: '1.5rem' }}>
-                          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#111827', cursor: 'pointer' }}>
-                            <input
-                              type="checkbox"
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#111827' }}>
+                            <Switch
                               checked={showArchived}
-                              onChange={(e) => setShowArchived(e.target.checked)}
-                              style={{
-                                width: '1rem',
-                                height: '1rem',
-                                borderRadius: '0.25rem',
-                                border: '1px solid #d1d5db',
-                                cursor: 'pointer',
-                              }}
+                              onChange={(checked) => setShowArchived(checked)}
+                              size="sm"
                             />
                             <span>Show Archived Items</span>
-                          </label>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -3740,7 +3734,7 @@ export function Inventory() {
               }}
             >
               {/* Item ID - always required, disabled */}
-              <label
+              <div
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -3748,135 +3742,86 @@ export function Inventory() {
                   fontSize: '0.875rem',
                   color: '#111827',
                   opacity: 0.6,
-                  cursor: 'not-allowed',
                 }}
               >
-                <input
-                  type="checkbox"
+                <Switch
                   checked={true}
+                  onChange={() => {}}
                   disabled
-                  style={{
-                    width: '1rem',
-                    height: '1rem',
-                    borderRadius: '0.25rem',
-                    border: '1px solid #d1d5db',
-                    backgroundColor: '#e5e7eb',
-                  }}
+                  size="sm"
                 />
                 <span>Item ID (always required)</span>
-              </label>
+              </div>
 
               {/* Brand */}
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#111827' }}>
-                <input
-                  type="checkbox"
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#111827' }}>
+                <Switch
                   checked={itemDetailsRequired.brand}
-                  onChange={(e) => setItemDetailsRequired(prev => ({ ...prev, brand: e.target.checked }))}
-                  style={{
-                    width: '1rem',
-                    height: '1rem',
-                    borderRadius: '0.25rem',
-                    border: '1px solid #d1d5db',
-                  }}
+                  onChange={(checked) => setItemDetailsRequired(prev => ({ ...prev, brand: checked }))}
+                  size="sm"
                 />
                 <span>Brand</span>
-              </label>
+              </div>
 
               {/* Item Name */}
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#111827' }}>
-                <input
-                  type="checkbox"
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#111827' }}>
+                <Switch
                   checked={itemDetailsRequired.itemName}
-                  onChange={(e) => setItemDetailsRequired(prev => ({ ...prev, itemName: e.target.checked }))}
-                  style={{
-                    width: '1rem',
-                    height: '1rem',
-                    borderRadius: '0.25rem',
-                    border: '1px solid #d1d5db',
-                  }}
+                  onChange={(checked) => setItemDetailsRequired(prev => ({ ...prev, itemName: checked }))}
+                  size="sm"
                 />
                 <span>Item Name</span>
-              </label>
+              </div>
 
               {/* Item Type */}
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#111827' }}>
-                <input
-                  type="checkbox"
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#111827' }}>
+                <Switch
                   checked={itemDetailsRequired.itemType}
-                  onChange={(e) => setItemDetailsRequired(prev => ({ ...prev, itemType: e.target.checked }))}
-                  style={{
-                    width: '1rem',
-                    height: '1rem',
-                    borderRadius: '0.25rem',
-                    border: '1px solid #d1d5db',
-                  }}
+                  onChange={(checked) => setItemDetailsRequired(prev => ({ ...prev, itemType: checked }))}
+                  size="sm"
                 />
                 <span>Item Type</span>
-              </label>
+              </div>
 
               {/* Purchase Price */}
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#111827' }}>
-                <input
-                  type="checkbox"
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#111827' }}>
+                <Switch
                   checked={itemDetailsRequired.purchasePrice}
-                  onChange={(e) => setItemDetailsRequired(prev => ({ ...prev, purchasePrice: e.target.checked }))}
-                  style={{
-                    width: '1rem',
-                    height: '1rem',
-                    borderRadius: '0.25rem',
-                    border: '1px solid #d1d5db',
-                  }}
+                  onChange={(checked) => setItemDetailsRequired(prev => ({ ...prev, purchasePrice: checked }))}
+                  size="sm"
                 />
                 <span>Purchase Price</span>
-              </label>
+              </div>
 
               {/* SRP */}
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#111827' }}>
-                <input
-                  type="checkbox"
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#111827' }}>
+                <Switch
                   checked={itemDetailsRequired.sellingPrice}
-                  onChange={(e) => setItemDetailsRequired(prev => ({ ...prev, sellingPrice: e.target.checked }))}
-                  style={{
-                    width: '1rem',
-                    height: '1rem',
-                    borderRadius: '0.25rem',
-                    border: '1px solid #d1d5db',
-                  }}
+                  onChange={(checked) => setItemDetailsRequired(prev => ({ ...prev, sellingPrice: checked }))}
+                  size="sm"
                 />
                 <span>SRP</span>
-              </label>
+              </div>
 
               {/* Added Stock */}
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#111827' }}>
-                <input
-                  type="checkbox"
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#111827' }}>
+                <Switch
                   checked={itemDetailsRequired.addedStock}
-                  onChange={(e) => setItemDetailsRequired(prev => ({ ...prev, addedStock: e.target.checked }))}
-                  style={{
-                    width: '1rem',
-                    height: '1rem',
-                    borderRadius: '0.25rem',
-                    border: '1px solid #d1d5db',
-                  }}
+                  onChange={(checked) => setItemDetailsRequired(prev => ({ ...prev, addedStock: checked }))}
+                  size="sm"
                 />
                 <span>Added Stock</span>
-              </label>
+              </div>
 
               {/* Restock Level */}
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#111827' }}>
-                <input
-                  type="checkbox"
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#111827' }}>
+                <Switch
                   checked={itemDetailsRequired.restockLevel}
-                  onChange={(e) => setItemDetailsRequired(prev => ({ ...prev, restockLevel: e.target.checked }))}
-                  style={{
-                    width: '1rem',
-                    height: '1rem',
-                    borderRadius: '0.25rem',
-                    border: '1px solid #d1d5db',
-                  }}
+                  onChange={(checked) => setItemDetailsRequired(prev => ({ ...prev, restockLevel: checked }))}
+                  size="sm"
                 />
                 <span>Restock Level</span>
-              </label>
+              </div>
             </div>
 
             <div

@@ -7,6 +7,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { can } from '../../config/permissions';
 import logo from '../../assets/logo.png';
 import { HeaderDropdown } from '../../components/HeaderDropdown';
+import Switch from '../../components/ui/Switch';
 
 export type CustomerRow = {
   id: string;          // Firestore document ID
@@ -977,15 +978,14 @@ export function Customers() {
                     </select>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'flex-end', gap: '0.5rem' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.875rem', color: '#4b5563' }}>
-                      <input
-                        type="checkbox"
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#4b5563' }}>
+                      <Switch
                         checked={showArchivedFilter}
-                        onChange={(e) => setShowArchivedFilter(e.target.checked)}
-                        style={{ width: '1rem', height: '1rem', cursor: 'pointer' }}
+                        onChange={(checked) => setShowArchivedFilter(checked)}
+                        size="sm"
                       />
                       Show Archived
-                    </label>
+                    </div>
                   </div>
                 </div>
               )}

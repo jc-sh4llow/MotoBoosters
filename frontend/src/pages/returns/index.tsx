@@ -1,4 +1,4 @@
-import { FaHome, FaChevronDown, FaBars, FaWarehouse, FaTag, FaWrench, FaFileInvoice, FaPlus, FaUser, FaSearch, FaTimes, FaUndoAlt, FaFilter, FaCog, FaFileExcel, FaTrash } from 'react-icons/fa';
+import { FaHome, FaChevronDown, FaBars, FaWarehouse, FaTag, FaWrench, FaFileInvoice, FaPlus, FaUser, FaSearch, FaTimes, FaUndoAlt, FaFilter, FaCog, FaFileExcel } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useMemo } from 'react';
 import { collection, getDocs, query, where, addDoc, writeBatch, doc, updateDoc } from 'firebase/firestore';
@@ -429,65 +429,6 @@ export const Returns: React.FC = () => {
     }
   };
 
-  const handleToggleArchiveReturn = async (returnDocId: string, currentStatus?: string) => {
-    try {
-      const newStatus = currentStatus === 'archived' ? 'active' : 'archived';
-
-      if (newStatus === 'archived' && !canArchiveReturns) {
-        setModalState({
-          type: 'info',
-          title: 'Not allowed',
-          message: 'Your role is not allowed to archive returns.',
-        });
-        return;
-      }
-
-      if (newStatus === 'active' && !canUnarchiveReturns) {
-        setModalState({
-          type: 'info',
-          title: 'Not allowed',
-          message: 'Your role is not allowed to unarchive returns.',
-        });
-        return;
-      }
-
-      if (newStatus === 'archived') {
-        setModalState({
-          type: 'confirm-archive',
-          title: 'Archive return?',
-          message:
-            'Are you sure you want to archive this return? It will be hidden from the main list but not deleted.',
-          returnDocId,
-          currentStatus,
-        });
-        return;
-      }
-
-      const ref = doc(db, 'returns', returnDocId);
-      await updateDoc(ref, {
-        status: newStatus,
-        archivedAt: newStatus === 'archived' ? new Date().toISOString() : null,
-      });
-
-      setPreviousReturns((prev) =>
-        prev.map((row) =>
-          row.returnDocId === returnDocId
-            ? {
-              ...row,
-              status: newStatus,
-            }
-            : row,
-        ),
-      );
-    } catch (err) {
-      console.error('Error archiving/unarchiving return:', err);
-      setModalState({
-        type: 'info',
-        title: 'Error',
-        message: 'Failed to update return archive status. Please try again.',
-      });
-    }
-  };
 
   // Firestore collection ref for transactions
   const transactionsCollection = collection(db, 'transactions');
@@ -2233,16 +2174,131 @@ export const Returns: React.FC = () => {
                       alignItems: 'center',
                     }}
                   >
-                    <h2
-                      style={{
-                        fontSize: '1rem',
-                        fontWeight: 600,
-                        color: '#1e40af',
-                        margin: 0,
-                      }}
-                    >
-                      Previous Returns
-                    </h2>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                      <h2
+                        style={{
+                          fontSize: '1rem',
+                          fontWeight: 600,
+                          color: '#1e40af',
+                          margin: 0,
+                        }}
+                      >
+                        Previous Returns
+                      </h2>
+                      {isSelectMode && selectedItems.size > 0 && (() => {
+                        const selectedRets = getFilteredReturns.filter(ret => selectedItems.has(ret.returnDocId));
+                        const hasUnarchived = selectedRets.some(ret => ret.status !== 'archived');
+                        const hasArchived = selectedRets.some(ret => ret.status === 'archived');
+
+                        return (
+                          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                            <span style={{ fontSize: '0.875rem', color: '#374151' }}>
+                              {selectedItems.size} selected
+                            </span>
+                            {canArchiveReturns && hasUnarchived && (
+                              <button
+                                onClick={async () => {
+                                  const toArchive = selectedRets.filter(ret => ret.status !== 'archived');
+                                  await Promise.all(
+                                    toArchive.map((ret) => {
+                                      const retRef = doc(db, 'returns', ret.returnDocId);
+                                      return updateDoc(retRef, { status: 'archived', archivedAt: new Date().toISOString() });
+                                    })
+                                  );
+                                  setPreviousReturns((prev) =>
+                                    prev.map((row) =>
+                                      toArchive.some(r => r.returnDocId === row.returnDocId)
+                                        ? { ...row, status: 'archived' }
+                                        : row,
+                                    ),
+                                  );
+                                  setSelectedItems(new Set());
+                                  setIsSelectMode(false);
+                                }}
+                                style={{
+                                  backgroundColor: '#f59e0b',
+                                  color: 'white',
+                                  padding: '0.5rem 1rem',
+                                  borderRadius: '0.375rem',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  fontSize: '0.875rem',
+                                  fontWeight: 500,
+                                }}
+                              >
+                                Archive Selected
+                              </button>
+                            )}
+                            {canUnarchiveReturns && hasArchived && (
+                              <button
+                                onClick={async () => {
+                                  const toUnarchive = selectedRets.filter(ret => ret.status === 'archived');
+                                  await Promise.all(
+                                    toUnarchive.map((ret) => {
+                                      const retRef = doc(db, 'returns', ret.returnDocId);
+                                      return updateDoc(retRef, { status: 'active', archivedAt: null });
+                                    })
+                                  );
+                                  setPreviousReturns((prev) =>
+                                    prev.map((row) =>
+                                      toUnarchive.some(r => r.returnDocId === row.returnDocId)
+                                        ? { ...row, status: 'active' }
+                                        : row,
+                                    ),
+                                  );
+                                  setSelectedItems(new Set());
+                                  setIsSelectMode(false);
+                                }}
+                                style={{
+                                  backgroundColor: '#3b82f6',
+                                  color: 'white',
+                                  padding: '0.5rem 1rem',
+                                  borderRadius: '0.375rem',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  fontSize: '0.875rem',
+                                  fontWeight: 500,
+                                }}
+                              >
+                                Unarchive Selected
+                              </button>
+                            )}
+                            {canDeleteReturns && hasArchived && !hasUnarchived && (
+                              <button
+                                onClick={async () => {
+                                  const toDelete = selectedRets.filter(ret => ret.status === 'archived');
+                                  await Promise.all(
+                                    toDelete.map((ret) => {
+                                      const retRef = doc(db, 'returns', ret.returnDocId);
+                                      return updateDoc(retRef, { deleted: true });
+                                    })
+                                  );
+                                  setPreviousReturns((prev) =>
+                                    prev.filter((row) =>
+                                      !toDelete.some(r => r.returnDocId === row.returnDocId)
+                                    ),
+                                  );
+                                  setSelectedItems(new Set());
+                                  setIsSelectMode(false);
+                                }}
+                                style={{
+                                  backgroundColor: '#ef4444',
+                                  color: 'white',
+                                  padding: '0.5rem 1rem',
+                                  borderRadius: '0.375rem',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  fontSize: '0.875rem',
+                                  fontWeight: 500,
+                                }}
+                              >
+                                Delete Selected
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </div>
                   </div>
 
                   <div style={{ overflowX: 'auto' }}>
@@ -2350,9 +2406,18 @@ export const Returns: React.FC = () => {
                                 {ret.status !== 'archived' && canArchiveReturns && (
                                   <button
                                     type="button"
-                                    onClick={() =>
-                                      handleToggleArchiveReturn(ret.returnDocId, ret.status)
-                                    }
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      const retRef = doc(db, 'returns', ret.returnDocId);
+                                      await updateDoc(retRef, { status: 'archived', archivedAt: new Date().toISOString() });
+                                      setPreviousReturns((prev) =>
+                                        prev.map((row) =>
+                                          row.returnDocId === ret.returnDocId
+                                            ? { ...row, status: 'archived' }
+                                            : row,
+                                        ),
+                                      );
+                                    }}
                                     style={{
                                       padding: '0.25rem 0.75rem',
                                       borderRadius: '999px',
@@ -2369,9 +2434,18 @@ export const Returns: React.FC = () => {
                                 {ret.status === 'archived' && canUnarchiveReturns && (
                                   <button
                                     type="button"
-                                    onClick={() =>
-                                      handleToggleArchiveReturn(ret.returnDocId, ret.status)
-                                    }
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      const retRef = doc(db, 'returns', ret.returnDocId);
+                                      await updateDoc(retRef, { status: 'active', archivedAt: null });
+                                      setPreviousReturns((prev) =>
+                                        prev.map((row) =>
+                                          row.returnDocId === ret.returnDocId
+                                            ? { ...row, status: 'active' }
+                                            : row,
+                                        ),
+                                      );
+                                    }}
                                     style={{
                                       padding: '0.25rem 0.75rem',
                                       borderRadius: '999px',
@@ -2388,12 +2462,13 @@ export const Returns: React.FC = () => {
                                 {ret.status === 'archived' && canDeleteReturns && (
                                   <button
                                     type="button"
-                                    onClick={() => {
-                                      setModalState({
-                                        type: 'info',
-                                        title: 'Delete Return',
-                                        message: 'Delete functionality for returns is not yet implemented.',
-                                      });
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      const retRef = doc(db, 'returns', ret.returnDocId);
+                                      await updateDoc(retRef, { deleted: true });
+                                      setPreviousReturns((prev) =>
+                                        prev.filter((row) => row.returnDocId !== ret.returnDocId),
+                                      );
                                     }}
                                     style={{
                                       padding: '0.25rem 0.75rem',
@@ -2405,7 +2480,7 @@ export const Returns: React.FC = () => {
                                       cursor: 'pointer',
                                     }}
                                   >
-                                    <FaTrash size={12} style={{ display: 'inline', marginRight: '0.25rem' }} /> Delete
+                                    Delete
                                   </button>
                                 )}
                               </td>
@@ -2521,7 +2596,19 @@ export const Returns: React.FC = () => {
                   type="button"
                   onClick={async () => {
                     if (modalState.type === 'confirm-archive') {
-                      await handleToggleArchiveReturn(modalState.returnDocId, modalState.currentStatus);
+                      const newStatus = modalState.currentStatus === 'archived' ? 'active' : 'archived';
+                      const ref = doc(db, 'returns', modalState.returnDocId);
+                      await updateDoc(ref, {
+                        status: newStatus,
+                        archivedAt: newStatus === 'archived' ? new Date().toISOString() : null,
+                      });
+                      setPreviousReturns((prev) =>
+                        prev.map((row) =>
+                          row.returnDocId === modalState.returnDocId
+                            ? { ...row, status: newStatus }
+                            : row,
+                        ),
+                      );
                       setModalState(null);
                     }
                   }}

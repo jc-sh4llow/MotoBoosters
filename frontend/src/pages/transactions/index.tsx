@@ -1185,12 +1185,21 @@ export function Transactions() {
                       {/* Show Archive button if any unarchived items are selected */}
                       {canArchiveTransactions && hasUnarchived && (
                         <button
-                          onClick={() => {
-                            // Archive only unarchived selected transactions
-                            selectedTxs.filter(tx => !tx.archived).forEach(async (tx) => {
-                              const txRef = doc(db, 'transactions', tx.id);
-                              await updateDoc(txRef, { archived: true });
-                            });
+                          onClick={async () => {
+                            const toArchive = selectedTxs.filter(tx => !tx.archived);
+                            await Promise.all(
+                              toArchive.map((tx) => {
+                                const txRef = doc(db, 'transactions', tx.id);
+                                return updateDoc(txRef, { archived: true });
+                              })
+                            );
+                            setTransactions((prev) =>
+                              prev.map((row) =>
+                                toArchive.some(t => t.id === row.id)
+                                  ? { ...row, archived: true }
+                                  : row,
+                              ),
+                            );
                             setSelectedItems(new Set());
                             setIsSelectMode(false);
                           }}
@@ -1211,12 +1220,21 @@ export function Transactions() {
                       {/* Show Unarchive button if any archived items are selected */}
                       {canUnarchiveTransactions && hasArchived && (
                         <button
-                          onClick={() => {
-                            // Unarchive only archived selected transactions
-                            selectedTxs.filter(tx => tx.archived).forEach(async (tx) => {
-                              const txRef = doc(db, 'transactions', tx.id);
-                              await updateDoc(txRef, { archived: false });
-                            });
+                          onClick={async () => {
+                            const toUnarchive = selectedTxs.filter(tx => tx.archived);
+                            await Promise.all(
+                              toUnarchive.map((tx) => {
+                                const txRef = doc(db, 'transactions', tx.id);
+                                return updateDoc(txRef, { archived: false });
+                              })
+                            );
+                            setTransactions((prev) =>
+                              prev.map((row) =>
+                                toUnarchive.some(t => t.id === row.id)
+                                  ? { ...row, archived: false }
+                                  : row,
+                              ),
+                            );
                             setSelectedItems(new Set());
                             setIsSelectMode(false);
                           }}
@@ -1232,6 +1250,39 @@ export function Transactions() {
                           }}
                         >
                           Unarchive Selected
+                        </button>
+                      )}
+                      {/* Show Delete button if only archived items are selected */}
+                      {canDeleteTransactions && hasArchived && !hasUnarchived && (
+                        <button
+                          onClick={async () => {
+                            const toDelete = selectedTxs.filter(tx => tx.archived);
+                            await Promise.all(
+                              toDelete.map((tx) => {
+                                const txRef = doc(db, 'transactions', tx.id);
+                                return updateDoc(txRef, { deleted: true });
+                              })
+                            );
+                            setTransactions((prev) =>
+                              prev.filter((row) =>
+                                !toDelete.some(t => t.id === row.id)
+                              ),
+                            );
+                            setSelectedItems(new Set());
+                            setIsSelectMode(false);
+                          }}
+                          style={{
+                            backgroundColor: '#ef4444',
+                            color: 'white',
+                            padding: '0.5rem 1rem',
+                            borderRadius: '0.375rem',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: '0.875rem',
+                            fontWeight: 500,
+                          }}
+                        >
+                          Delete Selected
                         </button>
                       )}
                     </div>

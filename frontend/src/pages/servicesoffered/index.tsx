@@ -171,8 +171,6 @@ export function Services() {
     loadServices();
   }, []);
 
-
-
   const [selectedService, setSelectedService] = useState<ServiceRow | null>(null);
   const [serviceForm, setServiceForm] = useState({
     id: '',
@@ -213,7 +211,7 @@ export function Services() {
         confirmLabel: 'Close',
         cancelLabel: undefined,
         tone: 'info',
-        onConfirm: () => setModalState(prev => ({ ...prev, open: false })),
+        onConfirm: undefined,
       });
       return;
     }
@@ -259,36 +257,59 @@ export function Services() {
       setTimeout(() => setShouldShowDetails(false), 300);
     } catch (err) {
       console.error('Error saving service', err);
-      alert('Failed to save service. Please try again.');
+      setModalState({
+        open: true,
+        title: 'Save Failed',
+        message: 'Failed to save service. Please try again.',
+        confirmLabel: 'Close',
+        cancelLabel: undefined,
+        tone: 'danger',
+        onConfirm: undefined,
+      });
     }
   };
 
   const handleDeleteService = async () => {
     if (!canEditServices) return;
     if (!selectedService) return;
-    const confirmed = window.confirm('Delete this service?');
-    if (!confirmed) return;
+    setModalState({
+      open: true,
+      title: 'Delete Service',
+      message: 'Are you sure you want to permanently delete this archived service? This action cannot be undone.',
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+      tone: 'danger',
+      onConfirm: async () => {
+        try {
+          await deleteDoc(doc(db, 'services', selectedService.id));
+          await loadServices();
+          setSelectedService(null);
 
-    try {
-      await deleteDoc(doc(db, 'services', selectedService.id));
-      await loadServices();
-      setSelectedService(null);
-
-      setServiceForm({
-        id: '',
-        name: '',
-        price: '',
-        description: '',
-        vehicleTypes: []
-      });
-      setSelectedTypes(new Set());
-      setServiceHasUnsavedChanges(false);
-      setIsDetailsVisible(false);
-      setTimeout(() => setShouldShowDetails(false), 300);
-    } catch (err) {
-      console.error('Error deleting service', err);
-      alert('Failed to delete service. Please try again.');
-    }
+          setServiceForm({
+            id: '',
+            name: '',
+            price: '',
+            description: '',
+            vehicleTypes: []
+          });
+          setSelectedTypes(new Set());
+          setServiceHasUnsavedChanges(false);
+          setIsDetailsVisible(false);
+          setTimeout(() => setShouldShowDetails(false), 300);
+        } catch (err) {
+          console.error('Error deleting service', err);
+          setModalState({
+            open: true,
+            title: 'Delete Failed',
+            message: 'Failed to delete service. Please try again.',
+            confirmLabel: 'Close',
+            cancelLabel: undefined,
+            tone: 'danger',
+            onConfirm: undefined,
+          });
+        }
+      },
+    });
   };
 
   const handleToggleServiceStatus = async (service: ServiceRow) => {
@@ -312,7 +333,15 @@ export function Services() {
       }
     } catch (err) {
       console.error('Error toggling service status', err);
-      alert('Failed to update service status. Please try again.');
+      setModalState({
+        open: true,
+        title: 'Status Update Failed',
+        message: 'Failed to update service status. Please try again.',
+        confirmLabel: 'Close',
+        cancelLabel: undefined,
+        tone: 'danger',
+        onConfirm: undefined,
+      });
     }
   };
 
@@ -324,9 +353,18 @@ export function Services() {
       t => t.toLowerCase() === name.toLowerCase()
     );
     if (exists) {
-      alert('That vehicle type already exists.');
+      setModalState({
+        open: true,
+        title: 'Duplicate Vehicle Type',
+        message: 'That vehicle type already exists.',
+        confirmLabel: 'Close',
+        cancelLabel: undefined,
+        tone: 'info',
+        onConfirm: undefined,
+      });
       return;
     }
+
     setVehicleTypeOptions(prev => {
       const base = prev.filter(t => t !== 'All Types');
       const updated = [...base, name].sort((a, b) => a.localeCompare(b));
@@ -669,21 +707,38 @@ export function Services() {
                         {selectedUnarchivedCount > 0 && (
                           <button
                             type="button"
-                            onClick={async () => {
+                            onClick={() => {
                               const itemsToArchive = selectedServices.filter(s => !s.archived);
                               if (!itemsToArchive.length) return;
-                              if (!window.confirm(`Archive ${itemsToArchive.length} service(s)?`)) return;
-                              try {
-                                for (const item of itemsToArchive) {
-                                  await updateDoc(doc(db, 'services', item.id), { archived: true });
-                                }
-                                await loadServices();
-                                setSelectedItems(new Set());
-                                setIsSelectMode(false);
-                              } catch (err) {
-                                console.error('Error archiving services', err);
-                                alert('Failed to archive selected services.');
-                              }
+                              setModalState({
+                                open: true,
+                                title: 'Archive Services',
+                                message: `Archive ${itemsToArchive.length} service(s)?`,
+                                confirmLabel: 'Archive',
+                                cancelLabel: 'Cancel',
+                                tone: 'danger',
+                                onConfirm: async () => {
+                                  try {
+                                    for (const item of itemsToArchive) {
+                                      await updateDoc(doc(db, 'services', item.id), { archived: true });
+                                    }
+                                    await loadServices();
+                                    setSelectedItems(new Set());
+                                    setIsSelectMode(false);
+                                  } catch (err) {
+                                    console.error('Error archiving services', err);
+                                    setModalState({
+                                      open: true,
+                                      title: 'Archive Failed',
+                                      message: 'Failed to archive selected services. Please try again.',
+                                      confirmLabel: 'Close',
+                                      cancelLabel: undefined,
+                                      tone: 'danger',
+                                      onConfirm: undefined,
+                                    });
+                                  }
+                                },
+                              });
                             }}
                             style={{
                               backgroundColor: '#dc2626',
@@ -708,21 +763,38 @@ export function Services() {
                         {selectedArchivedCount > 0 && (
                           <button
                             type="button"
-                            onClick={async () => {
+                            onClick={() => {
                               const itemsToUnarchive = selectedServices.filter(s => s.archived);
                               if (!itemsToUnarchive.length) return;
-                              if (!window.confirm(`Unarchive ${itemsToUnarchive.length} service(s)?`)) return;
-                              try {
-                                for (const item of itemsToUnarchive) {
-                                  await updateDoc(doc(db, 'services', item.id), { archived: false });
-                                }
-                                await loadServices();
-                                setSelectedItems(new Set());
-                                setIsSelectMode(false);
-                              } catch (err) {
-                                console.error('Error unarchiving services', err);
-                                alert('Failed to unarchive selected services.');
-                              }
+                              setModalState({
+                                open: true,
+                                title: 'Unarchive Services',
+                                message: `Unarchive ${itemsToUnarchive.length} service(s)?`,
+                                confirmLabel: 'Unarchive',
+                                cancelLabel: 'Cancel',
+                                tone: 'info',
+                                onConfirm: async () => {
+                                  try {
+                                    for (const item of itemsToUnarchive) {
+                                      await updateDoc(doc(db, 'services', item.id), { archived: false });
+                                    }
+                                    await loadServices();
+                                    setSelectedItems(new Set());
+                                    setIsSelectMode(false);
+                                  } catch (err) {
+                                    console.error('Error unarchiving services', err);
+                                    setModalState({
+                                      open: true,
+                                      title: 'Unarchive Failed',
+                                      message: 'Failed to unarchive selected services. Please try again.',
+                                      confirmLabel: 'Close',
+                                      cancelLabel: undefined,
+                                      tone: 'danger',
+                                      onConfirm: undefined,
+                                    });
+                                  }
+                                },
+                              });
                             }}
                             style={{
                               backgroundColor: '#4b5563',
@@ -747,22 +819,50 @@ export function Services() {
                         {canDeleteServices && selectedArchivedCount > 0 && selectedUnarchivedCount === 0 && (
                           <button
                             type="button"
-                            onClick={async () => {
+                            onClick={() => {
                               const itemsToDelete = selectedServices.filter(s => s.archived);
                               if (!itemsToDelete.length) return;
-                              if (!window.confirm(`Delete ${itemsToDelete.length} archived service(s)? This cannot be undone.`)) return;
-                              if (!window.confirm('Are you absolutely sure you want to permanently delete the selected archived services?')) return;
-                              try {
-                                for (const item of itemsToDelete) {
-                                  await deleteDoc(doc(db, 'services', item.id));
-                                }
-                                await loadServices();
-                                setSelectedItems(new Set());
-                                setIsSelectMode(false);
-                              } catch (err) {
-                                console.error('Error deleting services', err);
-                                alert('Failed to delete selected services.');
-                              }
+                              // First confirmation
+                              setModalState({
+                                open: true,
+                                title: 'Delete Archived Services',
+                                message: `Delete ${itemsToDelete.length} archived service(s)? This cannot be undone.`,
+                                confirmLabel: 'Continue',
+                                cancelLabel: 'Cancel',
+                                tone: 'danger',
+                                onConfirm: () => {
+                                  // Second, stronger confirmation
+                                  setModalState({
+                                    open: true,
+                                    title: 'Confirm Permanent Deletion',
+                                    message: 'Are you absolutely sure you want to permanently delete the selected archived services? This action cannot be undone.',
+                                    confirmLabel: 'Delete',
+                                    cancelLabel: 'Cancel',
+                                    tone: 'danger',
+                                    onConfirm: async () => {
+                                      try {
+                                        for (const item of itemsToDelete) {
+                                          await deleteDoc(doc(db, 'services', item.id));
+                                        }
+                                        await loadServices();
+                                        setSelectedItems(new Set());
+                                        setIsSelectMode(false);
+                                      } catch (err) {
+                                        console.error('Error deleting services', err);
+                                        setModalState({
+                                          open: true,
+                                          title: 'Delete Failed',
+                                          message: 'Failed to delete selected services. Please try again.',
+                                          confirmLabel: 'Close',
+                                          cancelLabel: undefined,
+                                          tone: 'danger',
+                                          onConfirm: undefined,
+                                        });
+                                      }
+                                    },
+                                  });
+                                },
+                              });
                             }}
                             style={{
                               backgroundColor: '#b91c1c',
@@ -1096,11 +1196,35 @@ export function Services() {
                               {canArchiveServices && (
                                 <button
                                   type="button"
-                                  onClick={async () => {
-                                    if (!selectedService || !window.confirm('Unarchive this service?')) return;
-                                    await updateDoc(doc(db, 'services', selectedService.id), { archived: false });
-                                    await loadServices();
-                                    setSelectedService({ ...selectedService, archived: false });
+                                  onClick={() => {
+                                    if (!selectedService) return;
+                                    const svc = selectedService;
+                                    setModalState({
+                                      open: true,
+                                      title: 'Unarchive Service',
+                                      message: `Unarchive service ${svc.serviceId}?`,
+                                      confirmLabel: 'Unarchive',
+                                      cancelLabel: 'Cancel',
+                                      tone: 'info',
+                                      onConfirm: async () => {
+                                        try {
+                                          await updateDoc(doc(db, 'services', svc.id), { archived: false });
+                                          await loadServices();
+                                          setSelectedService({ ...svc, archived: false });
+                                        } catch (err) {
+                                          console.error('Error unarchiving service', err);
+                                          setModalState({
+                                            open: true,
+                                            title: 'Unarchive Failed',
+                                            message: 'Failed to unarchive this service. Please try again.',
+                                            confirmLabel: 'Close',
+                                            cancelLabel: undefined,
+                                            tone: 'danger',
+                                            onConfirm: undefined,
+                                          });
+                                        }
+                                      },
+                                    });
                                   }}
                                   style={{ flex: 1, padding: '0.5rem 1rem', backgroundColor: '#dbeafe', color: '#1d4ed8', border: '1px solid #93c5fd', borderRadius: '0.375rem', fontWeight: '500', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem' }}
                                 >
@@ -1118,19 +1242,43 @@ export function Services() {
                               )}
                             </div>
                           ) : (
-                            canArchiveServices && selectedService && (
+                            canArchiveServices && (
                               <button
                                 type="button"
-                                onClick={async () => {
-                                  if (!selectedService || !window.confirm('Archive this service?')) return;
-                                  await updateDoc(doc(db, 'services', selectedService.id), { archived: true });
-                                  await loadServices();
-                                  setSelectedService(null);
-                                  setServiceForm({ id: '', name: '', price: '', description: '', vehicleTypes: [] });
-                                  setSelectedTypes(new Set());
-                                  setIsDetailsVisible(false);
-                                  setTimeout(() => setShouldShowDetails(false), 300);
+                                onClick={() => {
+                                  const svc = selectedService;
+                                  setModalState({
+                                    open: true,
+                                    title: 'Archive Service',
+                                    message: `Archive service ${svc.serviceId}?`,
+                                    confirmLabel: 'Archive',
+                                    cancelLabel: 'Cancel',
+                                    tone: 'danger',
+                                    onConfirm: async () => {
+                                      try {
+                                        await updateDoc(doc(db, 'services', svc.id), { archived: true });
+                                        await loadServices();
+                                        setSelectedService(null);
+                                        setServiceForm({ id: '', name: '', price: '', description: '', vehicleTypes: [] });
+                                        setSelectedTypes(new Set());
+                                        setIsDetailsVisible(false);
+                                        setTimeout(() => setShouldShowDetails(false), 300);
+                                      } catch (err) {
+                                        console.error('Error archiving service', err);
+                                        setModalState({
+                                          open: true,
+                                          title: 'Archive Failed',
+                                          message: 'Failed to archive this service. Please try again.',
+                                          confirmLabel: 'Close',
+                                          cancelLabel: undefined,
+                                          tone: 'danger',
+                                          onConfirm: undefined,
+                                        });
+                                      }
+                                    },
+                                  });
                                 }}
+                                disabled={!selectedService}
                                 style={{ marginTop: '0.75rem', padding: '0.5rem 1rem', backgroundColor: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '0.375rem', fontWeight: '500', cursor: 'pointer', width: '100%' }}
                               >
                                 Archive Service
@@ -1433,11 +1581,35 @@ export function Services() {
                                   {canArchiveServices && (
                                     <button
                                       type="button"
-                                      onClick={async () => {
-                                        if (!selectedService || !window.confirm('Unarchive this service?')) return;
-                                        await updateDoc(doc(db, 'services', selectedService.id), { archived: false });
-                                        await loadServices();
-                                        setSelectedService({ ...selectedService, archived: false });
+                                      onClick={() => {
+                                        if (!selectedService) return;
+                                        const svc = selectedService;
+                                        setModalState({
+                                          open: true,
+                                          title: 'Unarchive Service',
+                                          message: `Unarchive service ${svc.serviceId}?`,
+                                          confirmLabel: 'Unarchive',
+                                          cancelLabel: 'Cancel',
+                                          tone: 'info',
+                                          onConfirm: async () => {
+                                            try {
+                                              await updateDoc(doc(db, 'services', svc.id), { archived: false });
+                                              await loadServices();
+                                              setSelectedService({ ...svc, archived: false });
+                                            } catch (err) {
+                                              console.error('Error unarchiving service', err);
+                                              setModalState({
+                                                open: true,
+                                                title: 'Unarchive Failed',
+                                                message: 'Failed to unarchive this service. Please try again.',
+                                                confirmLabel: 'Close',
+                                                cancelLabel: undefined,
+                                                tone: 'danger',
+                                                onConfirm: undefined,
+                                              });
+                                            }
+                                          },
+                                        });
                                       }}
                                       style={{ flex: 1, padding: '0.5rem 1rem', backgroundColor: '#dbeafe', color: '#1d4ed8', border: '1px solid #93c5fd', borderRadius: '0.375rem', fontWeight: '500', cursor: 'pointer' }}
                                     >
@@ -1458,15 +1630,38 @@ export function Services() {
                                 canArchiveServices && (
                                   <button
                                     type="button"
-                                    onClick={async () => {
-                                      if (!selectedService || !window.confirm('Archive this service?')) return;
-                                      await updateDoc(doc(db, 'services', selectedService.id), { archived: true });
-                                      await loadServices();
-                                      setSelectedService(null);
-                                      setServiceForm({ id: '', name: '', price: '', description: '', vehicleTypes: [] });
-                                      setSelectedTypes(new Set());
-                                      setIsDetailsVisible(false);
-                                      setTimeout(() => setShouldShowDetails(false), 300);
+                                    onClick={() => {
+                                      const svc = selectedService;
+                                      setModalState({
+                                        open: true,
+                                        title: 'Archive Service',
+                                        message: `Archive service ${svc.serviceId}?`,
+                                        confirmLabel: 'Archive',
+                                        cancelLabel: 'Cancel',
+                                        tone: 'danger',
+                                        onConfirm: async () => {
+                                          try {
+                                            await updateDoc(doc(db, 'services', svc.id), { archived: true });
+                                            await loadServices();
+                                            setSelectedService(null);
+                                            setServiceForm({ id: '', name: '', price: '', description: '', vehicleTypes: [] });
+                                            setSelectedTypes(new Set());
+                                            setIsDetailsVisible(false);
+                                            setTimeout(() => setShouldShowDetails(false), 300);
+                                          } catch (err) {
+                                            console.error('Error archiving service', err);
+                                            setModalState({
+                                              open: true,
+                                              title: 'Archive Failed',
+                                              message: 'Failed to archive this service. Please try again.',
+                                              confirmLabel: 'Close',
+                                              cancelLabel: undefined,
+                                              tone: 'danger',
+                                              onConfirm: undefined,
+                                            });
+                                          }
+                                        },
+                                      });
                                     }}
                                     disabled={!selectedService}
                                     style={{ marginTop: '0.75rem', padding: '0.5rem 1rem', backgroundColor: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '0.375rem', fontWeight: '500', cursor: 'pointer', width: '100%' }}
@@ -1588,9 +1783,9 @@ export function Services() {
                         )}
                         <th style={{ padding: '0.75rem 1rem', fontWeight: '500', color: '#4b5563' }}>Service ID</th>
                         <th style={{ padding: '0.75rem 1rem', fontWeight: '500', color: '#4b5563' }}>Service Name</th>
-                        <th style={{ padding: '0.75rem 1rem', fontWeight: '500', textAlign: 'center', color: '#4b5563' }}>Description</th>
-                        <th style={{ padding: '0.75rem 1rem', fontWeight: '500', textAlign: 'center', color: '#4b5563' }}>Price</th>
-                        <th style={{ padding: '0.75rem 1rem', fontWeight: '500', textAlign: 'center', color: '#4b5563' }}>Status</th>
+                        <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: '500', color: '#4b5563' }}>Description</th>
+                        <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: '500', color: '#4b5563' }}>Price</th>
+                        <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: '500', color: '#4b5563' }}>Status</th>
                         <th style={{ padding: '0.75rem 1rem', fontWeight: '500', color: '#4b5563' }}>Vehicle Types</th>
                       </tr>
                     </thead>
@@ -1759,6 +1954,87 @@ export function Services() {
                   }}
                 >
                   Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        {/* Generic confirmation / message modal (desktop + general) */}
+        {modalState.open && (
+          <div style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0,0,0,0.45)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 2200,
+          }}>
+            <div style={{
+              backgroundColor: 'white',
+              borderRadius: '0.75rem',
+              padding: '1.5rem 2rem',
+              maxWidth: '480px',
+              width: '100%',
+              boxShadow: '0 20px 40px rgba(15, 23, 42, 0.45)',
+              border: '1px solid #e5e7eb',
+            }}>
+              <h3 style={{
+                fontSize: '1.1rem',
+                fontWeight: 600,
+                margin: 0,
+                marginBottom: '0.75rem',
+                color: modalState.tone === 'danger' ? '#b91c1c' : '#111827',
+              }}>
+                {modalState.title}
+              </h3>
+              <p style={{
+                fontSize: '0.9rem',
+                color: '#374151',
+                margin: 0,
+                marginBottom: '1.25rem',
+                whiteSpace: 'pre-line',
+              }}>
+                {modalState.message}
+              </p>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                {modalState.cancelLabel && (
+                  <button
+                    type="button"
+                    onClick={() => setModalState(prev => ({ ...prev, open: false }))}
+                    style={{
+                      padding: '0.45rem 0.9rem',
+                      borderRadius: '0.375rem',
+                      border: '1px solid #d1d5db',
+                      backgroundColor: 'white',
+                      color: '#374151',
+                      cursor: 'pointer',
+                      fontSize: '0.875rem',
+                    }}
+                  >
+                    {modalState.cancelLabel}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const cb = modalState.onConfirm;
+                    setModalState(prev => ({ ...prev, open: false }));
+                    if (cb) cb();
+                  }}
+                  style={{
+                    padding: '0.45rem 0.9rem',
+                    borderRadius: '0.375rem',
+                    border: '1px solid',
+                    borderColor: modalState.tone === 'danger' ? '#b91c1c' : '#2563eb',
+                    backgroundColor: modalState.tone === 'danger' ? '#fee2e2' : '#2563eb',
+                    color: modalState.tone === 'danger' ? '#b91c1c' : 'white',
+                    cursor: 'pointer',
+                    fontSize: '0.875rem',
+                    fontWeight: 500,
+                  }}
+                >
+                  {modalState.confirmLabel || 'OK'}
                 </button>
               </div>
             </div>

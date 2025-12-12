@@ -23,9 +23,13 @@ export function Customers() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const userRoles = user?.roles?.length ? user.roles : (user?.role ? [user.role] : []);
-  const currentRole = (user?.role || '').toString();
-  const canEditCustomers = true; // everyone can edit
-  const canDeleteCustomers = currentRole === 'superadmin' || currentRole === 'admin';
+
+  // Permission checks for customers page
+  const canViewArchivedCustomers = can(userRoles, 'customers.view.archived');
+  const canAddCustomers = can(userRoles, 'customers.add');
+  const canEditCustomers = can(userRoles, 'customers.edit');
+  const canArchiveCustomers = can(userRoles, 'customers.archive');
+  const canDeleteCustomers = can(userRoles, 'customers.delete');
 
 
 
@@ -37,6 +41,10 @@ export function Customers() {
   const [customers, setCustomers] = useState<CustomerRow[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Select mode for bulk archive/unarchive/delete
+  const [isSelectMode, setIsSelectMode] = useState(false);
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
 
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerRow | null>(null);
   const [customerForm, setCustomerForm] = useState({
@@ -111,7 +119,7 @@ export function Customers() {
         };
       });
 
-      if (currentRole !== 'superadmin') {
+      if (!canViewArchivedCustomers) {
         loaded = loaded.filter(c => !c.isArchived);
       }
 

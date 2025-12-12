@@ -1,4 +1,4 @@
-import { FaHome, FaGripLinesVertical, FaBars, FaWarehouse, FaTag, FaWrench, FaFileInvoice, FaPlus, FaUser, FaSearch, FaTimes, FaUndoAlt, FaFilter, FaCog } from 'react-icons/fa';
+import { FaHome, FaChevronDown, FaBars, FaWarehouse, FaTag, FaWrench, FaFileInvoice, FaPlus, FaUser, FaSearch, FaTimes, FaUndoAlt, FaFilter, FaCog, FaFileExcel, FaTrash } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useMemo } from 'react';
 import { collection, getDocs, query, where, addDoc, writeBatch, doc, updateDoc } from 'firebase/firestore';
@@ -39,7 +39,7 @@ export const Returns: React.FC = () => {
   }, []);
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [isReturnDetailsExpanded, setIsReturnDetailsExpanded] = useState(true);
+  const [isReturnDetailsExpanded, setIsReturnDetailsExpanded] = useState(false);
   const userRoles = user?.roles?.length ? user.roles : (user?.role ? [user.role] : []);
   const [transactions, setTransactions] = useState<TransactionRow[]>([]);
   const [transactionsLoading, setTransactionsLoading] = useState(false);
@@ -65,6 +65,10 @@ export const Returns: React.FC = () => {
   const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'last7' | 'thisMonth'>('all');
   const [employees, setEmployees] = useState<Array<{ id: string; name: string }>>([]);
   const [handledBy, setHandledBy] = useState<string>('');
+  const [isSelectMode, setIsSelectMode] = useState(false);
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+  const [showFilters, setShowFilters] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
   const [returnDate] = useState<string>(() => {
     const now = new Date();
     const yyyy = now.getFullYear();
@@ -89,12 +93,13 @@ export const Returns: React.FC = () => {
     }>
   >([]);
 
-  const currentRole = (user as any)?.role || '';
-  const roleName = String(currentRole || '').toLowerCase();
-  const isSuperAdmin = roleName === 'superadmin';
-  const canProcessReturns = can(roleName, 'returns.process');
-  const canArchiveReturns = can(roleName, 'returns.archive');
-  const canUnarchiveReturns = can(roleName, 'returns.unarchive');
+  const canProcessReturns = can(userRoles, 'returns.process');
+  const canViewArchivedReturns = can(userRoles, 'returns.view.archived');
+  const canArchiveReturns = can(userRoles, 'returns.archive');
+  const canUnarchiveReturns = can(userRoles, 'returns.unarchive');
+  const canDeleteReturns = can(userRoles, 'returns.delete');
+  const canExportReturns = can(userRoles, 'returns.export');
+  const canViewReturnsPage = can(userRoles, 'page.returns.view');
 
 
 
@@ -146,6 +151,31 @@ export const Returns: React.FC = () => {
     const totalAlready = returnLines.reduce((sum, line) => sum + (line.alreadyReturned || 0), 0);
     return totalAlready > 0;
   }, [returnLines]);
+
+  const getFilteredReturns = useMemo(() => {
+    return previousReturns.filter((ret) => {
+      if (!showArchived && ret.status === 'archived') return false;
+      
+      if (dateFilter !== 'all') {
+        const retDate = new Date(ret.date);
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const retDateOnly = new Date(retDate.getFullYear(), retDate.getMonth(), retDate.getDate());
+        
+        if (dateFilter === 'today') {
+          if (retDateOnly.getTime() !== today.getTime()) return false;
+        } else if (dateFilter === 'last7') {
+          const sevenDaysAgo = new Date(today);
+          sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+          if (retDateOnly.getTime() < sevenDaysAgo.getTime()) return false;
+        } else if (dateFilter === 'thisMonth') {
+          if (retDate.getFullYear() !== now.getFullYear() || retDate.getMonth() !== now.getMonth()) return false;
+        }
+      }
+      
+      return true;
+    });
+  }, [previousReturns, showArchived, dateFilter]);
 
   const handleProcessReturn = async () => {
     if (!canProcessReturns) {
@@ -426,7 +456,7 @@ export const Returns: React.FC = () => {
           type: 'confirm-archive',
           title: 'Archive return?',
           message:
-            'Are you sure you want to archive this return? It will be hidden for non-superadmin users but not deleted.',
+            'Are you sure you want to archive this return? It will be hidden from the main list but not deleted.',
           returnDocId,
           currentStatus,
         });
@@ -687,8 +717,20 @@ export const Returns: React.FC = () => {
   };
 
   const handleSelectTransaction = async (tx: TransactionRow) => {
+    // Restrict transaction selection to users with returns.process permission
+    if (!canProcessReturns) {
+      setModalState({
+        type: 'info',
+        title: 'Not allowed',
+        message: 'You do not have permission to process returns.',
+      });
+      return;
+    }
+
     setSelectedTransactionId(tx.id);
     setSelectedTransaction(tx);
+    // Auto-open accordion when transaction is selected
+    setIsReturnDetailsExpanded(true);
 
     try {
       // Step 2a: load line items for this transaction
@@ -837,8 +879,8 @@ export const Returns: React.FC = () => {
               </div>
               <h1
                 style={{
-                  fontSize: '1.875rem',
-                  fontWeight: 'bold',
+                  fontSize: '1.75rem',
+                  fontWeight: 700,
                   color: '#1e40af',
                   margin: 0,
                 }}
@@ -998,6 +1040,81 @@ export const Returns: React.FC = () => {
               overflow: 'visible',
             }}
           >
+            {/* Action Bar */}
+            <section style={{ marginBottom: '1rem' }}>
+              <div style={{ backgroundColor: 'white', borderRadius: '0.5rem', padding: '1rem', border: '1px solid #e5e7eb' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: showFilters ? '1rem' : 0 }}>
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    {canExportReturns && (
+                      <button type="button" onClick={() => {
+                        const rows = previousReturns;
+                        if (!rows.length) return;
+                        const headers = ['Return Code', 'Date', 'Customer', 'Transaction', 'Items Returned', 'Total Refunded'];
+                        const escapeCell = (v: unknown) => { const s = (v ?? '').toString(); return s.includes('"') || s.includes(',') || s.includes('\n') ? '"' + s.replace(/"/g, '""') + '"' : s; };
+                        const csv = [headers.join(','), ...rows.map(r => [r.id, r.date, r.customerName, r.transactionCode, r.itemsReturned, r.returnedTotal].map(escapeCell).join(','))].join('\r\n');
+                        const blob = new Blob([csv], { type: 'text/csv' });
+                        const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `returns_${new Date().toISOString().split('T')[0]}.csv`; document.body.appendChild(link); link.click(); document.body.removeChild(link);
+                      }} style={{ backgroundColor: '#059669', color: 'white', padding: '0.5rem 1rem', borderRadius: '0.375rem', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 500, fontSize: '0.875rem', height: '40px' }}>
+                        Export to CSV <FaFileExcel />
+                      </button>
+                    )}
+                    {canArchiveReturns && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (isSelectMode) {
+                            setIsSelectMode(false);
+                            setSelectedItems(new Set());
+                          } else {
+                            setIsSelectMode(true);
+                          }
+                        }}
+                        style={{
+                          backgroundColor: isSelectMode ? '#6b7280' : '#1d4ed8',
+                          color: 'white',
+                          padding: '0.5rem 1rem',
+                          borderRadius: '0.375rem',
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontWeight: 500,
+                          fontSize: '0.875rem',
+                          height: '40px',
+                        }}
+                      >
+                        {isSelectMode ? 'Cancel' : 'Select'}
+                      </button>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <button type="button" onClick={() => setShowFilters(!showFilters)} style={{ backgroundColor: '#1e40af', color: 'white', padding: '0.5rem 1rem', borderRadius: '0.375rem', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 500, fontSize: '0.875rem', height: '40px' }}>
+                      Filters <FaFilter />
+                    </button>
+                    <button type="button" onClick={() => { setDateFilter('all'); setShowArchived(false); }} style={{ backgroundColor: '#6b7280', color: 'white', padding: '0.5rem 1rem', borderRadius: '0.375rem', border: 'none', cursor: 'pointer', fontWeight: 500, fontSize: '0.875rem', height: '40px' }}>
+                      Clear Filters
+                    </button>
+                  </div>
+                </div>
+                {showFilters && (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1rem', paddingTop: '1rem', borderTop: '1px solid #e5e7eb' }}>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#4b5563' }}>Date Filter</label>
+                      <select value={dateFilter} onChange={(e) => setDateFilter(e.target.value as any)} style={{ width: '100%', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #d1d5db', backgroundColor: 'white', color: '#111827' }}>
+                        <option value="all">All dates</option>
+                        <option value="today">Today</option>
+                        <option value="last7">Last 7 days</option>
+                        <option value="thisMonth">This month</option>
+                      </select>
+                    </div>
+                    {canViewArchivedReturns && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <input type="checkbox" id="showArchived" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
+                        <label htmlFor="showArchived" style={{ fontSize: '0.875rem', color: '#4b5563', cursor: 'pointer' }}>Show Archived</label>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </section>
             {/* Slide-out Transactions List panel */}
             <section
               style={{
@@ -1214,6 +1331,8 @@ export const Returns: React.FC = () => {
                         maxHeight: '100%',
                         overflowY: 'auto',
                         overflowX: 'auto',
+                        scrollbarWidth: 'thin',
+                        scrollbarColor: '#d1d5db #f3f4f6',
                       }}
                     >
                       <table
@@ -1520,7 +1639,7 @@ export const Returns: React.FC = () => {
                         style={{
                           fontSize: '0.95rem',
                           fontWeight: 600,
-                          color: '#111827',
+                          color: '#1e40af',
                         }}
                       >
                         Return Details
@@ -1540,11 +1659,11 @@ export const Returns: React.FC = () => {
                         </span>
                       )}
                     </div>
-                    <FaGripLinesVertical
+                    <FaChevronDown
                       style={{
-                        color: '#9ca3af',
+                        color: '#1e40af',
                         transform: isReturnDetailsExpanded
-                          ? 'rotate(90deg)'
+                          ? 'rotate(180deg)'
                           : 'rotate(0deg)',
                         transition: 'transform 0.2s ease',
                       }}
@@ -2076,15 +2195,15 @@ export const Returns: React.FC = () => {
                             padding: '0.5rem 1.75rem',
                             borderRadius: '0.375rem',
                             border: 'none',
-                            backgroundColor: canProcessReturns ? '#1d4ed8' : '#9ca3af',
+                            backgroundColor: (canProcessReturns && ((refundMethod === 'cash' && cashConfirmed) || (refundMethod === 'gcash' && gcashRef.trim()))) ? '#1d4ed8' : '#9ca3af',
                             color: 'white',
                             fontSize: '0.9rem',
                             fontWeight: 500,
                             cursor:
-                              !canProcessReturns || isProcessingReturn ? 'not-allowed' : 'pointer',
+                              (!canProcessReturns || isProcessingReturn || !((refundMethod === 'cash' && cashConfirmed) || (refundMethod === 'gcash' && gcashRef.trim()))) ? 'not-allowed' : 'pointer',
                             opacity: isProcessingReturn ? 0.7 : 1,
                           }}
-                          disabled={!canProcessReturns || isProcessingReturn}
+                          disabled={!canProcessReturns || isProcessingReturn || !((refundMethod === 'cash' && cashConfirmed) || (refundMethod === 'gcash' && gcashRef.trim()))}
                           onClick={handleProcessReturn}
                         >
                           Process Return
@@ -2118,7 +2237,7 @@ export const Returns: React.FC = () => {
                       style={{
                         fontSize: '1rem',
                         fontWeight: 600,
-                        color: '#111827',
+                        color: '#1e40af',
                         margin: 0,
                       }}
                     >
@@ -2143,6 +2262,11 @@ export const Returns: React.FC = () => {
                             textAlign: 'left',
                           }}
                         >
+                          {isSelectMode && (
+                            <th style={{ padding: '0.6rem 0.5rem', textAlign: 'center', width: '40px' }}>
+                              <input type="checkbox" checked={selectedItems.size === previousReturns.length && previousReturns.length > 0} onChange={(e) => { if (e.target.checked) { setSelectedItems(new Set(previousReturns.map(r => r.returnDocId))); } else { setSelectedItems(new Set()); } }} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
+                            </th>
+                          )}
                           <th style={{ padding: '0.6rem 1rem' }}>Return ID</th>
                           <th style={{ padding: '0.6rem 1rem' }}>Date</th>
                           <th style={{ padding: '0.6rem 1rem' }}>Customer</th>
@@ -2170,16 +2294,34 @@ export const Returns: React.FC = () => {
                             </td>
                           </tr>
                         )}
-                        {previousReturns
-                          .filter((ret) => (isSuperAdmin ? true : ret.status !== 'archived'))
-                          .map((ret) => (
+                        {getFilteredReturns.map((ret) => (
                             <tr
                               key={ret.id}
+                              onClick={() => {
+                                if (isSelectMode) {
+                                  setSelectedItems(prev => {
+                                    const next = new Set(prev);
+                                    if (next.has(ret.returnDocId)) {
+                                      next.delete(ret.returnDocId);
+                                    } else {
+                                      next.add(ret.returnDocId);
+                                    }
+                                    return next;
+                                  });
+                                }
+                              }}
                               style={{
                                 borderBottom: '1px solid #e5e7eb',
-                                opacity: ret.status === 'archived' && isSuperAdmin ? 0.6 : 1,
+                                opacity: ret.status === 'archived' ? 0.6 : 1,
+                                cursor: isSelectMode ? 'pointer' : 'default',
+                                backgroundColor: isSelectMode && selectedItems.has(ret.returnDocId) ? '#eff6ff' : 'white',
                               }}
                             >
+                              {isSelectMode && (
+                                <td style={{ padding: '0.6rem 0.5rem', textAlign: 'center' }}>
+                                  <input type="checkbox" checked={selectedItems.has(ret.returnDocId)} onChange={() => {}} onClick={(e) => { e.stopPropagation(); setSelectedItems(prev => { const next = new Set(prev); if (next.has(ret.returnDocId)) { next.delete(ret.returnDocId); } else { next.add(ret.returnDocId); } return next; }); }} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
+                                </td>
+                              )}
                               <td style={{ padding: '0.6rem 1rem' }}>{ret.id}</td>
                               <td style={{ padding: '0.6rem 1rem' }}>{ret.date}</td>
                               <td style={{ padding: '0.6rem 1rem' }}>{ret.customerName || 'Walk-in Customer'}</td>
@@ -2200,30 +2342,72 @@ export const Returns: React.FC = () => {
                                 style={{
                                   padding: '0.6rem 1rem',
                                   textAlign: 'right',
+                                  display: 'flex',
+                                  gap: '0.5rem',
+                                  justifyContent: 'flex-end',
                                 }}
                               >
-                                {((ret.status === 'archived' && canUnarchiveReturns) ||
-                                  (ret.status !== 'archived' && canArchiveReturns)) && (
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        handleToggleArchiveReturn(ret.returnDocId, ret.status)
-                                      }
-                                      style={{
-                                        padding: '0.25rem 0.75rem',
-                                        borderRadius: '999px',
-                                        border: '1px solid #d1d5db',
-                                        backgroundColor:
-                                          ret.status === 'archived' && isSuperAdmin ? '#e0f2fe' : '#fee2e2',
-                                        color:
-                                          ret.status === 'archived' && isSuperAdmin ? '#0369a1' : '#b91c1c',
-                                        fontSize: '0.75rem',
-                                        cursor: 'pointer',
-                                      }}
-                                    >
-                                      {ret.status === 'archived' && isSuperAdmin ? 'Unarchive' : 'Archive'}
-                                    </button>
-                                  )}
+                                {ret.status !== 'archived' && canArchiveReturns && (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      handleToggleArchiveReturn(ret.returnDocId, ret.status)
+                                    }
+                                    style={{
+                                      padding: '0.25rem 0.75rem',
+                                      borderRadius: '999px',
+                                      border: '1px solid #fecaca',
+                                      backgroundColor: '#fee2e2',
+                                      color: '#b91c1c',
+                                      fontSize: '0.75rem',
+                                      cursor: 'pointer',
+                                    }}
+                                  >
+                                    Archive
+                                  </button>
+                                )}
+                                {ret.status === 'archived' && canUnarchiveReturns && (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      handleToggleArchiveReturn(ret.returnDocId, ret.status)
+                                    }
+                                    style={{
+                                      padding: '0.25rem 0.75rem',
+                                      borderRadius: '999px',
+                                      border: '1px solid #93c5fd',
+                                      backgroundColor: '#dbeafe',
+                                      color: '#1d4ed8',
+                                      fontSize: '0.75rem',
+                                      cursor: 'pointer',
+                                    }}
+                                  >
+                                    Unarchive
+                                  </button>
+                                )}
+                                {ret.status === 'archived' && canDeleteReturns && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setModalState({
+                                        type: 'info',
+                                        title: 'Delete Return',
+                                        message: 'Delete functionality for returns is not yet implemented.',
+                                      });
+                                    }}
+                                    style={{
+                                      padding: '0.25rem 0.75rem',
+                                      borderRadius: '999px',
+                                      border: '1px solid #fca5a5',
+                                      backgroundColor: '#fef2f2',
+                                      color: '#dc2626',
+                                      fontSize: '0.75rem',
+                                      cursor: 'pointer',
+                                    }}
+                                  >
+                                    <FaTrash size={12} style={{ display: 'inline', marginRight: '0.25rem' }} /> Delete
+                                  </button>
+                                )}
                               </td>
                             </tr>
                           ))}

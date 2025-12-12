@@ -1590,22 +1590,34 @@ export function Users() {
                                 >
                                   Edit
                                 </button>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (can(currentRole, 'users.delete')) {
-                                      handleDeleteUser(user.id);
-                                    }
-                                  }}
-                                  style={{
-                                    backgroundColor: 'transparent',
-                                    border: 'none',
-                                    color: '#ef4444',
-                                    cursor: 'pointer'
-                                  }}
-                                >
-                                  Delete
-                                </button>
+                                {can(currentRole, 'users.archive') && (
+                                  <button
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      const userRef = doc(db, 'users', user.id);
+                                      await updateDoc(userRef, { archived: true, archivedAt: new Date().toISOString() });
+                                      setUsers((prev) =>
+                                        prev.map((row) =>
+                                          row.id === user.id
+                                            ? { ...row, status: 'archived' }
+                                            : row,
+                                        ),
+                                      );
+                                    }}
+                                    style={{
+                                      padding: '0.25rem 0.75rem',
+                                      borderRadius: '999px',
+                                      border: '1px solid #fecaca',
+                                      backgroundColor: '#fee2e2',
+                                      color: '#b91c1c',
+                                      fontSize: '0.75rem',
+                                      cursor: 'pointer',
+                                      fontWeight: 500
+                                    }}
+                                  >
+                                    Archive
+                                  </button>
+                                )}
                               </>
                             )}
 

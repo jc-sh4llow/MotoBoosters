@@ -1,7 +1,7 @@
 import { FaHome, FaBars, FaWarehouse, FaTag, FaWrench, FaFileInvoice, FaPlus, FaUser, FaSearch, FaTimes, FaUndoAlt, FaCog, FaFileExcel, FaFilter } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy, getDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { can } from '../../config/permissions';
@@ -41,6 +41,15 @@ export function Customers() {
   const [customers, setCustomers] = useState<CustomerRow[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Required fields settings (loaded from Firestore)
+  const [customersRequiredFields, setCustomersRequiredFields] = useState({
+    customerName: true,
+    contactNumber: false,
+    email: false,
+    address: false,
+    vehicleType: false,
+  });
 
   // Filter state
   const [showFilters, setShowFilters] = useState(false);
@@ -198,6 +207,29 @@ export function Customers() {
     loadCustomers();
   }, []);
 
+  // Load required fields settings from Firestore
+  useEffect(() => {
+    const loadRequiredFields = async () => {
+      try {
+        const settingsDoc = await getDoc(doc(db, 'settings', 'requiredFields'));
+        if (settingsDoc.exists() && settingsDoc.data().customers) {
+          const cust = settingsDoc.data().customers;
+          setCustomersRequiredFields(prev => ({
+            ...prev,
+            customerName: cust.customerName ?? prev.customerName,
+            contactNumber: cust.contactNumber ?? prev.contactNumber,
+            email: cust.email ?? prev.email,
+            address: cust.address ?? prev.address,
+            vehicleType: cust.vehicleType ?? prev.vehicleType,
+          }));
+        }
+      } catch (err) {
+        console.error('Failed to load required fields settings:', err);
+      }
+    };
+    loadRequiredFields();
+  }, []);
+
   const handleTypeChange = (type: string) => {
     setSelectedTypes(prev => {
       const newTypes = new Set(prev);
@@ -260,11 +292,60 @@ export function Customers() {
   };
 
   const handleSaveCustomer = async () => {
-    if (!customerForm.name) {
+    // Validate required fields based on settings
+    if (customersRequiredFields.customerName && !customerForm.name.trim()) {
       setModalState({
         open: true,
-        title: 'Missing Information',
-        message: 'Please fill in Customer Name before saving.',
+        title: 'Missing Required Field',
+        message: 'Customer Name is required.',
+        confirmLabel: 'Close',
+        cancelLabel: undefined,
+        tone: 'info',
+        onConfirm: undefined,
+      });
+      return;
+    }
+    if (customersRequiredFields.contactNumber && !customerForm.contact.trim()) {
+      setModalState({
+        open: true,
+        title: 'Missing Required Field',
+        message: 'Contact Number is required.',
+        confirmLabel: 'Close',
+        cancelLabel: undefined,
+        tone: 'info',
+        onConfirm: undefined,
+      });
+      return;
+    }
+    if (customersRequiredFields.email && !customerForm.email.trim()) {
+      setModalState({
+        open: true,
+        title: 'Missing Required Field',
+        message: 'Email is required.',
+        confirmLabel: 'Close',
+        cancelLabel: undefined,
+        tone: 'info',
+        onConfirm: undefined,
+      });
+      return;
+    }
+    if (customersRequiredFields.address && !customerForm.address.trim()) {
+      setModalState({
+        open: true,
+        title: 'Missing Required Field',
+        message: 'Address is required.',
+        confirmLabel: 'Close',
+        cancelLabel: undefined,
+        tone: 'info',
+        onConfirm: undefined,
+      });
+      return;
+    }
+    if (customersRequiredFields.vehicleType && selectedTypes.size === 0) {
+      setModalState({
+        open: true,
+        title: 'Missing Required Field',
+        message: 'At least one Vehicle Type is required.',
         confirmLabel: 'Close',
         cancelLabel: undefined,
         tone: 'info',

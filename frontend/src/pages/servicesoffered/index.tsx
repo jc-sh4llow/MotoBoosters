@@ -1,4 +1,4 @@
-import { FaHome, FaGripLinesVertical, FaBars, FaWarehouse, FaTag, FaWrench, FaFileInvoice, FaPlus, FaUser, FaSearch, FaTimes, FaUndoAlt, FaCog } from 'react-icons/fa';
+import { FaBars, FaSearch, FaTimes, FaFilter, FaFileExcel, FaTrash, FaUndoAlt } from 'react-icons/fa';
 
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
@@ -17,19 +17,23 @@ type ServiceRow = {
   status: 'Active' | 'Inactive';
   description: string;
   vehicleTypes: string[];
+  archived?: boolean;
 };
 
 export function Services() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
-  const currentRole = (user?.role || '').toString();
-  const canEditServices = can(currentRole, 'services.add');
   const userRoles = user?.roles?.length ? user.roles : (user?.role ? [user.role] : []);
 
-
-
-
+  // Permission checks
+  const canViewArchived = can(userRoles, 'services.view.archived');
+  const canAddServices = can(userRoles, 'services.add');
+  const canEditServices = can(userRoles, 'services.edit');
+  const canArchiveServices = can(userRoles, 'services.archive');
+  const canDeleteServices = can(userRoles, 'services.delete');
+  const canToggleStatus = can(userRoles, 'services.toggle.status');
+  const canExportServices = can(userRoles, 'services.export');
 
   const [isDetailsVisible, setIsDetailsVisible] = useState(false);
   const [shouldShowDetails, setShouldShowDetails] = useState(false);
@@ -59,6 +63,18 @@ export function Services() {
   const [services, setServices] = useState<ServiceRow[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Select mode state
+  const [isSelectMode, setIsSelectMode] = useState(false);
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+
+  // Filter state
+  const [showFilters, setShowFilters] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [minPrice, setMinPrice] = useState<string>('');
+  const [maxPrice, setMaxPrice] = useState<string>('');
+  const [vehicleTypeFilter, setVehicleTypeFilter] = useState<string>('');
+  const [showArchivedFilter, setShowArchivedFilter] = useState(false);
 
   // Track viewport width and basic mobile flag
   useEffect(() => {
@@ -139,6 +155,7 @@ export function Services() {
           status: (data.status ?? 'Active') as 'Active' | 'Inactive',
           description: data.description ?? '',
           vehicleTypes: (data.vehicleTypes ?? []) as string[],
+          archived: !!data.archived,
         } as ServiceRow;
       });
       setServices(loaded);
@@ -248,7 +265,7 @@ export function Services() {
   };
 
   const handleToggleServiceStatus = async (service: ServiceRow) => {
-    if (!canEditServices) return;
+    if (!canToggleStatus) return;
 
     const newStatus: 'Active' | 'Inactive' = service.status === 'Active' ? 'Inactive' : 'Active';
 
@@ -302,26 +319,41 @@ export function Services() {
     });
   };
 
-  const filteredServices = services.filter(service => {
+  const getFilteredServices = () => {
+    let filtered = canViewArchived 
+      ? (showArchivedFilter ? services : services.filter(s => !s.archived))
+      : services.filter(s => !s.archived);
+
     const q = searchTerm.trim().toLowerCase();
-    if (!q) return true;
+    if (q) {
+      filtered = filtered.filter(service => {
+        const idMatch = service.serviceId.toLowerCase().includes(q);
+        const nameMatch = service.name.toLowerCase().includes(q);
+        const descMatch = service.description.toLowerCase().includes(q);
+        const statusMatch = service.status.toLowerCase().includes(q);
+        const priceMatch = service.price.toString().toLowerCase().includes(q);
+        const vehicleTypesMatch = service.vehicleTypes.join(' ').toLowerCase().includes(q);
+        return idMatch || nameMatch || descMatch || statusMatch || priceMatch || vehicleTypesMatch;
+      });
+    }
 
-    const idMatch = service.serviceId.toLowerCase().includes(q);
-    const nameMatch = service.name.toLowerCase().includes(q);
-    const descMatch = service.description.toLowerCase().includes(q);
-    const statusMatch = service.status.toLowerCase().includes(q);
-    const priceMatch = service.price.toString().toLowerCase().includes(q);
-    const vehicleTypesMatch = service.vehicleTypes.join(' ').toLowerCase().includes(q);
+    if (statusFilter) {
+      filtered = filtered.filter(s => s.status === statusFilter);
+    }
+    if (minPrice) {
+      filtered = filtered.filter(s => s.price >= Number(minPrice));
+    }
+    if (maxPrice) {
+      filtered = filtered.filter(s => s.price <= Number(maxPrice));
+    }
+    if (vehicleTypeFilter) {
+      filtered = filtered.filter(s => s.vehicleTypes.includes(vehicleTypeFilter));
+    }
 
-    return (
-      idMatch ||
-      nameMatch ||
-      descMatch ||
-      statusMatch ||
-      priceMatch ||
-      vehicleTypesMatch
-    );
-  });
+    return filtered;
+  };
+
+  const filteredServices = getFilteredServices();
 
   return (
     <div style={{
@@ -553,6 +585,86 @@ export function Services() {
             padding: '2rem',
             boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
           }}>
+            {/* Action Bar */}
+            <section style={{ marginBottom: '1rem' }}>
+              <div style={{ backgroundColor: 'white', borderRadius: '0.5rem', padding: '1rem', border: '1px solid #e5e7eb' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: showFilters ? '1rem' : 0 }}>
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    {canExportServices && (
+                      <button type="button" onClick={() => {
+                        const rows = filteredServices;
+                        if (!rows.length) return;
+                        const headers = ['Service ID','Name','Price','Status','Description','Vehicle Types','Archived'];
+                        const escapeCell = (v: unknown) => { const s = (v ?? '').toString(); return s.includes('"') || s.includes(',') || s.includes('\n') ? '"' + s.replace(/"/g, '""') + '"' : s; };
+                        const csv = [headers.join(','), ...rows.map(s => [s.serviceId, s.name, s.price, s.status, s.description, s.vehicleTypes.join('; '), s.archived ? 'Yes' : 'No'].map(escapeCell).join(','))].join('\r\n');
+                        const blob = new Blob([csv], { type: 'text/csv' });
+                        const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `services_${new Date().toISOString().split('T')[0]}.csv`; document.body.appendChild(link); link.click(); document.body.removeChild(link);
+                      }} style={{ backgroundColor: '#059669', color: 'white', padding: '0.5rem 1rem', borderRadius: '0.375rem', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 500, fontSize: '0.875rem', height: '40px' }}>
+                        Export to CSV <FaFileExcel />
+                      </button>
+                    )}
+                    {canArchiveServices && (
+                      <button type="button" onClick={() => { if (isSelectMode) { setIsSelectMode(false); setSelectedItems(new Set()); } else { setIsSelectMode(true); } }} style={{ backgroundColor: isSelectMode ? '#6b7280' : '#1d4ed8', color: 'white', padding: '0.5rem 1rem', borderRadius: '0.375rem', border: 'none', cursor: 'pointer', fontWeight: 500, fontSize: '0.875rem', height: '40px' }}>
+                        {isSelectMode ? 'Cancel' : 'Select'}
+                      </button>
+                    )}
+                    {isSelectMode && canArchiveServices && selectedItems.size > 0 && (
+                      <button type="button" onClick={async () => {
+                        const items = filteredServices.filter(s => selectedItems.has(s.id) && !s.archived);
+                        if (!items.length || !window.confirm(`Archive ${items.length} service(s)?`)) return;
+                        for (const item of items) await updateDoc(doc(db, 'services', item.id), { archived: true });
+                        await loadServices(); setSelectedItems(new Set()); setIsSelectMode(false);
+                      }} style={{ backgroundColor: '#dc2626', color: 'white', padding: '0.5rem 0.9rem', borderRadius: '0.375rem', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 500, fontSize: '0.875rem', height: '40px' }}>
+                        <FaTrash /> Archive
+                      </button>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <button type="button" onClick={() => setShowFilters(!showFilters)} style={{ backgroundColor: '#1e40af', color: 'white', padding: '0.5rem 1rem', borderRadius: '0.375rem', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 500, fontSize: '0.875rem', height: '40px' }}>
+                      Filters <FaFilter />
+                    </button>
+                    <button type="button" onClick={() => { setStatusFilter(''); setMinPrice(''); setMaxPrice(''); setVehicleTypeFilter(''); setShowArchivedFilter(false); }} style={{ backgroundColor: '#6b7280', color: 'white', padding: '0.5rem 1rem', borderRadius: '0.375rem', border: 'none', cursor: 'pointer', fontWeight: 500, fontSize: '0.875rem', height: '40px' }}>
+                      Clear Filters
+                    </button>
+                  </div>
+                </div>
+                {showFilters && (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1rem', paddingTop: '1rem', borderTop: '1px solid #e5e7eb' }}>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#4b5563' }}>Status</label>
+                      <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ width: '100%', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #d1d5db', backgroundColor: 'white', color: '#111827' }}>
+                        <option value="">All Status</option>
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#4b5563' }}>Price Range</label>
+                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        <input type="number" placeholder="Min" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} style={{ width: '70px', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #d1d5db', fontSize: '0.875rem', backgroundColor: 'white', color: '#111827' }} />
+                        <span>-</span>
+                        <input type="number" placeholder="Max" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} style={{ width: '70px', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #d1d5db', fontSize: '0.875rem', backgroundColor: 'white', color: '#111827' }} />
+                      </div>
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#4b5563' }}>Vehicle Type</label>
+                      <select value={vehicleTypeFilter} onChange={(e) => setVehicleTypeFilter(e.target.value)} style={{ width: '100%', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #d1d5db', backgroundColor: 'white', color: '#111827' }}>
+                        <option value="">All Types</option>
+                        {vehicleTypeOptions.filter(t => t !== 'All Types').map(type => (<option key={type} value={type}>{type}</option>))}
+                      </select>
+                    </div>
+                    {canViewArchived && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', paddingTop: '1.5rem' }}>
+                        <label style={{ fontSize: '0.875rem', color: '#4b5563', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <input type="checkbox" checked={showArchivedFilter} onChange={(e) => setShowArchivedFilter(e.target.checked)} style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
+                          Show Archived
+                        </label>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </section>
 
             <div style={{
               display: 'flex',
@@ -813,32 +925,52 @@ export function Services() {
                               Cancel
                             </button>
                           </div>
-                          <button
-                            type="button"
-                            onClick={handleDeleteService}
-                            disabled={!selectedService}
-                            style={{
-                              padding: '0.5rem 1rem',
-                              backgroundColor: '#fef2f2',
-                              color: '#dc2626',
-                              border: '1px solid #fecaca',
-                              borderRadius: '0.375rem',
-                              fontWeight: '500',
-                              cursor: 'pointer',
-                              transition: 'all 0.2s',
-                              whiteSpace: 'nowrap'
-                            }}
-                            onMouseOver={(e) => {
-                              e.currentTarget.style.backgroundColor = '#fee2e2';
-                              e.currentTarget.style.borderColor = '#fca5a5';
-                            }}
-                            onMouseOut={(e) => {
-                              e.currentTarget.style.backgroundColor = '#fef2f2';
-                              e.currentTarget.style.borderColor = '#fecaca';
-                            }}
-                          >
-                            Delete Service
-                          </button>
+                          {selectedService?.archived ? (
+                            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
+                              {canArchiveServices && (
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    if (!selectedService || !window.confirm('Unarchive this service?')) return;
+                                    await updateDoc(doc(db, 'services', selectedService.id), { archived: false });
+                                    await loadServices();
+                                    setSelectedService({ ...selectedService, archived: false });
+                                  }}
+                                  style={{ flex: 1, padding: '0.5rem 1rem', backgroundColor: '#dbeafe', color: '#1d4ed8', border: '1px solid #93c5fd', borderRadius: '0.375rem', fontWeight: '500', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem' }}
+                                >
+                                  <FaUndoAlt /> Unarchive
+                                </button>
+                              )}
+                              {canDeleteServices && (
+                                <button
+                                  type="button"
+                                  onClick={handleDeleteService}
+                                  style={{ flex: 1, padding: '0.5rem 1rem', backgroundColor: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '0.375rem', fontWeight: '500', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem' }}
+                                >
+                                  <FaTrash /> Delete
+                                </button>
+                              )}
+                            </div>
+                          ) : (
+                            canArchiveServices && selectedService && (
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  if (!selectedService || !window.confirm('Archive this service?')) return;
+                                  await updateDoc(doc(db, 'services', selectedService.id), { archived: true });
+                                  await loadServices();
+                                  setSelectedService(null);
+                                  setServiceForm({ id: '', name: '', price: '', description: '', vehicleTypes: [] });
+                                  setSelectedTypes(new Set());
+                                  setIsDetailsVisible(false);
+                                  setTimeout(() => setShouldShowDetails(false), 300);
+                                }}
+                                style={{ marginTop: '0.75rem', padding: '0.5rem 1rem', backgroundColor: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '0.375rem', fontWeight: '500', cursor: 'pointer', width: '100%' }}
+                              >
+                                Archive Service
+                              </button>
+                            )
+                          )}
                         </>
                       )}
                     </div>
@@ -1130,34 +1262,53 @@ export function Services() {
                                   Cancel
                                 </button>
                               </div>
-                              <button
-                                type="button"
-                                onClick={handleDeleteService}
-                                disabled={!selectedService}
-                                style={{
-                                  marginTop: '0.75rem',
-                                  padding: '0.5rem 1rem',
-                                  backgroundColor: '#fef2f2',
-                                  color: '#dc2626',
-                                  border: '1px solid #fecaca',
-                                  borderRadius: '0.375rem',
-                                  fontWeight: '500',
-                                  cursor: 'pointer',
-                                  transition: 'all 0.2s',
-                                  whiteSpace: 'nowrap',
-                                  width: '100%'
-                                }}
-                                onMouseOver={(e) => {
-                                  e.currentTarget.style.backgroundColor = '#fee2e2';
-                                  e.currentTarget.style.borderColor = '#fca5a5';
-                                }}
-                                onMouseOut={(e) => {
-                                  e.currentTarget.style.backgroundColor = '#fef2f2';
-                                  e.currentTarget.style.borderColor = '#fecaca';
-                                }}
-                              >
-                                Delete Service
-                              </button>
+                              {selectedService?.archived ? (
+                                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
+                                  {canArchiveServices && (
+                                    <button
+                                      type="button"
+                                      onClick={async () => {
+                                        if (!selectedService || !window.confirm('Unarchive this service?')) return;
+                                        await updateDoc(doc(db, 'services', selectedService.id), { archived: false });
+                                        await loadServices();
+                                        setSelectedService({ ...selectedService, archived: false });
+                                      }}
+                                      style={{ flex: 1, padding: '0.5rem 1rem', backgroundColor: '#dbeafe', color: '#1d4ed8', border: '1px solid #93c5fd', borderRadius: '0.375rem', fontWeight: '500', cursor: 'pointer' }}
+                                    >
+                                      <FaUndoAlt style={{ marginRight: '0.25rem' }} /> Unarchive
+                                    </button>
+                                  )}
+                                  {canDeleteServices && (
+                                    <button
+                                      type="button"
+                                      onClick={handleDeleteService}
+                                      style={{ flex: 1, padding: '0.5rem 1rem', backgroundColor: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '0.375rem', fontWeight: '500', cursor: 'pointer' }}
+                                    >
+                                      <FaTrash style={{ marginRight: '0.25rem' }} /> Delete
+                                    </button>
+                                  )}
+                                </div>
+                              ) : (
+                                canArchiveServices && (
+                                  <button
+                                    type="button"
+                                    onClick={async () => {
+                                      if (!selectedService || !window.confirm('Archive this service?')) return;
+                                      await updateDoc(doc(db, 'services', selectedService.id), { archived: true });
+                                      await loadServices();
+                                      setSelectedService(null);
+                                      setServiceForm({ id: '', name: '', price: '', description: '', vehicleTypes: [] });
+                                      setSelectedTypes(new Set());
+                                      setIsDetailsVisible(false);
+                                      setTimeout(() => setShouldShowDetails(false), 300);
+                                    }}
+                                    disabled={!selectedService}
+                                    style={{ marginTop: '0.75rem', padding: '0.5rem 1rem', backgroundColor: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '0.375rem', fontWeight: '500', cursor: 'pointer', width: '100%' }}
+                                  >
+                                    Archive Service
+                                  </button>
+                                )
+                              )}
                             </div>
                           )}
                         </div>
@@ -1262,9 +1413,13 @@ export function Services() {
                         backgroundColor: '#f3f4f6',
                         borderBottom: '1px solid #e5e7eb',
                         textAlign: 'left',
-                        fontWeight: 600,
-                        textAlign: 'left'
+                        fontWeight: 600
                       }}>
+                        {isSelectMode && (
+                          <th style={{ padding: '0.75rem 0.5rem', textAlign: 'center', width: '40px' }}>
+                            <input type="checkbox" checked={selectedItems.size === filteredServices.length && filteredServices.length > 0} onChange={(e) => { if (e.target.checked) { setSelectedItems(new Set(filteredServices.map(s => s.id))); } else { setSelectedItems(new Set()); } }} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
+                          </th>
+                        )}
                         <th style={{ padding: '0.75rem 1rem', fontWeight: '500', color: '#4b5563' }}>Service ID</th>
                         <th style={{ padding: '0.75rem 1rem', fontWeight: '500', color: '#4b5563' }}>Service Name</th>
                         <th style={{ padding: '0.75rem 1rem', fontWeight: '500', textAlign: 'center', color: '#4b5563' }}>Description</th>
@@ -1290,21 +1445,41 @@ export function Services() {
                             e.currentTarget.style.backgroundColor = 'white';
                           }}
                           onClick={() => {
-                            setSelectedService(service);
-                            setServiceForm({
-                              id: service.serviceId,
-                              name: service.name,
-                              price: String(service.price),
-                              description: service.description,
-                              vehicleTypes: service.vehicleTypes
-                            });
-                            setSelectedTypes(new Set(service.vehicleTypes));
-                            setServiceHasUnsavedChanges(false);
-                            setShouldShowDetails(true);
-                            requestAnimationFrame(() => setIsDetailsVisible(true));
+                            if (isSelectMode) {
+                              setSelectedItems(prev => {
+                                const next = new Set(prev);
+                                if (next.has(service.id)) { next.delete(service.id); } else { next.add(service.id); }
+                                return next;
+                              });
+                            } else {
+                              setSelectedService(service);
+                              setServiceForm({
+                                id: service.serviceId,
+                                name: service.name,
+                                price: String(service.price),
+                                description: service.description,
+                                vehicleTypes: service.vehicleTypes
+                              });
+                              setSelectedTypes(new Set(service.vehicleTypes));
+                              setServiceHasUnsavedChanges(false);
+                              setShouldShowDetails(true);
+                              requestAnimationFrame(() => setIsDetailsVisible(true));
+                            }
                           }}
                         >
-                          <td style={{ padding: '0.75rem 1rem', color: '#111827' }}>{service.serviceId}</td>
+                          {isSelectMode && (
+                            <td style={{ padding: '0.75rem 0.5rem', textAlign: 'center' }}>
+                              <input type="checkbox" checked={selectedItems.has(service.id)} onChange={() => {}} onClick={(e) => e.stopPropagation()} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
+                            </td>
+                          )}
+                          <td style={{ padding: '0.75rem 1rem', color: '#111827' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              {service.serviceId}
+                              {service.archived && (
+                                <span style={{ backgroundColor: '#fef3c7', color: '#92400e', padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.65rem', fontWeight: 600 }}>Archived</span>
+                              )}
+                            </div>
+                          </td>
                           <td style={{ padding: '0.75rem 1rem', color: '#111827' }}>{service.name}</td>
 
                           <td style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>
@@ -1332,7 +1507,7 @@ export function Services() {
                           <td style={{ padding: '0.75rem 1rem', color: '#111827', }}>
                             <button
                               type="button"
-                              disabled={!canEditServices}
+                              disabled={!canToggleStatus}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleToggleServiceStatus(service);
@@ -1346,7 +1521,7 @@ export function Services() {
                                 fontSize: '0.75rem',
                                 fontWeight: 500,
                                 border: 'none',
-                                cursor: canEditServices ? 'pointer' : 'default',
+                                cursor: canToggleStatus ? 'pointer' : 'default',
                               }}
                             >
                               {service.status}

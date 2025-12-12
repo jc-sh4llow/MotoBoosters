@@ -425,7 +425,7 @@ export function Users() {
         if (roleLower === 'employee') finalPassword = 'employee123';
         else if (roleLower === 'mechanic') finalPassword = 'mechanic123';
         else if (roleLower === 'admin') finalPassword = 'admin123';
-        else if (roleLower === 'superadmin') finalPassword = 'superadmin123';
+        else if (roleLower === 'developer') finalPassword = 'developer123';
         else finalPassword = 'password123';
       }
 
@@ -471,7 +471,7 @@ export function Users() {
   };
 
   const rolePriority: Record<string, number> = {
-    superadmin: 0,
+    developer: 0,
     admin: 1,
     employee: 2,
     mechanic: 3,

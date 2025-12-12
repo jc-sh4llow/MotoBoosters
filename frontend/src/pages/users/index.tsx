@@ -74,6 +74,8 @@ export function Users() {
   const [showPasswordConfirmModal, setShowPasswordConfirmModal] = useState(false);
   const [passwordConfirmInput, setPasswordConfirmInput] = useState('');
   const [passwordConfirmError, setPasswordConfirmError] = useState('');
+  const [isSelectMode, setIsSelectMode] = useState(false);
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
 
   const [sortState, setSortState] = useState<{
     column: 'id' | 'username' | 'fullName' | 'email' | 'role' | 'status' | 'lastLogin' | null;

@@ -184,10 +184,37 @@ export function Services() {
   const [serviceHasUnsavedChanges, setServiceHasUnsavedChanges] = useState(false);
   const [descriptionModalService, setDescriptionModalService] = useState<ServiceRow | null>(null);
 
+  // App-level confirmation / message modal
+  const [modalState, setModalState] = useState<{
+    open: boolean;
+    title: string;
+    message: string;
+    confirmLabel?: string;
+    cancelLabel?: string;
+    tone: 'info' | 'danger';
+    onConfirm?: () => void;
+  }>({
+    open: false,
+    title: '',
+    message: '',
+    confirmLabel: 'OK',
+    cancelLabel: undefined,
+    tone: 'info',
+    onConfirm: undefined,
+  });
+
   const handleSaveService = async () => {
     if (!canEditServices) return;
     if (!serviceForm.name || !serviceForm.price) {
-      alert('Please fill in Service Name and Price.');
+      setModalState({
+        open: true,
+        title: 'Missing Information',
+        message: 'Please fill in both Service Name and Service Price before saving.',
+        confirmLabel: 'Close',
+        cancelLabel: undefined,
+        tone: 'info',
+        onConfirm: () => setModalState(prev => ({ ...prev, open: false })),
+      });
       return;
     }
 
@@ -354,6 +381,11 @@ export function Services() {
   };
 
   const filteredServices = getFilteredServices();
+
+  // Helper lists for bulk actions in select mode
+  const selectedServices = filteredServices.filter(s => selectedItems.has(s.id));
+  const selectedArchivedCount = selectedServices.filter(s => s.archived).length;
+  const selectedUnarchivedCount = selectedServices.filter(s => !s.archived).length;
 
   return (
     <div style={{
@@ -604,19 +636,153 @@ export function Services() {
                       </button>
                     )}
                     {canArchiveServices && (
-                      <button type="button" onClick={() => { if (isSelectMode) { setIsSelectMode(false); setSelectedItems(new Set()); } else { setIsSelectMode(true); } }} style={{ backgroundColor: isSelectMode ? '#6b7280' : '#1d4ed8', color: 'white', padding: '0.5rem 1rem', borderRadius: '0.375rem', border: 'none', cursor: 'pointer', fontWeight: 500, fontSize: '0.875rem', height: '40px' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (isSelectMode) {
+                            setIsSelectMode(false);
+                            setSelectedItems(new Set());
+                          } else {
+                            setIsSelectMode(true);
+                          }
+                        }}
+                        style={{
+                          backgroundColor: isSelectMode ? '#6b7280' : '#1d4ed8',
+                          color: 'white',
+                          padding: '0.5rem 1rem',
+                          borderRadius: '0.375rem',
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontWeight: 500,
+                          fontSize: '0.875rem',
+                          height: '40px',
+                        }}
+                      >
                         {isSelectMode ? 'Cancel' : 'Select'}
                       </button>
                     )}
+
+                    {/* Bulk actions when select mode is active */}
                     {isSelectMode && canArchiveServices && selectedItems.size > 0 && (
-                      <button type="button" onClick={async () => {
-                        const items = filteredServices.filter(s => selectedItems.has(s.id) && !s.archived);
-                        if (!items.length || !window.confirm(`Archive ${items.length} service(s)?`)) return;
-                        for (const item of items) await updateDoc(doc(db, 'services', item.id), { archived: true });
-                        await loadServices(); setSelectedItems(new Set()); setIsSelectMode(false);
-                      }} style={{ backgroundColor: '#dc2626', color: 'white', padding: '0.5rem 0.9rem', borderRadius: '0.375rem', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 500, fontSize: '0.875rem', height: '40px' }}>
-                        <FaTrash /> Archive
-                      </button>
+                      <>
+                        {/* Scenario 1 & 3: at least one unarchived selected -> Archive button */}
+                        {selectedUnarchivedCount > 0 && (
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              const itemsToArchive = selectedServices.filter(s => !s.archived);
+                              if (!itemsToArchive.length) return;
+                              if (!window.confirm(`Archive ${itemsToArchive.length} service(s)?`)) return;
+                              try {
+                                for (const item of itemsToArchive) {
+                                  await updateDoc(doc(db, 'services', item.id), { archived: true });
+                                }
+                                await loadServices();
+                                setSelectedItems(new Set());
+                                setIsSelectMode(false);
+                              } catch (err) {
+                                console.error('Error archiving services', err);
+                                alert('Failed to archive selected services.');
+                              }
+                            }}
+                            style={{
+                              backgroundColor: '#dc2626',
+                              color: 'white',
+                              padding: '0.5rem 0.9rem',
+                              borderRadius: '0.375rem',
+                              border: 'none',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.4rem',
+                              fontWeight: 500,
+                              fontSize: '0.875rem',
+                              height: '40px',
+                            }}
+                          >
+                            <FaTrash /> Archive
+                          </button>
+                        )}
+
+                        {/* Scenario 2 & 3: at least one archived selected -> Unarchive button */}
+                        {selectedArchivedCount > 0 && (
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              const itemsToUnarchive = selectedServices.filter(s => s.archived);
+                              if (!itemsToUnarchive.length) return;
+                              if (!window.confirm(`Unarchive ${itemsToUnarchive.length} service(s)?`)) return;
+                              try {
+                                for (const item of itemsToUnarchive) {
+                                  await updateDoc(doc(db, 'services', item.id), { archived: false });
+                                }
+                                await loadServices();
+                                setSelectedItems(new Set());
+                                setIsSelectMode(false);
+                              } catch (err) {
+                                console.error('Error unarchiving services', err);
+                                alert('Failed to unarchive selected services.');
+                              }
+                            }}
+                            style={{
+                              backgroundColor: '#4b5563',
+                              color: 'white',
+                              padding: '0.5rem 0.9rem',
+                              borderRadius: '0.375rem',
+                              border: 'none',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.4rem',
+                              fontWeight: 500,
+                              fontSize: '0.875rem',
+                              height: '40px',
+                            }}
+                          >
+                            <FaUndoAlt /> Unarchive
+                          </button>
+                        )}
+
+                        {/* Scenario 2: only archived selected -> Delete button with double confirmation */}
+                        {canDeleteServices && selectedArchivedCount > 0 && selectedUnarchivedCount === 0 && (
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              const itemsToDelete = selectedServices.filter(s => s.archived);
+                              if (!itemsToDelete.length) return;
+                              if (!window.confirm(`Delete ${itemsToDelete.length} archived service(s)? This cannot be undone.`)) return;
+                              if (!window.confirm('Are you absolutely sure you want to permanently delete the selected archived services?')) return;
+                              try {
+                                for (const item of itemsToDelete) {
+                                  await deleteDoc(doc(db, 'services', item.id));
+                                }
+                                await loadServices();
+                                setSelectedItems(new Set());
+                                setIsSelectMode(false);
+                              } catch (err) {
+                                console.error('Error deleting services', err);
+                                alert('Failed to delete selected services.');
+                              }
+                            }}
+                            style={{
+                              backgroundColor: '#b91c1c',
+                              color: 'white',
+                              padding: '0.5rem 0.9rem',
+                              borderRadius: '0.375rem',
+                              border: 'none',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.4rem',
+                              fontWeight: 500,
+                              fontSize: '0.875rem',
+                              height: '40px',
+                            }}
+                          >
+                            <FaTrash /> Delete
+                          </button>
+                        )}
+                      </>
                     )}
                   </div>
                   <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>

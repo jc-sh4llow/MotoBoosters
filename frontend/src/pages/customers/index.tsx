@@ -1,4 +1,4 @@
-import { FaHome, FaBars, FaWarehouse, FaTag, FaWrench, FaFileInvoice, FaPlus, FaUser, FaSearch, FaTimes, FaUndoAlt, FaCog } from 'react-icons/fa';
+import { FaHome, FaBars, FaWarehouse, FaTag, FaWrench, FaFileInvoice, FaPlus, FaUser, FaSearch, FaTimes, FaUndoAlt, FaCog, FaFileExcel, FaFilter } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
@@ -23,9 +23,10 @@ export function Customers() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const userRoles = user?.roles?.length ? user.roles : (user?.role ? [user.role] : []);
+  const currentRole = (user?.role || '').toString();
 
-  // Permission checks for customers page
-  const canViewArchivedCustomers = can(userRoles, 'customers.view.archived');
+  // Permission checks using the can utility
+  const canViewArchived = can(userRoles, 'customers.view.archived');
   const canAddCustomers = can(userRoles, 'customers.add');
   const canEditCustomers = can(userRoles, 'customers.edit');
   const canArchiveCustomers = can(userRoles, 'customers.archive');
@@ -42,9 +43,10 @@ export function Customers() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Select mode for bulk archive/unarchive/delete
-  const [isSelectMode, setIsSelectMode] = useState(false);
-  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+  // Filter state
+  const [showFilters, setShowFilters] = useState(false);
+  const [vehicleTypeFilter, setVehicleTypeFilter] = useState('');
+  const [showArchivedFilter, setShowArchivedFilter] = useState(false);
 
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerRow | null>(null);
   const [customerForm, setCustomerForm] = useState({
@@ -74,6 +76,29 @@ export function Customers() {
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [deleteMode, setDeleteMode] = useState<'archive' | 'unarchive' | 'hard'>('archive');
 
+  // Select mode and bulk actions state
+  const [isSelectMode, setIsSelectMode] = useState(false);
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+
+  // App-level confirmation / message modal
+  const [modalState, setModalState] = useState<{
+    open: boolean;
+    title: string;
+    message: string;
+    confirmLabel?: string;
+    cancelLabel?: string;
+    tone: 'info' | 'danger';
+    onConfirm?: () => void;
+  }>({
+    open: false,
+    title: '',
+    message: '',
+    confirmLabel: 'OK',
+    cancelLabel: undefined,
+    tone: 'info',
+    onConfirm: undefined,
+  });
+
   useEffect(() => {
     const handleResize = () => {
       const mobile = window.innerWidth < 768;
@@ -83,6 +108,26 @@ export function Customers() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Click outside listener for details section
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      // Check if click is outside details section and not on a customer row
+      const isDetailsClick = target.closest('[data-details-section]');
+      const isRowClick = target.closest('table tbody tr');
+      
+      if (!isDetailsClick && !isRowClick && shouldShowDetails) {
+        setIsDetailsVisible(false);
+        setTimeout(() => setShouldShowDetails(false), 300);
+      }
+    };
+
+    if (shouldShowDetails) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [shouldShowDetails]);
 
 
 
@@ -119,7 +164,7 @@ export function Customers() {
         };
       });
 
-      if (!canViewArchivedCustomers) {
+      if (!canViewArchived) {
         loaded = loaded.filter(c => !c.isArchived);
       }
 
@@ -217,7 +262,15 @@ export function Customers() {
 
   const handleSaveCustomer = async () => {
     if (!customerForm.name) {
-      alert('Please fill in Customer Name.');
+      setModalState({
+        open: true,
+        title: 'Missing Information',
+        message: 'Please fill in Customer Name before saving.',
+        confirmLabel: 'Close',
+        cancelLabel: undefined,
+        tone: 'info',
+        onConfirm: undefined,
+      });
       return;
     }
 
@@ -262,7 +315,15 @@ export function Customers() {
       setTimeout(() => setShouldShowDetails(false), 300);
     } catch (err) {
       console.error('Error saving customer', err);
-      alert('Failed to save customer. Please try again.');
+      setModalState({
+        open: true,
+        title: 'Save Failed',
+        message: 'Failed to save customer. Please try again.',
+        confirmLabel: 'Close',
+        cancelLabel: undefined,
+        tone: 'danger',
+        onConfirm: undefined,
+      });
     }
   };
 
@@ -304,31 +365,49 @@ export function Customers() {
       setTimeout(() => setShouldShowDetails(false), 300);
     } catch (err) {
       console.error('Error deleting customer', err);
-      alert('Failed to delete customer. Please try again.');
+      setModalState({
+        open: true,
+        title: 'Delete Failed',
+        message: 'Failed to delete customer. Please try again.',
+        confirmLabel: 'Close',
+        cancelLabel: undefined,
+        tone: 'danger',
+        onConfirm: undefined,
+      });
     } finally {
       setIsDeleteConfirmOpen(false);
     }
   };
 
   const filteredCustomers = customers.filter(customer => {
+    // Search filter
     const q = searchTerm.trim().toLowerCase();
-    if (!q) return true;
+    if (q) {
+      const idMatch = customer.customerId.toLowerCase().includes(q);
+      const nameMatch = customer.name.toLowerCase().includes(q);
+      const contactMatch = customer.contact.toLowerCase().includes(q);
+      const emailMatch = customer.email.toLowerCase().includes(q);
+      const addressMatch = customer.address.toLowerCase().includes(q);
+      const vehicleTypesMatch = customer.vehicleTypes.join(' ').toLowerCase().includes(q);
 
-    const idMatch = customer.customerId.toLowerCase().includes(q);
-    const nameMatch = customer.name.toLowerCase().includes(q);
-    const contactMatch = customer.contact.toLowerCase().includes(q);
-    const emailMatch = customer.email.toLowerCase().includes(q);
-    const addressMatch = customer.address.toLowerCase().includes(q);
-    const vehicleTypesMatch = customer.vehicleTypes.join(' ').toLowerCase().includes(q);
+      if (!idMatch && !nameMatch && !contactMatch && !emailMatch && !addressMatch && !vehicleTypesMatch) {
+        return false;
+      }
+    }
 
-    return (
-      idMatch ||
-      nameMatch ||
-      contactMatch ||
-      emailMatch ||
-      addressMatch ||
-      vehicleTypesMatch
-    );
+    // Vehicle type filter
+    if (vehicleTypeFilter && vehicleTypeFilter !== 'All Types') {
+      if (!customer.vehicleTypes.includes(vehicleTypeFilter)) {
+        return false;
+      }
+    }
+
+    // Archived filter
+    if (!showArchivedFilter && customer.isArchived) {
+      return false;
+    }
+
+    return true;
   });
 
   return (
@@ -556,6 +635,283 @@ export function Customers() {
             transition: 'margin-left 0.3s ease',
           }}
         >
+          {/* Action Bar */}
+          <section style={{ marginBottom: '1rem' }}>
+            <div style={{ backgroundColor: 'white', borderRadius: '0.5rem', padding: '1rem', border: '1px solid #e5e7eb' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: showFilters ? '1rem' : 0 }}>
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  {canEditCustomers && (
+                    <button type="button" onClick={() => {
+                      const rows = filteredCustomers;
+                      if (!rows.length) return;
+                      const headers = ['Customer ID', 'Name', 'Contact', 'Email', 'Address', 'Vehicle Types', 'Status'];
+                      const escapeCell = (v: unknown) => { const s = (v ?? '').toString(); return s.includes('"') || s.includes(',') || s.includes('\n') ? '"' + s.replace(/"/g, '""') + '"' : s; };
+                      const csv = [headers.join(','), ...rows.map(c => [c.customerId, c.name, c.contact, c.email, c.address, c.vehicleTypes.join('; '), c.isArchived ? 'Archived' : 'Active'].map(escapeCell).join(','))].join('\r\n');
+                      const blob = new Blob([csv], { type: 'text/csv' });
+                      const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `customers_${new Date().toISOString().split('T')[0]}.csv`; document.body.appendChild(link); link.click(); document.body.removeChild(link);
+                    }} style={{ backgroundColor: '#059669', color: 'white', padding: '0.5rem 1rem', borderRadius: '0.375rem', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 500, fontSize: '0.875rem', height: '40px' }}>
+                      Export to CSV <FaFileExcel />
+                    </button>
+                  )}
+                  {canArchiveCustomers && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (isSelectMode) {
+                          setIsSelectMode(false);
+                          setSelectedItems(new Set());
+                        } else {
+                          setIsSelectMode(true);
+                        }
+                      }}
+                      style={{
+                        backgroundColor: isSelectMode ? '#6b7280' : '#1d4ed8',
+                        color: 'white',
+                        padding: '0.5rem 1rem',
+                        borderRadius: '0.375rem',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontWeight: 500,
+                        fontSize: '0.875rem',
+                        height: '40px',
+                      }}
+                    >
+                      {isSelectMode ? 'Cancel' : 'Select'}
+                    </button>
+                  )}
+
+                  {/* Bulk actions when select mode is active */}
+                  {isSelectMode && canArchiveCustomers && selectedItems.size > 0 && (
+                    <>
+                      {/* Helper counts for selected archived/unarchived customers */}
+                      {(() => {
+                        const selectedCustomers = filteredCustomers.filter(c => selectedItems.has(c.id));
+                        const selectedArchivedCount = selectedCustomers.filter(c => c.isArchived).length;
+                        const selectedUnarchivedCount = selectedCustomers.filter(c => !c.isArchived).length;
+
+                        return (
+                          <>
+                            {/* Scenario 1 & 3: at least one unarchived selected -> Archive button */}
+                            {selectedUnarchivedCount > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const itemsToArchive = selectedCustomers.filter(c => !c.isArchived);
+                                  if (!itemsToArchive.length) return;
+                                  setModalState({
+                                    open: true,
+                                    title: 'Archive Customers',
+                                    message: `Archive ${itemsToArchive.length} customer(s)?`,
+                                    confirmLabel: 'Archive',
+                                    cancelLabel: 'Cancel',
+                                    tone: 'danger',
+                                    onConfirm: async () => {
+                                      try {
+                                        for (const item of itemsToArchive) {
+                                          await updateDoc(doc(db, 'customers', item.id), { isArchived: true });
+                                        }
+                                        await loadCustomers();
+                                        setSelectedItems(new Set());
+                                        setIsSelectMode(false);
+                                      } catch (err) {
+                                        console.error('Error archiving customers', err);
+                                        setModalState({
+                                          open: true,
+                                          title: 'Archive Failed',
+                                          message: 'Failed to archive selected customers. Please try again.',
+                                          confirmLabel: 'Close',
+                                          cancelLabel: undefined,
+                                          tone: 'danger',
+                                          onConfirm: undefined,
+                                        });
+                                      }
+                                    },
+                                  });
+                                }}
+                                style={{
+                                  backgroundColor: '#dc2626',
+                                  color: 'white',
+                                  padding: '0.5rem 0.9rem',
+                                  borderRadius: '0.375rem',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '0.4rem',
+                                  fontWeight: 500,
+                                  fontSize: '0.875rem',
+                                  height: '40px',
+                                }}
+                              >
+                                Archive
+                              </button>
+                            )}
+
+                            {/* Scenario 2 & 3: at least one archived selected -> Unarchive button */}
+                            {selectedArchivedCount > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const itemsToUnarchive = selectedCustomers.filter(c => c.isArchived);
+                                  if (!itemsToUnarchive.length) return;
+                                  setModalState({
+                                    open: true,
+                                    title: 'Unarchive Customers',
+                                    message: `Unarchive ${itemsToUnarchive.length} customer(s)?`,
+                                    confirmLabel: 'Unarchive',
+                                    cancelLabel: 'Cancel',
+                                    tone: 'info',
+                                    onConfirm: async () => {
+                                      try {
+                                        for (const item of itemsToUnarchive) {
+                                          await updateDoc(doc(db, 'customers', item.id), { isArchived: false });
+                                        }
+                                        await loadCustomers();
+                                        setSelectedItems(new Set());
+                                        setIsSelectMode(false);
+                                      } catch (err) {
+                                        console.error('Error unarchiving customers', err);
+                                        setModalState({
+                                          open: true,
+                                          title: 'Unarchive Failed',
+                                          message: 'Failed to unarchive selected customers. Please try again.',
+                                          confirmLabel: 'Close',
+                                          cancelLabel: undefined,
+                                          tone: 'danger',
+                                          onConfirm: undefined,
+                                        });
+                                      }
+                                    },
+                                  });
+                                }}
+                                style={{
+                                  backgroundColor: '#4b5563',
+                                  color: 'white',
+                                  padding: '0.5rem 0.9rem',
+                                  borderRadius: '0.375rem',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '0.4rem',
+                                  fontWeight: 500,
+                                  fontSize: '0.875rem',
+                                  height: '40px',
+                                }}
+                              >
+                                Unarchive
+                              </button>
+                            )}
+
+                            {/* Scenario 2: only archived selected -> Delete button with double confirmation */}
+                            {canDeleteCustomers && selectedArchivedCount > 0 && selectedUnarchivedCount === 0 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const itemsToDelete = selectedCustomers.filter(c => c.isArchived);
+                                  if (!itemsToDelete.length) return;
+                                  // First confirmation
+                                  setModalState({
+                                    open: true,
+                                    title: 'Delete Archived Customers',
+                                    message: `Delete ${itemsToDelete.length} archived customer(s)? This cannot be undone.`,
+                                    confirmLabel: 'Continue',
+                                    cancelLabel: 'Cancel',
+                                    tone: 'danger',
+                                    onConfirm: () => {
+                                      // Second, stronger confirmation
+                                      setModalState({
+                                        open: true,
+                                        title: 'Confirm Permanent Deletion',
+                                        message: 'Are you absolutely sure you want to permanently delete the selected archived customers? This action cannot be undone.',
+                                        confirmLabel: 'Delete',
+                                        cancelLabel: 'Cancel',
+                                        tone: 'danger',
+                                        onConfirm: async () => {
+                                          try {
+                                            for (const item of itemsToDelete) {
+                                              await deleteDoc(doc(db, 'customers', item.id));
+                                            }
+                                            await loadCustomers();
+                                            setSelectedItems(new Set());
+                                            setIsSelectMode(false);
+                                          } catch (err) {
+                                            console.error('Error deleting customers', err);
+                                            setModalState({
+                                              open: true,
+                                              title: 'Delete Failed',
+                                              message: 'Failed to delete selected customers. Please try again.',
+                                              confirmLabel: 'Close',
+                                              cancelLabel: undefined,
+                                              tone: 'danger',
+                                              onConfirm: undefined,
+                                            });
+                                          }
+                                        },
+                                      });
+                                    },
+                                  });
+                                }}
+                                style={{
+                                  backgroundColor: '#b91c1c',
+                                  color: 'white',
+                                  padding: '0.5rem 0.9rem',
+                                  borderRadius: '0.375rem',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '0.4rem',
+                                  fontWeight: 500,
+                                  fontSize: '0.875rem',
+                                  height: '40px',
+                                }}
+                              >
+                                Delete
+                              </button>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </>
+                  )}
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  <button type="button" onClick={() => setShowFilters(!showFilters)} style={{ backgroundColor: '#1e40af', color: 'white', padding: '0.5rem 1rem', borderRadius: '0.375rem', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 500, fontSize: '0.875rem', height: '40px' }}>
+                    Filters <FaFilter />
+                  </button>
+                  <button type="button" onClick={() => { setVehicleTypeFilter(''); setShowArchivedFilter(false); }} style={{ backgroundColor: '#6b7280', color: 'white', padding: '0.5rem 1rem', borderRadius: '0.375rem', border: 'none', cursor: 'pointer', fontWeight: 500, fontSize: '0.875rem', height: '40px' }}>
+                    Clear Filters
+                  </button>
+                </div>
+              </div>
+              {showFilters && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1rem', paddingTop: '1rem', borderTop: '1px solid #e5e7eb' }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#4b5563' }}>Vehicle Type</label>
+                    <select value={vehicleTypeFilter} onChange={(e) => setVehicleTypeFilter(e.target.value)} style={{ width: '100%', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #d1d5db', backgroundColor: 'white', color: '#111827' }}>
+                      <option value="">All Types</option>
+                      {vehicleTypeOptions.map((type) => (
+                        <option key={type} value={type}>{type}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: '0.5rem' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.875rem', color: '#4b5563' }}>
+                      <input
+                        type="checkbox"
+                        checked={showArchivedFilter}
+                        onChange={(e) => setShowArchivedFilter(e.target.checked)}
+                        style={{ width: '1rem', height: '1rem', cursor: 'pointer' }}
+                      />
+                      Show Archived
+                    </label>
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
+
           {/* Main Content */}
           <div
             style={{
@@ -575,6 +931,7 @@ export function Customers() {
               {/* Customer Details Section */}
               {shouldShowDetails && (
                 <div
+                  data-details-section
                   style={{
                     backgroundColor: 'white',
                     backdropFilter: 'blur(12px)',
@@ -592,6 +949,7 @@ export function Customers() {
                     opacity: isDetailsVisible ? 1 : 0,
                     transition: 'transform 0.3s ease, opacity 0.3s ease',
                   }}
+                  onClick={(e) => e.stopPropagation()}
                 >
                   <h2
                     style={{
@@ -866,55 +1224,7 @@ export function Customers() {
                             Cancel
                           </button>
                         </div>
-                        {canDeleteCustomers && selectedCustomer && currentRole === 'superadmin' && (
-                          <div
-                            style={{
-                              display: 'flex',
-                              gap: '1rem',
-                              marginTop: '0.75rem',
-                            }}
-                          >
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setDeleteMode(selectedCustomer.isArchived ? 'unarchive' : 'archive');
-                                setIsDeleteConfirmOpen(true);
-                              }}
-                              style={{
-                                padding: '0.5rem 1rem',
-                                backgroundColor: '#fef2f2',
-                                color: '#111827',
-                                border: '1px solid #fecaca',
-                                borderRadius: '0.375rem',
-                                fontWeight: '500',
-                                width: '50%',
-                                cursor: 'pointer',
-                              }}
-                            >
-                              {selectedCustomer.isArchived ? 'Unarchive' : 'Archive'}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setDeleteMode('hard');
-                                setIsDeleteConfirmOpen(true);
-                              }}
-                              style={{
-                                padding: '0.5rem 1rem',
-                                backgroundColor: '#fef2f2',
-                                color: '#dc2626',
-                                border: '1px solid #fecaca',
-                                borderRadius: '0.375rem',
-                                fontWeight: '500',
-                                width: '50%',
-                                cursor: 'pointer',
-                              }}
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        )}
-                        {canDeleteCustomers && selectedCustomer && currentRole !== 'superadmin' && (
+                        {canArchiveCustomers && selectedCustomer && !selectedCustomer.isArchived && (
                           <button
                             type="button"
                             onClick={() => {
@@ -922,19 +1232,63 @@ export function Customers() {
                               setIsDeleteConfirmOpen(true);
                             }}
                             style={{
+                              marginTop: '0.75rem',
                               padding: '0.5rem 1rem',
                               backgroundColor: '#fef2f2',
                               color: '#dc2626',
                               border: '1px solid #fecaca',
                               borderRadius: '0.375rem',
                               fontWeight: '500',
-                              marginTop: '0.75rem',
-                              width: '100%',
                               cursor: 'pointer',
+                              width: '100%',
                             }}
                           >
                             Archive Customer
                           </button>
+                        )}
+                        {canArchiveCustomers && selectedCustomer && selectedCustomer.isArchived && (
+                          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setDeleteMode('unarchive');
+                                setIsDeleteConfirmOpen(true);
+                              }}
+                              style={{
+                                flex: 1,
+                                padding: '0.5rem 1rem',
+                                backgroundColor: '#dbeafe',
+                                color: '#1d4ed8',
+                                border: '1px solid #93c5fd',
+                                borderRadius: '0.375rem',
+                                fontWeight: '500',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              Unarchive
+                            </button>
+                            {canDeleteCustomers && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setDeleteMode('hard');
+                                  setIsDeleteConfirmOpen(true);
+                                }}
+                                style={{
+                                  flex: 1,
+                                  padding: '0.5rem 1rem',
+                                  backgroundColor: '#fef2f2',
+                                  color: '#dc2626',
+                                  border: '1px solid #fecaca',
+                                  borderRadius: '0.375rem',
+                                  fontWeight: '500',
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                Delete
+                              </button>
+                            )}
+                          </div>
                         )}
                       </>
                     )}
@@ -946,9 +1300,12 @@ export function Customers() {
               <div
                 style={{
                   flex: 1,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '1.5rem',
+                  backgroundColor: 'white',
+                  backdropFilter: 'blur(12px)',
+                  borderRadius: '0.5rem',
+                  padding: '1.5rem',
+                  border: '1px solid rgba(255, 255, 255, 0.18)',
+                  boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.15)',
                 }}
               >
                 <div
@@ -956,14 +1313,16 @@ export function Customers() {
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    marginBottom: '0.5rem',
+                    marginBottom: '1.5rem',
                   }}
                 >
                   <h2
                     style={{
+                      color: 'black',
                       fontSize: '1.25rem',
-                      fontWeight: 600,
-                      color: '#111827',
+                      fontWeight: '600',
+                      color: '#1e40af',
+                      margin: 0,
                     }}
                   >
                     Available Customers
@@ -973,31 +1332,26 @@ export function Customers() {
                       type="button"
                       onClick={handleNewCustomer}
                       style={{
-                        padding: '0.5rem 1rem',
-                        backgroundColor: '#2563eb',
-                        color: 'white',
-                        borderRadius: '0.375rem',
-                        border: 'none',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.5rem',
-                        fontSize: '0.875rem',
+                        padding: '0.35rem 0.9rem',
+                        borderRadius: '9999px',
+                        border: '1px solid #3b82f6',
+                        backgroundColor: 'white',
+                        color: '#1d4ed8',
+                        fontSize: '0.8rem',
                         fontWeight: 500,
+                        cursor: 'pointer',
                       }}
                     >
-                      <FaPlus />
-                      <span>New Customer</span>
+                      New Customer
                     </button>
                   )}
                 </div>
 
                 <div
                   style={{
-                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                    borderRadius: '0.75rem',
-                    border: '1px solid #e5e7eb',
+                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                    borderRadius: '0.5rem',
                     overflow: 'hidden',
-                    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
                   }}
                 >
                   <div
@@ -1016,6 +1370,11 @@ export function Customers() {
                             zIndex: 1,
                           }}
                         >
+                          {isSelectMode && (
+                            <th style={{ padding: '0.75rem 0.5rem', textAlign: 'center', width: '40px' }}>
+                              <input type="checkbox" checked={selectedItems.size === filteredCustomers.length && filteredCustomers.length > 0} onChange={(e) => { if (e.target.checked) { setSelectedItems(new Set(filteredCustomers.map(c => c.id))); } else { setSelectedItems(new Set()); } }} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
+                            </th>
+                          )}
                           <th
                             style={{
                               padding: '0.75rem 1rem',
@@ -1158,15 +1517,40 @@ export function Customers() {
                           filteredCustomers.map((customer) => (
                             <tr
                               key={customer.id}
-                              onClick={() => handleRowClick(customer)}
                               style={{
                                 cursor: 'pointer',
                                 backgroundColor:
                                   selectedCustomer && selectedCustomer.id === customer.id
                                     ? '#eff6ff'
                                     : 'white',
+                                transition: 'background-color 0.2s',
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = '#f0f0f0';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor =
+                                  selectedCustomer && selectedCustomer.id === customer.id
+                                    ? '#eff6ff'
+                                    : 'white';
+                              }}
+                              onClick={() => {
+                                if (isSelectMode) {
+                                  setSelectedItems(prev => {
+                                    const next = new Set(prev);
+                                    if (next.has(customer.id)) { next.delete(customer.id); } else { next.add(customer.id); }
+                                    return next;
+                                  });
+                                } else {
+                                  handleRowClick(customer);
+                                }
                               }}
                             >
+                              {isSelectMode && (
+                                <td style={{ padding: '0.75rem 0.5rem', textAlign: 'center' }}>
+                                  <input type="checkbox" checked={selectedItems.has(customer.id)} onChange={() => {}} onClick={(e) => e.stopPropagation()} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
+                                </td>
+                              )}
                               <td
                                 style={{
                                   padding: '0.75rem 1rem',
@@ -1255,6 +1639,88 @@ export function Customers() {
           </div>
         </main>
       </div>
+
+      {/* Generic confirmation / message modal */}
+      {modalState.open && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0,0,0,0.45)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 2200,
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '0.75rem',
+            padding: '1.5rem 2rem',
+            maxWidth: '480px',
+            width: '100%',
+            boxShadow: '0 20px 40px rgba(15, 23, 42, 0.45)',
+            border: '1px solid #e5e7eb',
+          }}>
+            <h3 style={{
+              fontSize: '1.1rem',
+              fontWeight: 600,
+              margin: 0,
+              marginBottom: '0.75rem',
+              color: modalState.tone === 'danger' ? '#b91c1c' : '#111827',
+            }}>
+              {modalState.title}
+            </h3>
+            <p style={{
+              fontSize: '0.9rem',
+              color: '#374151',
+              margin: 0,
+              marginBottom: '1.25rem',
+              whiteSpace: 'pre-line',
+            }}>
+              {modalState.message}
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+              {modalState.cancelLabel && (
+                <button
+                  type="button"
+                  onClick={() => setModalState(prev => ({ ...prev, open: false }))}
+                  style={{
+                    padding: '0.45rem 0.9rem',
+                    borderRadius: '0.375rem',
+                    border: '1px solid #d1d5db',
+                    backgroundColor: 'white',
+                    color: '#374151',
+                    cursor: 'pointer',
+                    fontSize: '0.875rem',
+                  }}
+                >
+                  {modalState.cancelLabel}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  const cb = modalState.onConfirm;
+                  setModalState(prev => ({ ...prev, open: false }));
+                  if (cb) cb();
+                }}
+                style={{
+                  padding: '0.45rem 0.9rem',
+                  borderRadius: '0.375rem',
+                  border: '1px solid',
+                  borderColor: modalState.tone === 'danger' ? '#b91c1c' : '#2563eb',
+                  backgroundColor: modalState.tone === 'danger' ? '#fee2e2' : '#2563eb',
+                  color: modalState.tone === 'danger' ? '#b91c1c' : 'white',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem',
+                  fontWeight: 500,
+                }}
+              >
+                {modalState.confirmLabel || 'OK'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete / Archive Customer Confirmation Modal (admins/superadmins only) */}
       {canDeleteCustomers && isDeleteConfirmOpen && selectedCustomer && (

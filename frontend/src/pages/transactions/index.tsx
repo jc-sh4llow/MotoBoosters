@@ -50,6 +50,7 @@ export function Transactions() {
   const [maxPrice, setMaxPrice] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [showArchivedFilter, setShowArchivedFilter] = useState(true); // Toggle to show/hide archived records
+  const [activeTab, setActiveTab] = useState<'all' | 'parts' | 'service' | 'partsAndService'>('all');
   const [selectedTransaction, setSelectedTransaction] = useState<TransactionRow | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [transactions, setTransactions] = useState<TransactionRow[]>([]);
@@ -333,8 +334,13 @@ export function Transactions() {
         (!maxPrice || tx.grandTotal <= Number(maxPrice));
       const matchesStatus = !statusFilter || tx.status === statusFilter;
       const matchesArchived = showArchivedFilter || !tx.archived;
+      const matchesTab =
+        activeTab === 'all' ||
+        (activeTab === 'parts' && tx.type === 'Parts Only') ||
+        (activeTab === 'service' && tx.type === 'Service Only') ||
+        (activeTab === 'partsAndService' && tx.type === 'Parts + Service');
 
-      return matchesSearch && matchesDate && matchesType && matchesPrice && matchesStatus && matchesArchived;
+      return matchesSearch && matchesDate && matchesType && matchesPrice && matchesStatus && matchesArchived && matchesTab;
     });
   };
 
@@ -685,7 +691,36 @@ export function Transactions() {
                       {isSelectMode ? 'Cancel' : 'Select'}
                     </button>
                   </div>
-                  
+
+                  {/* Center: Type toggle buttons */}
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    {[
+                      { key: 'all', label: 'All' },
+                      { key: 'parts', label: 'Parts Only' },
+                      { key: 'service', label: 'Service Only' },
+                      { key: 'partsAndService', label: 'Parts & Service' }
+                    ].map(tab => (
+                      <button
+                        key={tab.key}
+                        onClick={() => setActiveTab(tab.key as any)}
+                        style={{
+                          padding: '0.5rem 1rem',
+                          borderRadius: '9999px',
+                          border: activeTab === tab.key ? '1px solid #1e40af' : '1px solid #e5e7eb',
+                          backgroundColor: activeTab === tab.key ? '#1e40af' : 'white',
+                          color: activeTab === tab.key ? 'white' : '#374151',
+                          fontSize: '0.875rem',
+                          fontWeight: 500,
+                          cursor: 'pointer',
+                          height: '40px',
+                          transition: 'all 0.2s',
+                        }}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+
                   {/* Right side buttons */}
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
                     <button
@@ -1054,7 +1089,10 @@ export function Transactions() {
                 marginBottom: '1rem',
                 color: '#1e40af'
               }}>
-                Transaction Summary
+                {activeTab === 'all' && 'Overall Transaction Summary'}
+                {activeTab === 'parts' && 'Parts Only Transaction Summary'}
+                {activeTab === 'service' && 'Service Only Transaction Summary'}
+                {activeTab === 'partsAndService' && 'Parts & Service Transaction Summary'}
               </h2>
               <div style={{
                 display: 'grid',

@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
-import { FaHome, FaBars, FaWarehouse, FaTag, FaWrench, FaFileInvoice, FaUser, FaSearch, FaTimes, FaFilter, FaChevronDown, FaEye, FaEyeSlash } from 'react-icons/fa';
+import { FaBars, FaSearch, FaTimes, FaFilter, FaChevronDown, FaEye, FaEyeSlash, FaFileExcel } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
-import { db, auth } from '../../lib/firebase';
+import { db } from '../../lib/firebase';
 import { useAuth } from '../../contexts/AuthContext';
-import { can } from '../../config/permissions';
+import { useRoles } from '../../contexts/PermissionsContext';
+import { can, type Role } from '../../config/permissions';
 import logo from '../../assets/logo.png';
 import bcrypt from 'bcryptjs';
 import { HeaderDropdown } from '../../components/HeaderDropdown';
+import { RoleBadge } from '../../components/RoleBadge';
 
 async function hashPassword(raw: string): Promise<string> {
   const normalized = raw.trim();
@@ -29,11 +31,13 @@ type UserRow = {
   fullName: string;
   email: string;
   contactNumber: string;
-  role: string;
+  role: string; // Legacy single role field
+  roles?: string[]; // New multi-role field
   status: string;
   lastLogin: string;
   password: string; // Plain password kept temporarily for compatibility
   passwordHash?: string; // Hashed password for secure verification
+  archived?: boolean;
 };
 
 export function Users() {
@@ -45,13 +49,20 @@ export function Users() {
   const [isConfirmFocused, setIsConfirmFocused] = useState(false);
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { roles: firestoreRoles, loading: rolesLoading } = useRoles();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [isNavExpanded, setIsNavExpanded] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
   const [isUserSettingsOpen, setIsUserSettingsOpen] = useState(false);
   const userRoles = user?.roles?.length ? user.roles : (user?.role ? [user.role] : []);
   let closeMenuTimeout: number | undefined;
   const [searchTerm, setSearchTerm] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [roleFilter, setRoleFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [showArchivedFilter, setShowArchivedFilter] = useState(false);
+
+  // Multi-role selection for user details form
+  const [selectedRolesForUser, setSelectedRolesForUser] = useState<string[]>([]);
 
   const [formData, setFormData] = useState({
     docId: '', // Firestore document ID
@@ -302,11 +313,13 @@ export function Users() {
           email: data.email ?? '',
           contactNumber: data.contactNumber ?? '',
           role: data.role ?? '',
+          roles: Array.isArray(data.roles) ? data.roles : (data.role ? [data.role] : []),
           // Normalize stored status to a consistent display value
           status: (data.status ?? '').toString().trim() || '',
           lastLogin: data.lastLogin ?? '',
           password: data.password ?? '',
           passwordHash: data.passwordHash ?? '',
+          archived: data.archived === true,
         } as UserRow;
       });
 
@@ -458,6 +471,78 @@ export function Users() {
     });
   };
 
+  // Permission checks for Users page
+  const canArchiveUsers = can(userRoles, 'users.archive');
+  const canDeleteUsers = can(userRoles, 'users.delete');
+  const canExportUsers = isAdminLike; // Export is admin-only for now
+  const canViewArchived = can(userRoles, 'users.view.archived');
+
+  // Get filtered users based on search and filters
+  const getFilteredUsers = () => {
+    return users.filter(u => {
+      // Hide developer accounts from non-developers unless they have permission
+      if (!can(userRoles, 'users.view.developer') && (u.roles || []).some(r => r.toLowerCase() === 'developer')) {
+        return false;
+      }
+      
+      // Filter by archived status
+      if (!showArchivedFilter && u.archived) return false;
+      if (showArchivedFilter && !canViewArchived && u.archived) return false;
+      
+      // Search filter
+      if (searchTerm) {
+        const term = searchTerm.toLowerCase();
+        const matchesSearch = 
+          u.displayId.toLowerCase().includes(term) ||
+          u.username.toLowerCase().includes(term) ||
+          u.fullName.toLowerCase().includes(term) ||
+          u.email.toLowerCase().includes(term);
+        if (!matchesSearch) return false;
+      }
+      
+      // Role filter
+      if (roleFilter) {
+        const userRolesList = u.roles || [u.role];
+        if (!userRolesList.some(r => r.toLowerCase() === roleFilter.toLowerCase())) return false;
+      }
+      
+      // Status filter
+      if (statusFilter) {
+        const userStatus = (u.status || '').toLowerCase();
+        if (statusFilter === 'active' && userStatus !== 'active') return false;
+        if (statusFilter === 'inactive' && userStatus === 'active') return false;
+      }
+      
+      return true;
+    });
+  };
+
+  // Export to CSV handler
+  const handleExportCsv = () => {
+    const dataToExport = getFilteredUsers();
+    if (dataToExport.length === 0) return;
+    
+    const headers = ['ID', 'Username', 'Full Name', 'Email', 'Contact', 'Roles', 'Status', 'Last Login'];
+    const rows = dataToExport.map(u => [
+      u.displayId,
+      u.username,
+      u.fullName,
+      u.email,
+      u.contactNumber,
+      (u.roles || [u.role]).join('; '),
+      u.status,
+      u.lastLogin
+    ]);
+    
+    const csvContent = [headers, ...rows].map(row => row.map(cell => `"${(cell || '').replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `users_export_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
 
   const getFirstName = (name: string) => {
     const parts = name.trim().split(/\s+/);
@@ -1191,10 +1276,9 @@ export function Users() {
                           cursor: 'pointer'
                         }}
                       >
-                        <option value="developer">Developer</option>
-                        <option value="admin">Admin</option>
-                        <option value="employee">Employee</option>
-                        <option value="mechanic">Mechanic</option>
+                        {firestoreRoles.map(role => (
+                          <option key={role.id} value={role.id}>{role.name}</option>
+                        ))}
                       </select>
                     </div>
 
@@ -1304,6 +1388,189 @@ export function Users() {
               </div>
             </section>
 
+            {/* Action Bar Section */}
+            <section style={{ marginBottom: '1rem' }}>
+              <div style={{
+                backgroundColor: 'white',
+                borderRadius: '0.5rem',
+                padding: '1rem',
+                marginBottom: '1rem',
+                border: '1px solid #e5e7eb'
+              }}>
+                {/* Action Bar - Left: Export, Select | Right: Filters, Clear Filters */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: showFilters ? '1rem' : 0 }}>
+                  {/* Left side buttons */}
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    {canExportUsers && (
+                      <button
+                        onClick={handleExportCsv}
+                        style={{
+                          backgroundColor: '#059669',
+                          color: 'white',
+                          padding: '0.5rem 1rem',
+                          borderRadius: '0.375rem',
+                          border: 'none',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          fontWeight: 500,
+                          fontSize: '0.875rem',
+                          height: '40px',
+                        }}
+                      >
+                        Export to CSV <FaFileExcel />
+                      </button>
+                    )}
+                    <button
+                      onClick={() => {
+                        setIsSelectMode(!isSelectMode);
+                        if (isSelectMode) setSelectedItems(new Set());
+                      }}
+                      style={{
+                        backgroundColor: isSelectMode ? '#dc2626' : '#3b82f6',
+                        color: 'white',
+                        padding: '0.5rem 1rem',
+                        borderRadius: '0.375rem',
+                        border: 'none',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        fontWeight: 500,
+                        fontSize: '0.875rem',
+                        height: '40px',
+                      }}
+                    >
+                      {isSelectMode ? 'Cancel' : 'Select'}
+                    </button>
+                  </div>
+
+                  {/* Right side buttons */}
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button
+                      onClick={() => setShowFilters(!showFilters)}
+                      style={{
+                        backgroundColor: '#1e40af',
+                        color: 'white',
+                        padding: '0.5rem 1rem',
+                        borderRadius: '0.375rem',
+                        border: 'none',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        fontWeight: 500,
+                        fontSize: '0.875rem',
+                        height: '40px',
+                      }}
+                    >
+                      Filters <FaFilter />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setRoleFilter('');
+                        setStatusFilter('');
+                        setShowArchivedFilter(false);
+                      }}
+                      style={{
+                        backgroundColor: '#6b7280',
+                        color: 'white',
+                        padding: '0.5rem 1rem',
+                        borderRadius: '0.375rem',
+                        border: 'none',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        fontWeight: 500,
+                        fontSize: '0.875rem',
+                        height: '40px',
+                      }}
+                    >
+                      Clear Filters
+                    </button>
+                  </div>
+                </div>
+
+                {/* Filters Panel */}
+                {showFilters && (
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                    gap: '1rem',
+                    paddingTop: '1rem',
+                    borderTop: '1px solid #e5e7eb',
+                  }}>
+                    {/* Role Filter */}
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#4b5563' }}>
+                        Role
+                      </label>
+                      <select
+                        value={roleFilter}
+                        onChange={(e) => setRoleFilter(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '0.5rem',
+                          borderRadius: '0.375rem',
+                          border: '1px solid #d1d5db',
+                          backgroundColor: 'white',
+                          color: '#111827',
+                          fontSize: '0.875rem'
+                        }}
+                      >
+                        <option value="">All Roles</option>
+                        {firestoreRoles.map(role => (
+                          <option key={role.id} value={role.id}>{role.name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Status Filter */}
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#4b5563' }}>
+                        Status
+                      </label>
+                      <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '0.5rem',
+                          borderRadius: '0.375rem',
+                          border: '1px solid #d1d5db',
+                          backgroundColor: 'white',
+                          color: '#111827',
+                          fontSize: '0.875rem'
+                        }}
+                      >
+                        <option value="">All Statuses</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                      </select>
+                    </div>
+
+                    {/* Show Archived Toggle */}
+                    {canViewArchived && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', paddingTop: '1.5rem' }}>
+                        <input
+                          type="checkbox"
+                          id="showArchived"
+                          checked={showArchivedFilter}
+                          onChange={(e) => setShowArchivedFilter(e.target.checked)}
+                          style={{ width: '1rem', height: '1rem' }}
+                        />
+                        <label htmlFor="showArchived" style={{ fontSize: '0.875rem', color: '#4b5563' }}>
+                          Show Archived
+                        </label>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </section>
+
             {/* System Users Section */}
             <section>
               <div style={{
@@ -1320,6 +1587,94 @@ export function Users() {
                 }}>
                   System Users
                 </h2>
+                {isSelectMode && selectedItems.size > 0 && (() => {
+                  const selectedUsers = getFilteredUsers().filter(u => selectedItems.has(u.id));
+                  const hasUnarchived = selectedUsers.some(u => !u.archived);
+                  const hasArchived = selectedUsers.some(u => u.archived);
+
+                  return (
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.875rem', color: '#374151' }}>
+                        {selectedItems.size} selected
+                      </span>
+                      {canArchiveUsers && hasUnarchived && (
+                        <button
+                          onClick={async () => {
+                            const toArchive = selectedUsers.filter(u => !u.archived);
+                            await Promise.all(
+                              toArchive.map((u) => updateDoc(doc(db, 'users', u.id), { archived: true, archivedAt: new Date().toISOString() }))
+                            );
+                            await loadUsers();
+                            setSelectedItems(new Set());
+                            setIsSelectMode(false);
+                          }}
+                          style={{
+                            backgroundColor: '#f59e0b',
+                            color: 'white',
+                            padding: '0.5rem 1rem',
+                            borderRadius: '0.375rem',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: '0.875rem',
+                            fontWeight: 500,
+                          }}
+                        >
+                          Archive Selected
+                        </button>
+                      )}
+                      {canArchiveUsers && hasArchived && (
+                        <button
+                          onClick={async () => {
+                            const toUnarchive = selectedUsers.filter(u => u.archived);
+                            await Promise.all(
+                              toUnarchive.map((u) => updateDoc(doc(db, 'users', u.id), { archived: false }))
+                            );
+                            await loadUsers();
+                            setSelectedItems(new Set());
+                            setIsSelectMode(false);
+                          }}
+                          style={{
+                            backgroundColor: '#3b82f6',
+                            color: 'white',
+                            padding: '0.5rem 1rem',
+                            borderRadius: '0.375rem',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: '0.875rem',
+                            fontWeight: 500,
+                          }}
+                        >
+                          Unarchive Selected
+                        </button>
+                      )}
+                      {canDeleteUsers && hasArchived && !hasUnarchived && (
+                        <button
+                          onClick={async () => {
+                            const toDelete = selectedUsers.filter(u => u.archived);
+                            await Promise.all(
+                              toDelete.map((u) => deleteDoc(doc(db, 'users', u.id)))
+                            );
+                            await loadUsers();
+                            setSelectedItems(new Set());
+                            setIsSelectMode(false);
+                          }}
+                          style={{
+                            backgroundColor: '#ef4444',
+                            color: 'white',
+                            padding: '0.5rem 1rem',
+                            borderRadius: '0.375rem',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: '0.875rem',
+                            fontWeight: 500,
+                          }}
+                        >
+                          Delete Selected
+                        </button>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
 
               <div style={{
@@ -1338,6 +1693,22 @@ export function Users() {
                       backgroundColor: '#f3f4f6',
                       borderBottom: '1px solid #e5e7eb'
                     }}>
+                      {isSelectMode && (
+                        <th style={{ padding: '0.75rem 0.5rem', width: '40px' }}>
+                          <input
+                            type="checkbox"
+                            checked={selectedItems.size === getFilteredUsers().length && getFilteredUsers().length > 0}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedItems(new Set(getFilteredUsers().map(u => u.id)));
+                              } else {
+                                setSelectedItems(new Set());
+                              }
+                            }}
+                            style={{ width: '1rem', height: '1rem', cursor: 'pointer' }}
+                          />
+                        </th>
+                      )}
                       <th
                         onClick={() => handleSort('id')}
                         style={{
@@ -1461,16 +1832,34 @@ export function Users() {
                     </tr>
                   </thead>
                   <tbody>
-                    {sortedUsers.map((user, index) => (
+                    {getFilteredUsers().map((user, index) => (
                       <tr
                         key={user.id}
-                        onClick={() => handleSelectUser(user)}
+                        onClick={() => isSelectMode ? null : handleSelectUser(user)}
                         style={{
-                          borderBottom: index === users.length - 1 ? 'none' : '1px solid #e5e7eb',
-                          backgroundColor: index % 2 === 0 ? 'white' : '#f9fafb',
-                          cursor: 'pointer'
+                          borderBottom: index === getFilteredUsers().length - 1 ? 'none' : '1px solid #e5e7eb',
+                          backgroundColor: selectedItems.has(user.id) ? '#dbeafe' : (index % 2 === 0 ? 'white' : '#f9fafb'),
+                          cursor: isSelectMode ? 'default' : 'pointer'
                         }}
                       >
+                        {isSelectMode && (
+                          <td style={{ padding: '1rem 0.5rem', width: '40px' }} onClick={e => e.stopPropagation()}>
+                            <input
+                              type="checkbox"
+                              checked={selectedItems.has(user.id)}
+                              onChange={(e) => {
+                                const newSet = new Set(selectedItems);
+                                if (e.target.checked) {
+                                  newSet.add(user.id);
+                                } else {
+                                  newSet.delete(user.id);
+                                }
+                                setSelectedItems(newSet);
+                              }}
+                              style={{ width: '1rem', height: '1rem', cursor: 'pointer' }}
+                            />
+                          </td>
+                        )}
                         <td style={{
                           padding: '1rem',
                           fontSize: '0.875rem',
@@ -1509,23 +1898,18 @@ export function Users() {
                           fontSize: '0.875rem',
                           color: '#111827',
                           whiteSpace: 'nowrap',
-                          display: 'flex',
-                          gap: '0.5rem',
-                          flexWrap: 'wrap'
                         }}>
-                          {user.role && (
-                            <span style={{
-                              display: 'inline-block',
-                              padding: '0.25rem 0.75rem',
-                              borderRadius: '9999px',
-                              fontSize: '0.75rem',
-                              fontWeight: 600,
-                              backgroundColor: '#dbeafe',
-                              color: '#1d4ed8'
-                            }}>
-                              {user.role}
-                            </span>
-                          )}
+                          <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
+                            {(user.roles || [user.role]).filter(Boolean).map(roleId => {
+                              const roleData = firestoreRoles.find(r => r.id === roleId || r.name.toLowerCase() === roleId.toLowerCase());
+                              return (
+                                <RoleBadge
+                                  key={roleId}
+                                  role={roleData || { id: roleId, name: roleId, color: '#6b7280', position: 999, permissions: {}, isDefault: false, isProtected: false, createdAt: new Date() }}
+                                />
+                              );
+                            })}
+                          </div>
                         </td>
                         <td
                           style={{
@@ -1595,10 +1979,14 @@ export function Users() {
                                     setIsEditing(true);
                                   }}
                                   style={{
-                                    backgroundColor: 'transparent',
-                                    border: 'none',
-                                    color: '#3b82f6',
+                                    padding: '0.25rem 0.75rem',
+                                    borderRadius: '999px',
+                                    border: '1px solid #bfdbfe',
+                                    backgroundColor: '#dbeafe',
+                                    color: '#1d4ed8',
+                                    fontSize: '0.75rem',
                                     cursor: 'pointer',
+                                    fontWeight: 500,
                                     marginRight: '0.5rem'
                                   }}
                                 >
@@ -1644,10 +2032,14 @@ export function Users() {
                                   setIsEditing(true);
                                 }}
                                 style={{
-                                  backgroundColor: 'transparent',
-                                  border: 'none',
-                                  color: '#3b82f6',
-                                  cursor: 'pointer'
+                                  padding: '0.25rem 0.75rem',
+                                  borderRadius: '999px',
+                                  border: '1px solid #bfdbfe',
+                                  backgroundColor: '#dbeafe',
+                                  color: '#1d4ed8',
+                                  fontSize: '0.75rem',
+                                  cursor: 'pointer',
+                                  fontWeight: 500
                                 }}
                               >
                                 Edit
@@ -1657,7 +2049,7 @@ export function Users() {
                         )}
                       </tr>
                     ))}
-                    {users.length === 0 && (
+                    {getFilteredUsers().length === 0 && (
                       <tr>
                         <td colSpan={8} style={{
                           padding: '2rem',

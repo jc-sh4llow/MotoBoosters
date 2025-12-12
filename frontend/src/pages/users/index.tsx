@@ -1190,12 +1190,10 @@ export function Users() {
                           cursor: 'pointer'
                         }}
                       >
+                        <option value="developer">Developer</option>
                         <option value="admin">Admin</option>
                         <option value="employee">Employee</option>
                         <option value="mechanic">Mechanic</option>
-                        {user?.role === 'superadmin' && (
-                          <option value="superadmin">Super Admin</option>
-                        )}
                       </select>
                     </div>
 

@@ -479,8 +479,8 @@ export function Users() {
 
 
   const visibleUsers = users.filter(u => {
-    // Hide superadmin accounts from any non-superadmin viewer
-    if (currentRole !== 'superadmin' && (u.role || '').toLowerCase() === 'superadmin') {
+    // Hide developer accounts from non-developers unless they have permission
+    if (!can(userRoles, 'users.view.developer') && (u.role || '').toLowerCase() === 'developer') {
       return false;
     }
     return true;
@@ -844,7 +844,7 @@ export function Users() {
                     </span>
                   </button>
 
-                  {can(currentRole, 'users.edit.any') && (
+                  {can(userRoles, 'users.edit.any') && (
                     <button
                       type="button"
                       onClick={handleNewUser}

@@ -1604,4 +1604,5 @@ export function Sales() {
         )}
       </div>
     </div>
+  );
 }

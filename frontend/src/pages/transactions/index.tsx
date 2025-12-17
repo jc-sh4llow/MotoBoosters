@@ -1109,8 +1109,8 @@ export function Transactions() {
                   boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
                   borderLeft: '4px solid #3b82f6'
                 }}>
-                  <p style={{ color: '#6b7280', fontSize: '0.875rem', marginBottom: '0.5rem' }}>Total Transactions</p>
-                  <p style={{ fontSize: '1.5rem', fontWeight: '600', color: '#111827' }}>{summary.totalTransactions}</p>
+                  <p style={{ color: 'var(--field-label-text)', fontSize: '0.875rem', marginBottom: '0.5rem' }}>Total Transactions</p>
+                  <p style={{ fontSize: '1.5rem', fontWeight: '600', color: 'var(--text-primary)' }}>{summary.totalTransactions}</p>
                 </div>
                 <div style={{
                   backgroundColor: 'var(--surface-elevated)',
@@ -1119,8 +1119,8 @@ export function Transactions() {
                   boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
                   borderLeft: '4px solid #10b981'
                 }}>
-                  <p style={{ color: '#6b7280', fontSize: '0.875rem', marginBottom: '0.5rem' }}>Parts Only</p>
-                  <p style={{ fontSize: '1.5rem', fontWeight: '600', color: '#111827' }}>{summary.partsOnly}</p>
+                  <p style={{ color: 'var(--field-label-text)', fontSize: '0.875rem', marginBottom: '0.5rem' }}>Parts Only</p>
+                  <p style={{ fontSize: '1.5rem', fontWeight: '600', color: 'var(--text-primary)' }}>{summary.partsOnly}</p>
                 </div>
                 <div style={{
                   backgroundColor: 'var(--surface-elevated)',
@@ -1129,8 +1129,8 @@ export function Transactions() {
                   boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
                   borderLeft: '4px solid #f59e0b'
                 }}>
-                  <p style={{ color: '#6b7280', fontSize: '0.875rem', marginBottom: '0.5rem' }}>Service Only</p>
-                  <p style={{ fontSize: '1.5rem', fontWeight: '600', color: '#111827' }}>{summary.serviceOnly}</p>
+                  <p style={{ color: 'var(--field-label-text)', fontSize: '0.875rem', marginBottom: '0.5rem' }}>Service Only</p>
+                  <p style={{ fontSize: '1.5rem', fontWeight: '600', color: 'var(--text-primary)' }}>{summary.serviceOnly}</p>
                 </div>
                 <div style={{
                   backgroundColor: 'var(--surface-elevated)',
@@ -1139,8 +1139,8 @@ export function Transactions() {
                   boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
                   borderLeft: '4px solid #8b5cf6'
                 }}>
-                  <p style={{ color: '#6b7280', fontSize: '0.875rem', marginBottom: '0.5rem' }}>Parts + Service</p>
-                  <p style={{ fontSize: '1.5rem', fontWeight: '600', color: '#111827' }}>{summary.partsAndService}</p>
+                  <p style={{ color: 'var(--field-label-text)', fontSize: '0.875rem', marginBottom: '0.5rem' }}>Parts + Service</p>
+                  <p style={{ fontSize: '1.5rem', fontWeight: '600', color: 'var(--text-primary)' }}>{summary.partsAndService}</p>
                 </div>
                 <div style={{
                   backgroundColor: 'var(--surface-elevated)',
@@ -1149,8 +1149,8 @@ export function Transactions() {
                   boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
                   borderLeft: '4px solid #ec4899'
                 }}>
-                  <p style={{ color: '#6b7280', fontSize: '0.875rem', marginBottom: '0.5rem' }}>Total Revenue</p>
-                  <p style={{ fontSize: '1.5rem', fontWeight: '600', color: '#111827' }}>₱{summary.totalRevenue.toLocaleString()}</p>
+                  <p style={{ color: 'var(--field-label-text)', fontSize: '0.875rem', marginBottom: '0.5rem' }}>Total Revenue</p>
+                  <p style={{ fontSize: '1.5rem', fontWeight: '600', color: 'var(--text-primary)' }}>₱{summary.totalRevenue.toLocaleString()}</p>
                 </div>
               </div>
             </section>
@@ -1303,8 +1303,8 @@ export function Transactions() {
                 }}>
                   <thead>
                     <tr style={{
-                      backgroundColor: '#f9fafb',
-                      borderBottom: '1px solid #e5e7eb'
+                      backgroundColor: 'var(--table-header-bg)',
+                      borderBottom: '1px solid var(--table-border)'
                     }}>
                       {isSelectMode && (
                         <th style={{ padding: '0.75rem 0.5rem', textAlign: 'center', width: '40px' }}>
@@ -1335,7 +1335,7 @@ export function Transactions() {
                             textAlign,
                             fontSize: '0.75rem',
                             fontWeight: '600',
-                            color: '#4b5563',
+                            color: 'var(--table-header-text)',
                             textTransform: 'uppercase',
                             letterSpacing: '0.05em'
                           }}>
@@ -1351,16 +1351,16 @@ export function Transactions() {
                         <tr
                           key={tx.id}
                           style={{
-                            backgroundColor: index % 2 === 0 ? 'white' : '#f9fafb',
-                            borderBottom: index === transactions.length - 1 ? 'none' : '1px solid #e5e7eb',
+                            backgroundColor: index % 2 === 0 ? 'var(--table-row-bg)' : 'var(--table-row-alt-bg)',
+                            borderBottom: index === transactions.length - 1 ? 'none' : '1px solid var(--table-border)',
                             transition: 'background-color 0.2s',
                             cursor: 'pointer'
                           }}
                           onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = '#f3f4f6';
+                            e.currentTarget.style.backgroundColor = 'var(--table-row-hover-bg)';
                           }}
                           onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = index % 2 === 0 ? 'white' : '#f9fafb';
+                            e.currentTarget.style.backgroundColor = index % 2 === 0 ? 'var(--table-row-bg)' : 'var(--table-row-alt-bg)';
                           }}
                           onClick={() => {
                             if (isSelectMode) {
@@ -1391,7 +1391,7 @@ export function Transactions() {
                           <td style={{
                             padding: '1rem 1.5rem',
                             fontSize: '0.875rem',
-                            color: '#111827',
+                            color: 'var(--table-row-text)',
                             whiteSpace: 'nowrap',
                             textAlign: 'center'
                           }}>
@@ -1400,7 +1400,7 @@ export function Transactions() {
                           <td style={{
                             padding: '1rem 1.5rem',
                             fontSize: '0.875rem',
-                            color: '#4b5563',
+                            color: 'var(--table-header-text)',
                             whiteSpace: 'nowrap',
                             textAlign: 'center'
                           }}>
@@ -1409,7 +1409,7 @@ export function Transactions() {
                           <td style={{
                             padding: '1rem 1.5rem',
                             fontSize: '0.875rem',
-                            color: '#111827',
+                            color: 'var(--table-row-text)',
                             whiteSpace: 'nowrap',
                             textAlign: 'left'
                           }}>
@@ -1439,7 +1439,7 @@ export function Transactions() {
                             padding: '1rem 1.5rem',
                             fontSize: '0.875rem',
                             textAlign: 'center',
-                            color: '#111827'
+                            color: 'var(--table-row-text)'
                           }}>
                             {tx.itemCount}
                           </td>
@@ -1447,7 +1447,7 @@ export function Transactions() {
                             padding: '1rem 1.5rem',
                             fontSize: '0.875rem',
                             fontWeight: '600',
-                            color: '#111827',
+                            color: 'var(--table-row-text)',
                             textAlign: 'right',
                             whiteSpace: 'nowrap'
                           }}>
@@ -1473,7 +1473,7 @@ export function Transactions() {
                                 <div style={{
                                   fontSize: '0.75rem',
                                   fontWeight: 400,
-                                  color: '#2563eb',
+                                  color: 'var(--table-row-text)',
                                   marginTop: '0.15rem'
                                 }}>
                                   Discount/Markup: ₱{totalAdjAmount.toFixed(2)}
@@ -1484,7 +1484,7 @@ export function Transactions() {
                           <td style={{
                             padding: '1rem 1.5rem',
                             fontSize: '0.875rem',
-                            color: '#4b5563',
+                            color: 'var(--table-header-text)',
                             textAlign: 'left'
                           }}>
                             {tx.paymentType}

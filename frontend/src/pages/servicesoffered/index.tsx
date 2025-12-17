@@ -1864,8 +1864,8 @@ export function Services() {
                   <table style={{ width: '100%', borderCollapse: 'collapse', color: '#1e293b' }}>
                     <thead>
                       <tr style={{
-                        backgroundColor: '#f3f4f6',
-                        borderBottom: '1px solid #e5e7eb',
+                        backgroundColor: 'var(--table-header-bg)',
+                        borderBottom: '1px solid var(--table-border)',
                         textAlign: 'left',
                         fontWeight: 600
                       }}>
@@ -1874,12 +1874,12 @@ export function Services() {
                             <input type="checkbox" checked={selectedItems.size === filteredServices.length && filteredServices.length > 0} onChange={(e) => { if (e.target.checked) { setSelectedItems(new Set(filteredServices.map(s => s.id))); } else { setSelectedItems(new Set()); } }} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
                           </th>
                         )}
-                        <th style={{ padding: '0.75rem 1rem', fontWeight: '500', color: '#4b5563' }}>Service ID</th>
-                        <th style={{ padding: '0.75rem 1rem', fontWeight: '500', color: '#4b5563' }}>Service Name</th>
-                        <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: '500', color: '#4b5563' }}>Description</th>
-                        <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: '500', color: '#4b5563' }}>Price</th>
-                        <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: '500', color: '#4b5563' }}>Status</th>
-                        <th style={{ padding: '0.75rem 1rem', fontWeight: '500', color: '#4b5563' }}>Vehicle Types</th>
+                        <th style={{ padding: '0.75rem 1rem', fontWeight: '500', color: 'var(--table-header-text)' }}>Service ID</th>
+                        <th style={{ padding: '0.75rem 1rem', fontWeight: '500', color: 'var(--table-header-text)' }}>Service Name</th>
+                        <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: '500', color: 'var(--table-header-text)' }}>Description</th>
+                        <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: '500', color: 'var(--table-header-text)' }}>Price</th>
+                        <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: '500', color: 'var(--table-header-text)' }}>Status</th>
+                        <th style={{ padding: '0.75rem 1rem', fontWeight: '500', color: 'var(--table-header-text)' }}>Vehicle Types</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1926,7 +1926,7 @@ export function Services() {
                               <input type="checkbox" checked={selectedItems.has(service.id)} onChange={() => { }} onClick={(e) => e.stopPropagation()} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
                             </td>
                           )}
-                          <td style={{ padding: '0.75rem 1rem', color: '#111827' }}>
+                          <td style={{ padding: '0.75rem 1rem', color: 'var(--table-row-text)' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                               {service.serviceId}
                               {service.archived && (
@@ -1934,7 +1934,7 @@ export function Services() {
                               )}
                             </div>
                           </td>
-                          <td style={{ padding: '0.75rem 1rem', color: '#111827' }}>{service.name}</td>
+                          <td style={{ padding: '0.75rem 1rem', color: 'var(--table-row-text)' }}>{service.name}</td>
 
                           <td style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>
                             <button
@@ -1957,8 +1957,8 @@ export function Services() {
                               Description
                             </button>
                           </td>
-                          <td style={{ padding: '0.75rem 1rem', textAlign: 'right', color: '#111827' }}>₱{service.price.toLocaleString()}</td>
-                          <td style={{ padding: '0.75rem 1rem', color: '#111827', }}>
+                          <td style={{ padding: '0.75rem 1rem', textAlign: 'right', color: 'var(--table-row-text)' }}>₱{service.price.toLocaleString()}</td>
+                          <td style={{ padding: '0.75rem 1rem', color: 'var(--table-row-text)', }}>
                             <button
                               type="button"
                               disabled={!canToggleStatus}

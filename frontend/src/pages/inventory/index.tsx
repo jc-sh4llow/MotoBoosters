@@ -1955,7 +1955,7 @@ export function Inventory() {
               <div style={{
                 backgroundColor: 'var(--surface-elevated)',
                 borderRadius: '0.5rem',
-                border: '1px solid #e5e7eb',
+                border: '1px solid var(--panel-border)',
                 boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
                 marginBottom: '1.5rem',
                 overflow: 'hidden'
@@ -1965,8 +1965,8 @@ export function Inventory() {
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   padding: '1rem 1.5rem',
-                  borderBottom: isItemDetailsExpanded ? '1px solid #e5e7eb' : 'none',
-                  backgroundColor: 'white'
+                  borderBottom: isItemDetailsExpanded ? '1px solid var(--panel-border)' : 'none',
+                  backgroundColor: 'var(--panel-header-bg)'
                 }}>
                   <button
                     onClick={() => {
@@ -2016,7 +2016,7 @@ export function Inventory() {
                       textAlign: 'left',
                       fontSize: '1.125rem',
                       fontWeight: '600',
-                      color: '#1e40af'
+                      color: 'var(--page-title)'
                     }}
                   >
                     <span>Item Details</span>
@@ -2090,7 +2090,7 @@ export function Inventory() {
                   overflow: 'hidden',
                   transition: 'max-height 0.3s ease-out',
                   padding: isItemDetailsExpanded ? '1.5rem' : '0 1.5rem',
-                  backgroundColor: 'white'
+                  backgroundColor: 'var(--panel-bg)'
                 }}>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
                     {/* Left Column - Keep all your existing input fields here */}
@@ -2102,7 +2102,7 @@ export function Inventory() {
                           marginBottom: '0.5rem',
                           fontSize: '0.875rem',
                           fontWeight: '500',
-                          color: '#4b5563'
+                          color: 'var(--field-label-text)'
                         }}>
                           Item ID
                         </label>
@@ -2123,7 +2123,12 @@ export function Inventory() {
 
                       {/* Brand */}
                       <div style={{ marginBottom: '1rem' }}>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#4b5563' }}>
+                        <label style={{
+                          display: 'block',
+                          marginBottom: '0.5rem',
+                          fontSize: '0.875rem',
+                          color: 'var(--field-label-text)'
+                        }}>
                           Brand{itemDetailsRequired.brand ? ' *' : ''}
                         </label>
                         <select
@@ -2176,7 +2181,7 @@ export function Inventory() {
                           marginBottom: '0.5rem',
                           fontSize: '0.875rem',
                           fontWeight: '500',
-                          color: '#4b5563'
+                          color: 'var(--field-label-text)'
                         }}>
                           Item Name{itemDetailsRequired.itemName ? ' *' : ''}
                         </label>
@@ -2207,7 +2212,7 @@ export function Inventory() {
                           marginBottom: '0.5rem',
                           fontSize: '0.875rem',
                           fontWeight: '500',
-                          color: '#4b5563'
+                          color: 'var(--field-label-text)'
                         }}>
                           Item Type{itemDetailsRequired.itemType ? ' *' : ''}
                         </label>
@@ -3350,7 +3355,7 @@ export function Inventory() {
 
                 {/* Selected count display */}
                 {isSelectMode && selectedItems.size > 0 && (
-                  <div style={{ marginBottom: '0.75rem', fontSize: '0.875rem', color: '#374151', fontWeight: 500 }}>
+                  <div style={{ marginBottom: '0.75rem', fontSize: '0.875rem', color: 'var(--table-header-text)', fontWeight: 500 }}>
                     {selectedItems.size} selected
                   </div>
                 )}
@@ -3358,22 +3363,23 @@ export function Inventory() {
                 {/* Your existing table component goes here */}
                 <div style={{ overflowX: 'auto' }}>
                   <div style={{
-                    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                    backgroundColor: 'var(--table-bg)',
                     backdropFilter: 'blur(12px)',
                     borderRadius: '1rem',
                     boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.15)',
-                    border: '1px solid rgba(255, 255, 255, 0.18)',
+                    border: '1px solid var(--table-border)',
                     overflow: 'hidden'
                   }}>
                     <div style={{ overflowX: 'auto' }}>
                       <table style={{
                         width: '100%',
                         borderCollapse: 'collapse',
-                        color: '#1e293b' // Dark text color
+                        color: 'var(--table-row-text)' // Dark text color
                       }}>
                         <thead>
                           {isCompactTable ? (
-                            <tr style={{ backgroundColor: '#f3f4f6', borderBottom: '1px solid #e5e7eb', textAlign: 'left', fontSize: '0.875rem', fontWeight: 600, color: '#4b5563' }}>
+                            <tr style={{ backgroundColor: 'var(--table-header-bg)', borderBottom: '1px solid var(--table-border)', textAlign: 'left', fontSize: '0.875rem', fontWeight: 600, color: 'var(--table-header-text)' }}>
+
                               {isSelectMode && (
                                 <th style={{ padding: '0.75rem 0.5rem', textAlign: 'center', width: '40px' }}>
                                   <input
@@ -3397,7 +3403,7 @@ export function Inventory() {
                               <th style={{ padding: '0.75rem 1.5rem' }}>REMARKS</th>
                             </tr>
                           ) : (
-                            <tr style={{ backgroundColor: '#f3f4f6', borderBottom: '1px solid #e5e7eb', textAlign: 'left', fontSize: '0.875rem', fontWeight: 600, color: '#4b5563' }}>
+                            <tr style={{ backgroundColor: 'var(--table-header-bg)', borderBottom: '1px solid var(--table-border)', textAlign: 'left', fontSize: '0.875rem', fontWeight: 600, color: 'var(--table-header-text)' }}>
                               {isSelectMode && (
                                 <th style={{ padding: '0.75rem 0.5rem', textAlign: 'center', width: '40px' }}>
                                   <input
@@ -3492,11 +3498,11 @@ export function Inventory() {
                             // Determine background color based on archived and selection state
                             const isArchived = Boolean(item.archived);
                             const isSelected = isSelectMode && selectedItems.has(item.docId);
-                            let rowBgColor = 'white';
+                            let rowBgColor = 'var(--table-row-bg)';
                             if (isSelected) {
-                              rowBgColor = '#dbeafe';
+                              rowBgColor = 'var(--table-row-hover-bg)';
                             } else if (isArchived) {
-                              rowBgColor = '#f3f4f6'; // Light gray for archived
+                              rowBgColor = 'var(--table-row-alt-bg)'; // Light gray for archived
                             }
 
                             return (
@@ -3506,28 +3512,30 @@ export function Inventory() {
                                   borderTop: '1px solid rgba(0, 0, 0, 0.1)',
                                   transition: 'background-color 0.2s',
                                   backgroundColor: rowBgColor,
-                                  color: isArchived ? '#9ca3af' : '#1f2937', // Muted text for archived
+                                  color: isArchived ? 'var(--table-header-text)' : 'var(--table-row-text)', // Muted text for archived
+
                                   cursor: isSelectMode ? 'pointer' : 'default',
                                   opacity: isArchived ? 0.7 : 1, // Slightly faded for archived
                                 }}
                                 onMouseOver={e => {
                                   if (isSelected) {
-                                    e.currentTarget.style.backgroundColor = '#bfdbfe';
+                                    e.currentTarget.style.backgroundColor = 'var(--table-row-hover-bg)';
                                   } else if (isArchived) {
-                                    e.currentTarget.style.backgroundColor = '#e5e7eb';
+                                    e.currentTarget.style.backgroundColor = 'var(--table-row-alt-bg)';
                                   } else {
-                                    e.currentTarget.style.backgroundColor = '#f0f0f0';
+                                    e.currentTarget.style.backgroundColor = 'var(--table-row-hover-bg)';
                                   }
                                 }}
                                 onMouseOut={e => {
                                   if (isSelected) {
-                                    e.currentTarget.style.backgroundColor = '#dbeafe';
+                                    e.currentTarget.style.backgroundColor = 'var(--table-row-hover-bg)';
                                   } else if (isArchived) {
-                                    e.currentTarget.style.backgroundColor = '#f3f4f6';
+                                    e.currentTarget.style.backgroundColor = 'var(--table-row-alt-bg)';
                                   } else {
-                                    e.currentTarget.style.backgroundColor = 'white';
+                                    e.currentTarget.style.backgroundColor = 'var(--table-row-bg)';
                                   }
                                 }}
+
                                 onClick={() => {
                                   // In select mode, toggle selection instead of opening details
                                   if (isSelectMode) {
@@ -3631,7 +3639,7 @@ export function Inventory() {
                                       {renderDiscountPill(item.defaultDiscount, item.defaultMarkup)}
                                     </td>
 
-                                    {/* REMARKS (same as now) */}
+                                    {/* REMARKS */}
                                     <td style={{ padding: '1rem 1.5rem' }} onClick={e => e.stopPropagation()}>
                                       <input
                                         type="text"
@@ -3651,9 +3659,10 @@ export function Inventory() {
                                           width: '100%',
                                           padding: '0.25rem 0.5rem',
                                           borderRadius: '0.375rem',
-                                          border: '1px solid #d1d5db',
+                                          border: '1px solid var(--table-border)',
                                           fontSize: '0.8rem',
-                                          backgroundColor: '#f9fafb',
+                                          backgroundColor: 'var(--table-row-alt-bg)',
+                                          color: 'var(--table-row-text)',
                                         }}
                                         placeholder="Add remarks"
                                         disabled={!canEditInventory}
@@ -3662,15 +3671,20 @@ export function Inventory() {
                                   </>
                                 ) : (
                                   <>
+                                    {/* Full table view */}
                                     <td style={{ padding: '1rem 1.5rem' }}>{item.brand}</td>
                                     <td style={{ padding: '1rem 1.5rem' }}>{item.itemName}</td>
-                                    <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>{item.type ?? item.itemType}</td>
+                                    <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>{item.type || item.itemType}</td>
                                     {canViewPurchasePrice && (
-                                      <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>₱{Number(item.purchasePrice ?? 0).toFixed(2)}</td>
+                                      <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>
+                                        ₱{Number(item.purchasePrice ?? 0).toFixed(2)}
+                                      </td>
                                     )}
-                                    <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>₱{Number(item.sellingPrice ?? 0).toFixed(2)}</td>
+                                    <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>
+                                      ₱{Number(item.sellingPrice ?? 0).toFixed(2)}
+                                    </td>
                                     <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>{available}</td>
-                                    <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>{firestoreItems.length ? item.sold ?? '-' : item.sold}</td>
+                                    <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>{item.soldCount ?? 0}</td>
                                     <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>
                                       <span style={{
                                         display: 'inline-block',
@@ -3679,7 +3693,7 @@ export function Inventory() {
                                         fontSize: '0.75rem',
                                         fontWeight: 600,
                                         backgroundColor: statusStyles.bg,
-                                        color: statusStyles.color
+                                        color: statusStyles.color,
                                       }}>
                                         {status}
                                       </span>
@@ -3706,9 +3720,10 @@ export function Inventory() {
                                           width: '100%',
                                           padding: '0.25rem 0.5rem',
                                           borderRadius: '0.375rem',
-                                          border: '1px solid #d1d5db',
+                                          border: '1px solid var(--table-border)',
                                           fontSize: '0.8rem',
-                                          backgroundColor: '#f9fafb',
+                                          backgroundColor: 'var(--table-row-alt-bg)',
+                                          color: 'var(--table-row-text)',
                                         }}
                                         placeholder="Add remarks"
                                         disabled={!canEditInventory}
@@ -3746,13 +3761,13 @@ export function Inventory() {
         >
           <div
             style={{
-              backgroundColor: 'white',
+              backgroundColor: 'var(--panel-bg)',
               borderRadius: '0.75rem',
               padding: '1.75rem 2rem',
               maxWidth: '520px',
               width: '100%',
               boxShadow: '0 10px 40px rgba(15, 23, 42, 0.25)',
-              border: '1px solid #e5e7eb',
+              border: '1px solid var(--panel-border)',
             }}
           >
             <h2
@@ -3761,7 +3776,7 @@ export function Inventory() {
                 fontWeight: 600,
                 margin: 0,
                 marginBottom: '0.75rem',
-                color: '#111827',
+                color: 'var(--table-row-text)',
               }}
             >
               Item Details Settings
@@ -3769,7 +3784,7 @@ export function Inventory() {
             <p
               style={{
                 fontSize: '0.85rem',
-                color: '#6b7280',
+                color: 'var(--table-header-text)',
                 marginBottom: '1rem',
               }}
             >

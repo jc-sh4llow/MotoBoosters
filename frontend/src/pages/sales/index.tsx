@@ -1240,7 +1240,7 @@ export function Sales() {
 
               <div style={{
                 overflowX: 'auto',
-                backgroundColor: 'white',
+                backgroundColor: 'var(--surface-elevated)',
                 borderRadius: '0.5rem',
                 boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
               }}>
@@ -1251,8 +1251,8 @@ export function Sales() {
                 }}>
                   <thead>
                     <tr style={{
-                      backgroundColor: '#f3f4f6',
-                      borderBottom: '1px solid #e5e7eb'
+                      backgroundColor: 'var(--table-header-bg)',
+                      borderBottom: '1px solid var(--table-border)'
                     }}>
                       {['Transaction ID', 'Date', 'Item Code', 'Item Name', 'Quantity', 'Unit Price', 'Total Amount', 'Customer'].map((header) => (
                         <th
@@ -1262,7 +1262,7 @@ export function Sales() {
                             textAlign: 'left',
                             fontSize: '0.75rem',
                             fontWeight: '600',
-                            color: '#4b5563',
+                            color: 'var(--table-header-text)',
                             textTransform: 'uppercase',
                             letterSpacing: '0.05em',
                           }}
@@ -1275,7 +1275,7 @@ export function Sales() {
                   <tbody>
                     {filteredSalesWithGroup.map(({ sale, groupIndex }, index) => {
                       const isEvenGroup = groupIndex % 2 === 0;
-                      const rowBg = isEvenGroup ? 'white' : '#e5e7eb';
+                      const rowBg = isEvenGroup ? 'var(--table-row-bg)' : 'var(--table-row-alt-bg)';
 
                       return (
                         <tr
@@ -1284,7 +1284,7 @@ export function Sales() {
                             borderBottom:
                               index === filteredSalesWithGroup.length - 1
                                 ? 'none'
-                                : '1px solid #d1d5db',
+                                : '1px solid var(--table-border)',
                             backgroundColor: rowBg,
                           }}
                         >
@@ -1292,7 +1292,7 @@ export function Sales() {
                             style={{
                               padding: '1rem',
                               fontSize: '0.875rem',
-                              color: '#111827',
+                              color: 'var(--table-row-text)',
                               whiteSpace: 'nowrap',
                             }}
                           >
@@ -1302,7 +1302,7 @@ export function Sales() {
                             style={{
                               padding: '1rem',
                               fontSize: '0.875rem',
-                              color: '#4b5563',
+                              color: 'var(--table-row-text)',
                               whiteSpace: 'nowrap',
                             }}
                           >
@@ -1312,7 +1312,7 @@ export function Sales() {
                             style={{
                               padding: '1rem',
                               fontSize: '0.875rem',
-                              color: '#111827',
+                              color: 'var(--table-row-text)',
                               whiteSpace: 'nowrap',
                             }}
                           >
@@ -1322,7 +1322,7 @@ export function Sales() {
                             style={{
                               padding: '1rem',
                               fontSize: '0.875rem',
-                              color: '#111827',
+                              color: 'var(--table-row-text)',
                               whiteSpace: 'nowrap',
                             }}
                           >
@@ -1332,7 +1332,7 @@ export function Sales() {
                             style={{
                               padding: '1rem',
                               fontSize: '0.875rem',
-                              color: '#111827',
+                              color: 'var(--table-row-text)',
                               textAlign: 'right',
                               whiteSpace: 'nowrap',
                             }}
@@ -1343,7 +1343,7 @@ export function Sales() {
                             style={{
                               padding: '1rem',
                               fontSize: '0.875rem',
-                              color: '#111827',
+                              color: 'var(--table-row-text)',
                               textAlign: 'right',
                               whiteSpace: 'nowrap',
                             }}
@@ -1354,7 +1354,7 @@ export function Sales() {
                             style={{
                               padding: '1rem',
                               fontSize: '0.875rem',
-                              color: '#111827',
+                              color: 'var(--table-row-text)',
                               textAlign: 'right',
                               fontWeight: 600,
                               whiteSpace: 'nowrap',
@@ -1366,7 +1366,7 @@ export function Sales() {
                             style={{
                               padding: '1rem',
                               fontSize: '0.875rem',
-                              color: '#111827',
+                              color: 'var(--table-row-text)',
                               whiteSpace: 'nowrap',
                             }}
                           >

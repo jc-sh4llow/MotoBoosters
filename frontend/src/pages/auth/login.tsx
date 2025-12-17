@@ -2,9 +2,15 @@ import { useState } from 'react';
 import Switch from '../../components/ui/Switch';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { FaUser, FaLock } from 'react-icons/fa';
-import { collection, getDocs, query, where, limit, doc, updateDoc, addDoc } from 'firebase/firestore';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { FaEnvelope, FaLock } from 'react-icons/fa';
+import { collection, getDocs, query, where, limit } from 'firebase/firestore';
+import {
+  browserLocalPersistence,
+  browserSessionPersistence,
+  sendPasswordResetEmail,
+  setPersistence,
+  signInWithEmailAndPassword,
+} from 'firebase/auth';
 
 import { db, auth } from '../../lib/firebase';
 
@@ -12,10 +18,12 @@ export function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+
   const [modalState, setModalState] = useState<{
     type: 'error' | 'info' | 'prompt' | null;
     title: string;
@@ -26,102 +34,45 @@ export function Login() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!username || !password) {
+    if (!email || !password) {
       setModalState({
         type: 'error',
         title: 'Missing Information',
-        message: 'Please enter both username and password.',
+        message: 'Please enter both email and password.',
       });
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const identifier = username.trim();
+      const loginEmail = email.trim();
       const normalizedPassword = password.trim();
 
-      // Determine the email to use with Firebase Auth.
-      // If the user typed an email, use it directly.
-      // If they typed a username, look up the corresponding email in Firestore.
-      let loginEmail = identifier;
-      let profileDoc: any | null = null;
-      let profileData: any | null = null;
+      await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
 
-      if (!identifier.includes('@')) {
-        // Treat identifier as username; look up its email.
-        const userQuery = query(
-          collection(db, 'users'),
-          where('username', '==', identifier),
-          limit(1),
-        );
-        const userSnapshot = await getDocs(userQuery);
-
-        if (userSnapshot.empty) {
-          setModalState({
-            type: 'error',
-            title: 'Login Failed',
-            message: 'Invalid credentials.',
-          });
-          setIsSubmitting(false);
-          return;
-        }
-
-        profileDoc = userSnapshot.docs[0];
-        profileData = profileDoc.data() as any;
-
-        const emailFromProfile = (profileData.email ?? '').toString().trim();
-        if (!emailFromProfile) {
-          setModalState({
-            type: 'error',
-            title: 'Login Failed',
-            message: 'This user does not have an email configured. Please contact an administrator.',
-          });
-          setIsSubmitting(false);
-          return;
-        }
-
-        loginEmail = emailFromProfile;
-      }
-
-      // Sign in with Firebase Auth using the resolved email.
       const credential = await signInWithEmailAndPassword(auth, loginEmail, normalizedPassword);
       const uid = credential.user.uid;
 
-      // If we didn't already load a profile (email login), fetch it by authUid.
-      if (!profileDoc) {
-        const profileQuery = query(
-          collection(db, 'users'),
-          where('authUid', '==', uid),
-          limit(1),
-        );
-        const profileSnapshot = await getDocs(profileQuery);
+      const profileQuery = query(
+        collection(db, 'users'),
+        where('authUid', '==', uid),
+        limit(1),
+      );
+      const profileSnapshot = await getDocs(profileQuery);
 
-        if (profileSnapshot.empty) {
-          setModalState({
-            type: 'error',
-            title: 'Login Failed',
-            message: 'No user profile found for this account. Please contact an administrator.',
-          });
-          setIsSubmitting(false);
-          return;
-        }
-
-        profileDoc = profileSnapshot.docs[0];
-        profileData = profileDoc.data() as any;
-      } else {
-        // If profile exists and does not yet have authUid, backfill it.
-        const existingAuthUid = (profileData.authUid ?? '').toString();
-        if (!existingAuthUid) {
-          try {
-            const userRef = doc(db, 'users', profileDoc.id);
-            await updateDoc(userRef, { authUid: uid });
-          } catch (err) {
-            console.error('Failed to backfill authUid on user profile', err);
-          }
-        }
+      if (profileSnapshot.empty) {
+        setModalState({
+          type: 'error',
+          title: 'Login Failed',
+          message: 'No user profile found for this account. Please contact an administrator.',
+        });
+        setIsSubmitting(false);
+        return;
       }
 
-      // Normalize status so minor casing/spacing differences don't break login
+      const profileDoc = profileSnapshot.docs[0];
+      const profileData = profileDoc.data() as any;
+
       const rawStatus = (profileData?.status ?? '').toString();
       const normalizedStatus = rawStatus.trim().toLowerCase();
 
@@ -135,29 +86,18 @@ export function Login() {
         return;
       }
 
-      // Record last login timestamp for this user document
-      try {
-        const userRef = doc(db, 'users', profileDoc.id);
-        await updateDoc(userRef, {
-          lastLogin: new Date().toISOString(),
-        });
-      } catch (updateErr) {
-        console.error('Failed to update lastLogin', updateErr);
-      }
-
-      // Use roles array (new Discord-style) or fall back to single role (legacy)
       const userRoles: string[] = Array.isArray(profileData?.roles) && profileData.roles.length > 0
         ? profileData.roles
         : profileData?.role
           ? [profileData.role]
-          : ['staff']; // Default to staff if no role assigned
+          : [];
 
       login({
         id: profileDoc.id,
-        name: profileData?.fullName || profileData?.username || identifier,
+        name: profileData?.fullName || loginEmail,
         roles: userRoles,
         role: profileData?.role, // Keep for backward compatibility
-      });
+      }, { remember: rememberMe });
 
       navigate('/');
     } catch (error) {
@@ -173,12 +113,11 @@ export function Login() {
   };
 
   const handleForgotPassword = async () => {
-    // Show prompt asking which username needs password help
     setPromptValue('');
     setModalState({
       type: 'prompt',
       title: 'Forgot Password',
-      message: 'Enter the username that needs password help. An admin will review this request.',
+      message: 'Enter your email. A password reset link will be sent to your email.',
     });
   };
 
@@ -236,13 +175,13 @@ export function Login() {
                 transform: 'translateY(-50%)',
                 color: '#64748b'
               }}>
-                <FaUser />
+                <FaEnvelope />
               </div>
               <input
                 type="text"
-                placeholder="Username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 style={{
                   width: '100%',
                   padding: '0.75rem 1rem 0.75rem 2.5rem',
@@ -317,11 +256,11 @@ export function Login() {
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <Switch
-                  checked={false}
-                  onChange={() => {}}
+                  checked={rememberMe}
+                  onChange={(checked) => setRememberMe(checked)}
                   size="sm"
                 />
-                <span>Remember me</span>
+                <span style={{ color: '#111827' }}>Remember me</span>
               </div>
               <button
                 type="button"
@@ -441,7 +380,7 @@ export function Login() {
                   backgroundColor: '#f9fafb',
                   color: '#111827'
                 }}
-                placeholder="Username needing help"
+                placeholder="Email"
               />
             )}
 
@@ -474,36 +413,33 @@ export function Login() {
                     if (!trimmed) {
                       setModalState(prev => ({
                         ...prev,
-                        message: 'Please enter the username that needs password help.',
+                        message: 'Please enter your email.',
                       }));
                       return;
                     }
 
+                    const emailForReset = trimmed;
+
                     try {
-                      const userQuery = query(
-                        collection(db, 'users'),
-                        where('username', '==', trimmed),
-                        limit(1),
-                      );
-                      const userSnapshot = await getDocs(userQuery);
-
-                      if (userSnapshot.empty) {
-                        setModalState(prev => ({
-                          ...prev,
-                          message: 'No account found with that username. Please check the spelling and try again.',
-                        }));
-                        return;
-                      }
-
-                      await addDoc(collection(db, 'passwordHelpRequests'), {
-                        username: trimmed,
-                        createdAt: new Date().toISOString(),
+                      await sendPasswordResetEmail(auth, emailForReset);
+                      setModalState({
+                        type: 'info',
+                        title: 'Password Reset',
+                        message: 'If an account exists for that email, a password reset link has been sent.',
                       });
                     } catch (err) {
-                      console.error('Failed to record password help request', err);
+                      console.error('Failed to send password reset email', err);
+                      setModalState({
+                        type: 'error',
+                        title: 'Password Reset Failed',
+                        message: 'Failed to send password reset email. Please verify the email and try again.',
+                      });
+                      return;
+                    } finally {
+                      setPromptValue('');
                     }
 
-                    setPromptValue('');
+                    return;
                   }
                   setModalState({ type: null, title: '', message: '' });
                 }}

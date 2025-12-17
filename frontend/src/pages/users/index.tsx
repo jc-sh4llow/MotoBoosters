@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { FaBars, FaSearch, FaTimes, FaFilter, FaChevronDown, FaEye, FaEyeSlash, FaFileExcel } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
-import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useRoles } from '../../contexts/PermissionsContext';
 import { can, type Role } from '../../config/permissions';
 import logo from '../../assets/logo.png';
+
 import bcrypt from 'bcryptjs';
 import { HeaderDropdown } from '../../components/HeaderDropdown';
 import { RoleBadge } from '../../components/RoleBadge';
@@ -146,7 +147,7 @@ export function Users() {
   } | null>(null);
 
   const generateUserId = (fullName: string, role: string) => {
-    if (!fullName || !role) return '';
+    if (!fullName) return '';
 
     const initials = fullName
       .split(' ')
@@ -154,8 +155,48 @@ export function Users() {
       .map(part => part[0]?.toUpperCase() || '')
       .join('');
 
+    if (!role) return `NEW-${initials}`;
+
     const rolePrefix = role.slice(0, 3).toUpperCase();
     return `${rolePrefix}-${initials}`;
+  };
+
+  const getHighestAuthorityRoleId = (roleIds: string[], availableRoles: Role[]) => {
+    if (!roleIds || roleIds.length === 0) return '';
+
+    const roleMap = new Map(availableRoles.map(r => [r.id, r]));
+    const sorted = [...roleIds].sort((a, b) => {
+      const aPos = roleMap.get(a)?.position ?? 9999;
+      const bPos = roleMap.get(b)?.position ?? 9999;
+      return aPos - bPos;
+    });
+    return sorted[0] ?? '';
+  };
+
+  const normalizeRoleIdsByAuthority = (roleIds: string[], availableRoles: Role[]) => {
+    const roleMap = new Map(availableRoles.map(r => [r.id, r]));
+    return [...roleIds].sort((a, b) => {
+      const aPos = roleMap.get(a)?.position ?? 9999;
+      const bPos = roleMap.get(b)?.position ?? 9999;
+      return aPos - bPos;
+    });
+  };
+
+  const setRolesAndSyncIds = (nextRoleIds: string[]) => {
+    const normalizedRoles = normalizeRoleIdsByAuthority(nextRoleIds, firestoreRoles);
+    setSelectedRolesForUser(normalizedRoles);
+
+    const primaryRoleId = getHighestAuthorityRoleId(normalizedRoles, firestoreRoles);
+    setFormData(prev => {
+      const nextRole = primaryRoleId;
+      const nextUserId = generateUserId(prev.fullName, nextRole);
+      if (prev.role === nextRole && prev.userId === nextUserId) return prev;
+      return {
+        ...prev,
+        role: nextRole,
+        userId: nextUserId,
+      };
+    });
   };
 
   const handlePasswordFieldFocus = () => {
@@ -197,11 +238,19 @@ export function Users() {
 
   const handleSelectUser = (row: UserRow) => {
     setSelectedUserRow(row);
+
+    const normalizedRoles = normalizeRoleIdsByAuthority(
+      row.roles || (row.role ? [row.role] : []),
+      firestoreRoles,
+    );
+    const primaryRoleId = getHighestAuthorityRoleId(normalizedRoles, firestoreRoles) || row.role || '';
+
     setFormData(prev => ({
       ...prev,
       docId: row.id,
       userId: row.displayId,
       username: row.username,
+
       // Start with placeholder dots; actual password will only be revealed
       // after confirmation (for other users) or via eye toggle (for self).
       password: '••••••••',
@@ -210,10 +259,10 @@ export function Users() {
       email: row.email,
       contactNumber: row.contactNumber,
       status: row.status.toLowerCase() === 'active' ? 'active' : 'inactive',
-      role: row.role || prev.role,
+      role: primaryRoleId || prev.role,
     }));
     // Populate selectedRolesForUser from the user's roles array
-    setSelectedRolesForUser(row.roles || (row.role ? [row.role] : []));
+    setSelectedRolesForUser(normalizedRoles);
     setIsUserDetailsExpanded(true);
     setIsEditing(false);
     setPasswordDirty(false);
@@ -221,60 +270,10 @@ export function Users() {
     setStatusChangeConfirmed(false);
   };
 
-  const handleNewUser = () => {
-    if (!canEditUserDetailsBase) return;
-    const today = new Date().toISOString().split('T')[0];
-    setFormData({
-      docId: '',
-      userId: '',
-      username: '',
-      password: '',
-      confirmPassword: '',
-      fullName: '',
-      email: '',
-      contactNumber: '',
-      status: 'active',
-      role: 'employee',
-      dateCreated: today,
-    });
-    setSelectedRolesForUser([]); // Reset roles for new user
-    setIsUserDetailsExpanded(true);
-    setIsEditing(true);
-    setPasswordDirty(false);
-    setStatusChangeConfirmed(false);
-  };
-
   const handleRoleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const nextRole = e.target.value;
 
-    setFormData(prev => {
-      // Only trigger confirmation for existing users, when an admin-like user
-      // changes role while the account is currently inactive.
-      const isExisting = !!prev.docId && !!selectedUserRow;
-      const originalStatus = (selectedUserRow?.status || '').toString().trim().toLowerCase();
-      const currentStatus = (prev.status || '').toString().trim().toLowerCase();
-      const wasInactive = originalStatus === 'inactive' || currentStatus === 'inactive';
-
-      if (
-        isExisting &&
-        isAdminLike &&
-        wasInactive &&
-        selectedUserRow &&
-        nextRole !== (selectedUserRow.role || '')
-      ) {
-        setRoleChangeConfirm({
-          userId: prev.docId,
-          previousRole: selectedUserRow.role || '',
-          nextRole,
-        });
-        // Do not change role yet; wait for confirmation.
-        return prev;
-      }
-
-      const updated = { ...prev, role: nextRole };
-      updated.userId = generateUserId(updated.fullName, updated.role);
-      return updated;
-    });
+    setRolesAndSyncIds([nextRole]);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -293,7 +292,8 @@ export function Users() {
 
       // Auto-generate userId when fullName changes
       if (name === 'fullName') {
-        next.userId = generateUserId(value, next.role);
+        const primaryRoleId = getHighestAuthorityRoleId(selectedRolesForUser, firestoreRoles) || formData.role;
+        next.userId = generateUserId(value, primaryRoleId);
       }
 
       return next;
@@ -309,20 +309,23 @@ export function Users() {
       const snapshot = await getDocs(collection(db, 'users'));
       const loadedUsers = snapshot.docs.map(docSnap => {
         const data = docSnap.data() as any;
+        const docRoleIds: string[] = Array.isArray(data.roles) ? data.roles : (data.role ? [data.role] : []);
+        const primaryRoleId = getHighestAuthorityRoleId(docRoleIds, firestoreRoles) || (data.role ?? '');
         return {
           id: docSnap.id,
-          displayId: data.userId ?? docSnap.id,
+          displayId: data.userId ?? (generateUserId(data.fullName ?? '', primaryRoleId) || docSnap.id),
           username: data.username ?? '',
           fullName: data.fullName ?? '',
           email: data.email ?? '',
           contactNumber: data.contactNumber ?? '',
-          role: data.role ?? '',
-          roles: Array.isArray(data.roles) ? data.roles : (data.role ? [data.role] : []),
+          role: primaryRoleId,
+          roles: docRoleIds,
           // Normalize stored status to a consistent display value
           status: (data.status ?? '').toString().trim() || '',
           lastLogin: data.lastLogin ?? '',
           password: data.password ?? '',
           passwordHash: data.passwordHash ?? '',
+
           archived: data.archived === true,
         } as UserRow;
       });
@@ -337,25 +340,10 @@ export function Users() {
 
   useEffect(() => {
     loadUsers();
-  }, []);
+  }, [rolesLoading]);
 
   const handleDeleteUser = (id: string) => {
     setConfirmState({ type: 'delete', targetUserId: id });
-  };
-
-  const handleToggleUserStatus = async (row: UserRow) => {
-    if (!canEditUserDetailsBase) return;
-    const current = (row.status || '').toString().trim().toLowerCase();
-    const nextIsActive = current !== 'active';
-    const nextStatus: 'Active' | 'Inactive' = nextIsActive ? 'Active' : 'Inactive';
-
-    // Defer actual update until user confirms in modal
-    setSelectedUserRow(row);
-    setStatusConfirmState({
-      mode: 'table',
-      userId: row.id,
-      nextStatus,
-    });
   };
 
   const handleSaveUser = async () => {
@@ -374,6 +362,7 @@ export function Users() {
     // Non-admins cannot change passwords; only validate passwords for admin-like users
     if (isAdminLike) {
       if (password || confirmPassword) {
+
         if (!password || !confirmPassword) {
           setUsersAlert({
             title: 'Password Incomplete',
@@ -391,21 +380,33 @@ export function Users() {
       }
     }
 
-    if (docId) {
+    try {
+      if (!docId) {
+        setUsersAlert({
+          title: 'Cannot Create User',
+          message: 'Users can no longer be created here. New users must sign up using the Sign Up page.',
+        });
+        return;
+      }
+
       // Update existing user
       const userRef = doc(db, 'users', docId);
       const existing = users.find(u => u.id === docId) || selectedUserRow;
 
       if (isAdminLike) {
-        const primaryRole = selectedRolesForUser.length > 0 ? selectedRolesForUser[0] : role;
+        const normalizedRoles = normalizeRoleIdsByAuthority(selectedRolesForUser, firestoreRoles);
+        const primaryRoleId = getHighestAuthorityRoleId(normalizedRoles, firestoreRoles) || role;
+        const computedUserId = generateUserId(fullName, primaryRoleId);
+
         const updateData: any = {
-          userId,
+          userId: computedUserId || userId,
           username,
           fullName,
+          email,
           contactNumber,
           status: status === 'active' ? 'Active' : 'Inactive',
-          role: primaryRole,
-          roles: selectedRolesForUser,
+          role: primaryRoleId,
+          roles: normalizedRoles,
         };
 
         if (password && confirmPassword && password === confirmPassword) {
@@ -424,6 +425,7 @@ export function Users() {
           userId,
           username,
           fullName,
+          email,
           contactNumber,
           // Preserve original role and status
           role: existing.role,
@@ -432,41 +434,17 @@ export function Users() {
 
         await updateDoc(userRef, updateData);
       }
-    } else {
-      // Only users with edit.any permission can create new users
-      if (!isAdminLike) return;
 
-      const userRef = collection(db, 'users');
-      let finalPassword = password;
-
-      if (!finalPassword) {
-        const roleLower = (role || '').toLowerCase();
-        if (roleLower === 'employee') finalPassword = 'employee123';
-        else if (roleLower === 'mechanic') finalPassword = 'mechanic123';
-        else if (roleLower === 'admin') finalPassword = 'admin123';
-        else if (roleLower === 'developer') finalPassword = 'developer123';
-        else finalPassword = 'password123';
-      }
-
-      const newHash = await hashPassword(finalPassword);
-      const primaryRole = selectedRolesForUser.length > 0 ? selectedRolesForUser[0] : role;
-
-      await addDoc(userRef, {
-        userId,
-        username,
-        fullName,
-        contactNumber,
-        status: status === 'active' ? 'Active' : 'Inactive',
-        role: primaryRole,
-        roles: selectedRolesForUser.length > 0 ? selectedRolesForUser : [role],
-        password: finalPassword,
-        passwordHash: newHash,
+      await loadUsers();
+      setIsUserDetailsExpanded(false);
+      setIsEditing(false);
+    } catch (err) {
+      console.error('Error saving user', err);
+      setUsersAlert({
+        title: 'Save Failed',
+        message: 'Failed to save user changes. Please try again.',
       });
     }
-
-    await loadUsers();
-    setIsUserDetailsExpanded(false);
-    setIsEditing(false);
   };
 
   const handleSort = (column: 'id' | 'username' | 'fullName' | 'email' | 'role' | 'status' | 'lastLogin') => {
@@ -894,6 +872,7 @@ export function Users() {
                           role: 'employee',
                           dateCreated: today,
                         });
+                        setSelectedRolesForUser([]);
                         setSelectedUserRow(null);
                         setIsEditing(false);
                         setShowPassword(false);
@@ -936,25 +915,6 @@ export function Users() {
                       <FaChevronDown style={{ fontSize: '0.9em', marginLeft: '0.25rem' }} />
                     </span>
                   </button>
-
-                  {can(userRoles, 'users.edit.any') && (
-                    <button
-                      type="button"
-                      onClick={handleNewUser}
-                      style={{
-                        padding: '0.35rem 0.9rem',
-                        borderRadius: '9999px',
-                        border: '1px solid #3b82f6',
-                        backgroundColor: 'white',
-                        color: '#1d4ed8',
-                        fontSize: '0.8rem',
-                        fontWeight: 500,
-                        cursor: 'pointer'
-                      }}
-                    >
-                      New User
-                    </button>
-                  )}
                 </div>
 
                 <div style={{
@@ -1307,7 +1267,7 @@ export function Users() {
                                 {canEditUserDetails && can(userRoles, 'users.edit.any') && (
                                   <button
                                     type="button"
-                                    onClick={() => setSelectedRolesForUser(prev => prev.filter(r => r !== roleId))}
+                                    onClick={() => setRolesAndSyncIds(selectedRolesForUser.filter(r => r !== roleId))}
                                     style={{
                                       background: 'none',
                                       border: 'none',
@@ -1332,11 +1292,7 @@ export function Users() {
                             onChange={(e) => {
                               const roleId = e.target.value;
                               if (roleId && !selectedRolesForUser.includes(roleId)) {
-                                setSelectedRolesForUser(prev => [...prev, roleId]);
-                                // Also update formData.role to primary role
-                                if (selectedRolesForUser.length === 0) {
-                                  setFormData(prev => ({ ...prev, role: roleId }));
-                                }
+                                setRolesAndSyncIds([...selectedRolesForUser, roleId]);
                               }
                             }}
                             style={{
@@ -2355,6 +2311,7 @@ export function Users() {
                     next.userId = generateUserId(next.fullName, next.role);
                     return next;
                   });
+                  setRolesAndSyncIds([roleChangeConfirm.nextRole]);
                   setStatusChangeConfirmed(true);
                   setRoleChangeConfirm(null);
                 }}

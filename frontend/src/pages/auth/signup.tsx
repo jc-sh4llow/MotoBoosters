@@ -53,8 +53,8 @@ export function SignUp() {
         fullName: fullName.trim(),
         username: username.trim(),
         email: email.trim(),
-        role: 'pending',
         status: 'inactive',
+        roles: [],
         createdAt: new Date().toISOString(),
       });
 

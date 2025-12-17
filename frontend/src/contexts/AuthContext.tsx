@@ -1,6 +1,8 @@
 // src/contexts/AuthContext.tsx
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { signOut } from 'firebase/auth';
 import { DEVELOPER_ROLE_ID } from '../config/permissions';
+import { auth } from '../lib/firebase';
 
 export interface AuthUser {
   id: string;
@@ -13,7 +15,7 @@ export interface AuthUser {
 
 interface AuthContextType {
   user: AuthUser | null;
-  login: (user: AuthUser) => void;
+  login: (user: AuthUser, options?: { remember?: boolean }) => void;
   logout: () => void;
   initializing: boolean;
   // Helper to check if current user is Developer
@@ -30,7 +32,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
+      const storedLocal = localStorage.getItem(STORAGE_KEY);
+      const storedSession = sessionStorage.getItem(STORAGE_KEY);
+      const stored = storedLocal || storedSession;
       if (stored) {
         const parsed = JSON.parse(stored);
         // Handle migration: if old format (role string), convert to new format (roles array)
@@ -49,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const login = (userData: AuthUser) => {
+  const login = (userData: AuthUser, options?: { remember?: boolean }) => {
     // Ensure roles array exists
     const normalizedUser: AuthUser = {
       ...userData,
@@ -57,7 +61,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
     setUser(normalizedUser);
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(normalizedUser));
+      const remember = options?.remember ?? true;
+      const storage = remember ? localStorage : sessionStorage;
+      storage.setItem(STORAGE_KEY, JSON.stringify(normalizedUser));
+      (remember ? sessionStorage : localStorage).removeItem(STORAGE_KEY);
     } catch (err) {
       console.error('Failed to persist auth user to storage', err);
     }
@@ -67,9 +74,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     try {
       localStorage.removeItem(STORAGE_KEY);
+      sessionStorage.removeItem(STORAGE_KEY);
     } catch (err) {
       console.error('Failed to clear auth user from storage', err);
     }
+
+    signOut(auth).catch((err) => {
+      console.error('Failed to sign out from Firebase Auth', err);
+    });
   };
 
   // Check if user has Developer role

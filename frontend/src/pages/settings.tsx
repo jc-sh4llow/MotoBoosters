@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { FaBars, FaWarehouse, FaTag, FaWrench, FaPlus, FaFileInvoice, FaUser, FaUndoAlt, FaSearch, FaTimes, FaPlus as FaPlusIcon, FaTrash, FaEdit, FaChevronDown, FaUpload } from 'react-icons/fa';
 import { useAuth } from '../contexts/AuthContext';
 import logo from '../assets/logo.png';
-import { can, permissionGroups, DEVELOPER_ROLE_ID, type PermissionKey, type Role } from '../config/permissions';
-import { collection, doc, setDoc, deleteDoc, updateDoc, serverTimestamp, getDoc, getDocs } from 'firebase/firestore';
+import { can, permissionGroups, DEVELOPER_ROLE_ID, STAFF_ROLE_ID, type PermissionKey, type Role } from '../config/permissions';
+import { collection, doc, setDoc, deleteDoc, updateDoc, serverTimestamp, getDoc, getDocs, writeBatch } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useRoles } from '../contexts/PermissionsContext';
 import { RoleBadge } from '../components/RoleBadge';
@@ -440,6 +440,40 @@ export const Settings: React.FC = () => {
   // State for permission role dropdowns
   const [openPermissionDropdown, setOpenPermissionDropdown] = useState<string | null>(null);
 
+  const handleMoveRole = async (roleId: string, direction: 'up' | 'down') => {
+    if (!canEditRoles) return;
+
+    const visibleRoles = roles
+      .filter((role) => role.id !== DEVELOPER_ROLE_ID || can(userRoles, 'users.view.developer'))
+      .sort((a, b) => a.position - b.position);
+
+    const idx = visibleRoles.findIndex(r => r.id === roleId);
+    if (idx === -1) return;
+
+    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (swapIdx < 0 || swapIdx >= visibleRoles.length) return;
+
+    const current = visibleRoles[idx];
+    const target = visibleRoles[swapIdx];
+    if (current.isProtected || target.isProtected) return;
+
+    try {
+      const batch = writeBatch(db);
+      batch.update(doc(db, 'roles', current.id), {
+        position: target.position,
+        updatedAt: serverTimestamp(),
+      });
+      batch.update(doc(db, 'roles', target.id), {
+        position: current.position,
+        updatedAt: serverTimestamp(),
+      });
+      await batch.commit();
+      await refreshRoles();
+    } catch (err) {
+      console.error('Failed to move role', err);
+    }
+  };
+
   // Role management handlers
   const handleCreateRole = async () => {
     if (!newRoleName.trim() || !canCreateRoles) return;
@@ -447,7 +481,24 @@ export const Settings: React.FC = () => {
     setIsSavingRole(true);
     try {
       const roleId = newRoleName.toLowerCase().replace(/\s+/g, '-');
-      const newPosition = roles.length > 0 ? Math.max(...roles.map(r => r.position)) + 1 : 1;
+
+      const staffRole = roles.find(r => r.id === STAFF_ROLE_ID);
+      let newPosition = roles.length > 0 ? Math.max(...roles.map(r => r.position)) + 1 : 1;
+      let shouldShiftStaffAndBelow = false;
+
+      if (staffRole) {
+        const desired = staffRole.position - 1;
+        const collision = roles.some(r => r.id !== staffRole.id && r.position === desired);
+        if (!collision) {
+          newPosition = desired;
+        } else {
+          // Make room immediately above Staff by shifting Staff and all roles below it down.
+          // After shifting, the new role will be placed at the old staff position, which is
+          // exactly staff.position - 1 using the updated staff position.
+          newPosition = staffRole.position;
+          shouldShiftStaffAndBelow = true;
+        }
+      }
 
       const newRole: Role = {
         id: roleId,
@@ -460,11 +511,29 @@ export const Settings: React.FC = () => {
         createdAt: new Date(),
       };
 
-      await setDoc(doc(db, 'roles', roleId), {
-        ...newRole,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      });
+      if (shouldShiftStaffAndBelow && staffRole) {
+        const batch = writeBatch(db);
+        roles
+          .filter(r => r.position >= staffRole.position)
+          .forEach(r => {
+            batch.update(doc(db, 'roles', r.id), {
+              position: r.position + 1,
+              updatedAt: serverTimestamp(),
+            });
+          });
+        batch.set(doc(db, 'roles', roleId), {
+          ...newRole,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+        await batch.commit();
+      } else {
+        await setDoc(doc(db, 'roles', roleId), {
+          ...newRole,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+      }
 
       await refreshRoles();
       setIsCreatingRole(false);
@@ -890,7 +959,7 @@ export const Settings: React.FC = () => {
                           {roles
                             // Hide Developer role from users without users.view.developer permission
                             .filter((role) => role.id !== DEVELOPER_ROLE_ID || can(userRoles, 'users.view.developer'))
-                            .map((role) => (
+                            .map((role, index, arr) => (
                               <div
                                 key={role.id}
                                 style={{
@@ -914,6 +983,44 @@ export const Settings: React.FC = () => {
                                   </div>
                                 </div>
                                 <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                  {canEditRoles && !role.isProtected && (
+                                    <>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleMoveRole(role.id, 'up')}
+                                        disabled={index === 0 || arr[index - 1]?.isProtected}
+                                        style={{
+                                          padding: '0.35rem 0.6rem',
+                                          borderRadius: '0.25rem',
+                                          border: '1px solid #d1d5db',
+                                          backgroundColor: 'white',
+                                          color: '#374151',
+                                          fontSize: '0.8rem',
+                                          cursor: index === 0 || arr[index - 1]?.isProtected ? 'not-allowed' : 'pointer',
+                                          opacity: index === 0 || arr[index - 1]?.isProtected ? 0.5 : 1,
+                                        }}
+                                      >
+                                        Up
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleMoveRole(role.id, 'down')}
+                                        disabled={index === arr.length - 1 || arr[index + 1]?.isProtected}
+                                        style={{
+                                          padding: '0.35rem 0.6rem',
+                                          borderRadius: '0.25rem',
+                                          border: '1px solid #d1d5db',
+                                          backgroundColor: 'white',
+                                          color: '#374151',
+                                          fontSize: '0.8rem',
+                                          cursor: index === arr.length - 1 || arr[index + 1]?.isProtected ? 'not-allowed' : 'pointer',
+                                          opacity: index === arr.length - 1 || arr[index + 1]?.isProtected ? 0.5 : 1,
+                                        }}
+                                      >
+                                        Down
+                                      </button>
+                                    </>
+                                  )}
                                   {canEditRoles && !role.isProtected && (
                                     <button
                                       type="button"

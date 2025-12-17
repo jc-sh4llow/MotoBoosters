@@ -6,44 +6,67 @@
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  color-scheme: light;
-  color: #1f2937;
-  background-color: #ffffff;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  
+  /* Light mode theme variables */
+  --bg: #ffffff;
+  --bg-gradient: linear-gradient(109deg, #1e88e5 0%, #1e88e5 50%, #0d47a1 50%, #0d47a1 100%);
+  --surface: rgba(255, 255, 255, 0.92);
+  --surface-elevated: rgba(255, 255, 255, 0.9);
+  --text: #1f2937;
+  --text-muted: #6b7280;
+  --border: #d1d5db;
+  --control-bg: #ffffff;
+  --control-text: #1f2937;
+  --control-border: #d1d5db;
+  --placeholder: #9ca3af;
+  --primary: #3b82f6;
+  --primary-text: #ffffff;
+}
+
+.dark {
+  /* Dark mode theme variables */
+  --bg: #111827;
+  --bg-gradient: linear-gradient(109deg, #0d47a1 0%, #0d47a1 50%, #051e3e 50%, #051e3e 100%);
+  --surface: rgba(31, 41, 55, 0.92);
+  --surface-elevated: rgba(31, 41, 55, 0.95);
+  --text: #f9fafb;
+  --text-muted: #9ca3af;
+  --border: #374151;
+  --control-bg: #1f2937;
+  --control-text: #f9fafb;
+  --control-border: #4b5563;
+  --placeholder: #6b7280;
+  --primary: #3b82f6;
+  --primary-text: #ffffff;
 }
 
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  color: #1f2937;
+  background-color: var(--bg);
+  color: var(--text);
 }
 
-/* Global form control styling - white backgrounds, dark text */
+/* Global form control styling using theme variables */
 input,
 textarea,
 select {
-  background-color: #ffffff !important;
-  color: #1f2937 !important;
-  border: 1px solid #d1d5db;
+  background-color: var(--control-bg) !important;
+  color: var(--control-text) !important;
+  border: 1px solid var(--control-border);
 }
 
 input::placeholder,
 textarea::placeholder {
-  color: #9ca3af !important;
+  color: var(--placeholder) !important;
 }
 
-/* Ensure text elements have proper dark color */
+/* Ensure text elements inherit theme color */
 p, span, div, label, h1, h2, h3, h4, h5, h6 {
   color: inherit;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #1f2937;
-    background-color: #ffffff;
-  }
 }

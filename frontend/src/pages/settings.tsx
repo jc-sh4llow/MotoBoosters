@@ -12,6 +12,7 @@ import { HeaderDropdown } from '../components/HeaderDropdown';
 import Switch from '../components/ui/Switch';
 import { useRolePreview } from '../contexts/RolePreviewContext';
 import { useEffectiveRoleIds } from '../hooks/useEffectiveRoleIds';
+import { useTheme } from '../contexts/ThemeContext';
 
 // Section title color (consistent with other pages)
 const SECTION_TITLE_COLOR = '#1e40af';
@@ -126,6 +127,7 @@ export const Settings: React.FC = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { roles, loading: rolesLoading, refreshRoles, maxRolesPerUser } = useRoles();
+  const { theme, setTheme } = useTheme();
 
   // Debug: log when roles change
   useEffect(() => {
@@ -644,7 +646,7 @@ export const Settings: React.FC = () => {
         display: 'flex',
         flexDirection: 'column',
         position: 'relative',
-        background: 'linear-gradient(109deg, #1e88e5 0%, #1e88e5 50%, #0d47a1 50%, #0d47a1 100%)',
+        background: 'var(--bg-gradient)',
         backgroundSize: 'cover',
         backgroundAttachment: 'fixed',
       }}
@@ -657,7 +659,7 @@ export const Settings: React.FC = () => {
           right: 0,
           bottom: 0,
           zIndex: -1,
-          background: 'linear-gradient(109deg, #1e88e5 0%, #1e88e5 50%, #0d47a1 50%, #0d47a1 100%)',
+          background: 'var(--bg-gradient)',
           backgroundSize: 'cover',
           backgroundAttachment: 'fixed',
         }}
@@ -899,6 +901,71 @@ export const Settings: React.FC = () => {
                 boxShadow: '0 8px 32px rgba(15, 23, 42, 0.1)',
               }}
             >
+              {/* Theme Settings Section */}
+              <div
+                style={{
+                  backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                  borderRadius: '1rem',
+                  boxShadow: '0 8px 32px rgba(15, 23, 42, 0.15)',
+                  padding: '1.25rem 1.75rem',
+                  marginBottom: '1.25rem',
+                }}
+              >
+                <h2 style={{ fontSize: '1.1rem', fontWeight: 600, margin: '0 0 0.5rem 0', color: SECTION_TITLE_COLOR }}>
+                  Theme
+                </h2>
+                <p style={{ fontSize: '0.85rem', color: '#6b7280', margin: '0 0 1rem 0' }}>
+                  Choose your preferred color scheme for the application.
+                </p>
+                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                  <button
+                    onClick={() => setTheme('light')}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      borderRadius: '0.375rem',
+                      border: theme === 'light' ? '2px solid #2563eb' : '1px solid #d1d5db',
+                      backgroundColor: theme === 'light' ? '#eff6ff' : '#ffffff',
+                      color: theme === 'light' ? '#2563eb' : '#374151',
+                      fontSize: '0.875rem',
+                      fontWeight: theme === 'light' ? 600 : 400,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Light
+                  </button>
+                  <button
+                    onClick={() => setTheme('dark')}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      borderRadius: '0.375rem',
+                      border: theme === 'dark' ? '2px solid #2563eb' : '1px solid #d1d5db',
+                      backgroundColor: theme === 'dark' ? '#eff6ff' : '#ffffff',
+                      color: theme === 'dark' ? '#2563eb' : '#374151',
+                      fontSize: '0.875rem',
+                      fontWeight: theme === 'dark' ? 600 : 400,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Dark
+                  </button>
+                  <button
+                    onClick={() => setTheme('system')}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      borderRadius: '0.375rem',
+                      border: theme === 'system' ? '2px solid #2563eb' : '1px solid #d1d5db',
+                      backgroundColor: theme === 'system' ? '#eff6ff' : '#ffffff',
+                      color: theme === 'system' ? '#2563eb' : '#374151',
+                      fontSize: '0.875rem',
+                      fontWeight: theme === 'system' ? 600 : 400,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    System
+                  </button>
+                </div>
+              </div>
+
               {/* Role Management Section - Accordion */}
               {canManageRoles && (
                 <div

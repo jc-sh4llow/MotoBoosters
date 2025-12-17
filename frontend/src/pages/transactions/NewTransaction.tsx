@@ -821,7 +821,7 @@ export function NewTransaction() {
       display: 'flex',
       flexDirection: 'column',
       position: 'relative',
-      background: 'linear-gradient(109deg, #1e88e5 0%, #1e88e5 50%, #0d47a1 50%, #0d47a1 100%)',
+      background: 'var(--bg-gradient)',
       backgroundSize: 'cover',
       backgroundAttachment: 'fixed'
     }}>
@@ -833,7 +833,7 @@ export function NewTransaction() {
         right: 0,
         bottom: 0,
         zIndex: -1,
-        background: 'linear-gradient(109deg, #1e88e5 0%, #1e88e5 50%, #0d47a1 50%, #0d47a1 100%)',
+        background: 'var(--bg-gradient)',
         backgroundSize: 'cover',
         backgroundAttachment: 'fixed'
       }} />

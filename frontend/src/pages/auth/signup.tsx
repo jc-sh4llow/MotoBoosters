@@ -81,7 +81,7 @@ export function SignUp() {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: 'linear-gradient(135deg, #1e88e5 0%, #0d47a1 100%)',
+      background: 'var(--bg-gradient)',
       padding: '1rem',
     }}>
       <div style={{

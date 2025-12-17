@@ -1,9 +1,9 @@
 import { FaHome, FaChevronDown, FaBars, FaWarehouse, FaTag, FaWrench, FaFileInvoice, FaPlus, FaUser, FaSearch, FaTimes, FaUndoAlt, FaFilter, FaCog, FaFileExcel } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { collection, getDocs, query, where, addDoc, writeBatch, doc, updateDoc } from 'firebase/firestore';
 import { useAuth } from '../../contexts/AuthContext';
-import { Footer } from '@/components/Footer';
+import { Footer } from '../../components/Footer';
 import { can } from '../../config/permissions';
 import { db } from '../../lib/firebase';
 import logo from '../../assets/logo.png';
@@ -41,6 +41,28 @@ export const Returns: React.FC = () => {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [isReturnDetailsExpanded, setIsReturnDetailsExpanded] = useState(false);
+  const returnDetailsRef = useRef<HTMLDivElement | null>(null);
+  const returnDetailsToggleRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    if (!isReturnDetailsExpanded) return;
+
+    const handlePointerDown = (e: PointerEvent) => {
+      const target = e.target as Node | null;
+      if (!target) return;
+
+      const container = returnDetailsRef.current;
+      const toggle = returnDetailsToggleRef.current;
+
+      if (container && container.contains(target)) return;
+      if (toggle && toggle.contains(target)) return;
+
+      setIsReturnDetailsExpanded(false);
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    return () => document.removeEventListener('pointerdown', handlePointerDown);
+  }, [isReturnDetailsExpanded]);
   const userRoles = user?.roles?.length ? user.roles : (user?.role ? [user.role] : []);
   const [transactions, setTransactions] = useState<TransactionRow[]>([]);
   const [transactionsLoading, setTransactionsLoading] = useState(false);
@@ -156,13 +178,13 @@ export const Returns: React.FC = () => {
   const getFilteredReturns = useMemo(() => {
     return previousReturns.filter((ret) => {
       if (!showArchived && ret.status === 'archived') return false;
-      
+
       if (dateFilter !== 'all') {
         const retDate = new Date(ret.date);
         const now = new Date();
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         const retDateOnly = new Date(retDate.getFullYear(), retDate.getMonth(), retDate.getDate());
-        
+
         if (dateFilter === 'today') {
           if (retDateOnly.getTime() !== today.getTime()) return false;
         } else if (dateFilter === 'last7') {
@@ -173,7 +195,7 @@ export const Returns: React.FC = () => {
           if (retDate.getFullYear() !== now.getFullYear() || retDate.getMonth() !== now.getMonth()) return false;
         }
       }
-      
+
       return true;
     });
   }, [previousReturns, showArchived, dateFilter]);
@@ -1559,6 +1581,7 @@ export const Returns: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setIsReturnDetailsExpanded((prev) => !prev)}
+                    ref={returnDetailsToggleRef}
                     style={{
                       width: '100%',
                       padding: '0.85rem 1.25rem',
@@ -1613,7 +1636,7 @@ export const Returns: React.FC = () => {
                   </button>
 
                   {isReturnDetailsExpanded && (
-                    <div style={{ padding: '1.25rem 1.5rem 1.5rem 1.5rem' }}>
+                    <div ref={returnDetailsRef} style={{ padding: '1.25rem 1.5rem 1.5rem 1.5rem' }}>
                       {/* First row: Return ID / Handled By / Transaction ID / Return Date */}
                       <div
                         style={{
@@ -2351,141 +2374,141 @@ export const Returns: React.FC = () => {
                           </tr>
                         )}
                         {getFilteredReturns.map((ret) => (
-                            <tr
-                              key={ret.id}
-                              onClick={() => {
-                                if (isSelectMode) {
-                                  setSelectedItems(prev => {
-                                    const next = new Set(prev);
-                                    if (next.has(ret.returnDocId)) {
-                                      next.delete(ret.returnDocId);
-                                    } else {
-                                      next.add(ret.returnDocId);
-                                    }
-                                    return next;
-                                  });
-                                }
-                              }}
+                          <tr
+                            key={ret.id}
+                            onClick={() => {
+                              if (isSelectMode) {
+                                setSelectedItems(prev => {
+                                  const next = new Set(prev);
+                                  if (next.has(ret.returnDocId)) {
+                                    next.delete(ret.returnDocId);
+                                  } else {
+                                    next.add(ret.returnDocId);
+                                  }
+                                  return next;
+                                });
+                              }
+                            }}
+                            style={{
+                              borderBottom: '1px solid #e5e7eb',
+                              opacity: ret.status === 'archived' ? 0.6 : 1,
+                              cursor: isSelectMode ? 'pointer' : 'default',
+                              backgroundColor: isSelectMode && selectedItems.has(ret.returnDocId) ? '#eff6ff' : 'white',
+                            }}
+                          >
+                            {isSelectMode && (
+                              <td style={{ padding: '0.6rem 0.5rem', textAlign: 'center' }}>
+                                <input type="checkbox" checked={selectedItems.has(ret.returnDocId)} onChange={() => { }} onClick={(e) => { e.stopPropagation(); setSelectedItems(prev => { const next = new Set(prev); if (next.has(ret.returnDocId)) { next.delete(ret.returnDocId); } else { next.add(ret.returnDocId); } return next; }); }} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
+                              </td>
+                            )}
+                            <td style={{ padding: '0.6rem 1rem' }}>{ret.id}</td>
+                            <td style={{ padding: '0.6rem 1rem' }}>{ret.date}</td>
+                            <td style={{ padding: '0.6rem 1rem' }}>{ret.customerName || 'Walk-in Customer'}</td>
+                            <td style={{ padding: '0.6rem 1rem' }}>{ret.transactionCode}</td>
+                            <td style={{ padding: '0.6rem 1rem' }}>
+                              {ret.itemsReturned} item{ret.itemsReturned === 1 ? '' : 's'}
+                            </td>
+                            <td
                               style={{
-                                borderBottom: '1px solid #e5e7eb',
-                                opacity: ret.status === 'archived' ? 0.6 : 1,
-                                cursor: isSelectMode ? 'pointer' : 'default',
-                                backgroundColor: isSelectMode && selectedItems.has(ret.returnDocId) ? '#eff6ff' : 'white',
+                                padding: '0.6rem 1rem',
+                                textAlign: 'right',
+                                fontVariantNumeric: 'tabular-nums',
                               }}
                             >
-                              {isSelectMode && (
-                                <td style={{ padding: '0.6rem 0.5rem', textAlign: 'center' }}>
-                                  <input type="checkbox" checked={selectedItems.has(ret.returnDocId)} onChange={() => {}} onClick={(e) => { e.stopPropagation(); setSelectedItems(prev => { const next = new Set(prev); if (next.has(ret.returnDocId)) { next.delete(ret.returnDocId); } else { next.add(ret.returnDocId); } return next; }); }} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
-                                </td>
+                              ₱{ret.returnedTotal.toFixed(2)}
+                            </td>
+                            <td
+                              style={{
+                                padding: '0.6rem 1rem',
+                                textAlign: 'right',
+                                display: 'flex',
+                                gap: '0.5rem',
+                                justifyContent: 'flex-end',
+                              }}
+                            >
+                              {ret.status !== 'archived' && canArchiveReturns && (
+                                <button
+                                  type="button"
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    const retRef = doc(db, 'returns', ret.returnDocId);
+                                    await updateDoc(retRef, { status: 'archived', archivedAt: new Date().toISOString() });
+                                    setPreviousReturns((prev) =>
+                                      prev.map((row) =>
+                                        row.returnDocId === ret.returnDocId
+                                          ? { ...row, status: 'archived' }
+                                          : row,
+                                      ),
+                                    );
+                                  }}
+                                  style={{
+                                    padding: '0.25rem 0.75rem',
+                                    borderRadius: '999px',
+                                    border: '1px solid #fecaca',
+                                    backgroundColor: '#fee2e2',
+                                    color: '#b91c1c',
+                                    fontSize: '0.75rem',
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  Archive
+                                </button>
                               )}
-                              <td style={{ padding: '0.6rem 1rem' }}>{ret.id}</td>
-                              <td style={{ padding: '0.6rem 1rem' }}>{ret.date}</td>
-                              <td style={{ padding: '0.6rem 1rem' }}>{ret.customerName || 'Walk-in Customer'}</td>
-                              <td style={{ padding: '0.6rem 1rem' }}>{ret.transactionCode}</td>
-                              <td style={{ padding: '0.6rem 1rem' }}>
-                                {ret.itemsReturned} item{ret.itemsReturned === 1 ? '' : 's'}
-                              </td>
-                              <td
-                                style={{
-                                  padding: '0.6rem 1rem',
-                                  textAlign: 'right',
-                                  fontVariantNumeric: 'tabular-nums',
-                                }}
-                              >
-                                ₱{ret.returnedTotal.toFixed(2)}
-                              </td>
-                              <td
-                                style={{
-                                  padding: '0.6rem 1rem',
-                                  textAlign: 'right',
-                                  display: 'flex',
-                                  gap: '0.5rem',
-                                  justifyContent: 'flex-end',
-                                }}
-                              >
-                                {ret.status !== 'archived' && canArchiveReturns && (
-                                  <button
-                                    type="button"
-                                    onClick={async (e) => {
-                                      e.stopPropagation();
-                                      const retRef = doc(db, 'returns', ret.returnDocId);
-                                      await updateDoc(retRef, { status: 'archived', archivedAt: new Date().toISOString() });
-                                      setPreviousReturns((prev) =>
-                                        prev.map((row) =>
-                                          row.returnDocId === ret.returnDocId
-                                            ? { ...row, status: 'archived' }
-                                            : row,
-                                        ),
-                                      );
-                                    }}
-                                    style={{
-                                      padding: '0.25rem 0.75rem',
-                                      borderRadius: '999px',
-                                      border: '1px solid #fecaca',
-                                      backgroundColor: '#fee2e2',
-                                      color: '#b91c1c',
-                                      fontSize: '0.75rem',
-                                      cursor: 'pointer',
-                                    }}
-                                  >
-                                    Archive
-                                  </button>
-                                )}
-                                {ret.status === 'archived' && canUnarchiveReturns && (
-                                  <button
-                                    type="button"
-                                    onClick={async (e) => {
-                                      e.stopPropagation();
-                                      const retRef = doc(db, 'returns', ret.returnDocId);
-                                      await updateDoc(retRef, { status: 'active', archivedAt: null });
-                                      setPreviousReturns((prev) =>
-                                        prev.map((row) =>
-                                          row.returnDocId === ret.returnDocId
-                                            ? { ...row, status: 'active' }
-                                            : row,
-                                        ),
-                                      );
-                                    }}
-                                    style={{
-                                      padding: '0.25rem 0.75rem',
-                                      borderRadius: '999px',
-                                      border: '1px solid #93c5fd',
-                                      backgroundColor: '#dbeafe',
-                                      color: '#1d4ed8',
-                                      fontSize: '0.75rem',
-                                      cursor: 'pointer',
-                                    }}
-                                  >
-                                    Unarchive
-                                  </button>
-                                )}
-                                {ret.status === 'archived' && canDeleteReturns && (
-                                  <button
-                                    type="button"
-                                    onClick={async (e) => {
-                                      e.stopPropagation();
-                                      const retRef = doc(db, 'returns', ret.returnDocId);
-                                      await updateDoc(retRef, { deleted: true });
-                                      setPreviousReturns((prev) =>
-                                        prev.filter((row) => row.returnDocId !== ret.returnDocId),
-                                      );
-                                    }}
-                                    style={{
-                                      padding: '0.25rem 0.75rem',
-                                      borderRadius: '999px',
-                                      border: '1px solid #fca5a5',
-                                      backgroundColor: '#fef2f2',
-                                      color: '#dc2626',
-                                      fontSize: '0.75rem',
-                                      cursor: 'pointer',
-                                    }}
-                                  >
-                                    Delete
-                                  </button>
-                                )}
-                              </td>
-                            </tr>
-                          ))}
+                              {ret.status === 'archived' && canUnarchiveReturns && (
+                                <button
+                                  type="button"
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    const retRef = doc(db, 'returns', ret.returnDocId);
+                                    await updateDoc(retRef, { status: 'active', archivedAt: null });
+                                    setPreviousReturns((prev) =>
+                                      prev.map((row) =>
+                                        row.returnDocId === ret.returnDocId
+                                          ? { ...row, status: 'active' }
+                                          : row,
+                                      ),
+                                    );
+                                  }}
+                                  style={{
+                                    padding: '0.25rem 0.75rem',
+                                    borderRadius: '999px',
+                                    border: '1px solid #93c5fd',
+                                    backgroundColor: '#dbeafe',
+                                    color: '#1d4ed8',
+                                    fontSize: '0.75rem',
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  Unarchive
+                                </button>
+                              )}
+                              {ret.status === 'archived' && canDeleteReturns && (
+                                <button
+                                  type="button"
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    const retRef = doc(db, 'returns', ret.returnDocId);
+                                    await updateDoc(retRef, { deleted: true });
+                                    setPreviousReturns((prev) =>
+                                      prev.filter((row) => row.returnDocId !== ret.returnDocId),
+                                    );
+                                  }}
+                                  style={{
+                                    padding: '0.25rem 0.75rem',
+                                    borderRadius: '999px',
+                                    border: '1px solid #fca5a5',
+                                    backgroundColor: '#fef2f2',
+                                    color: '#dc2626',
+                                    fontSize: '0.75rem',
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  Delete
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
                       </tbody>
                     </table>
                   </div>

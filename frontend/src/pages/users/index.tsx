@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { FaBars, FaSearch, FaTimes, FaFilter, FaChevronDown, FaEye, FaEyeSlash, FaFileExcel } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { collection, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
@@ -45,6 +45,56 @@ type UserRow = {
 export function Users() {
 
   const [isUserDetailsExpanded, setIsUserDetailsExpanded] = useState(false);
+  const userDetailsRef = useRef<HTMLDivElement | null>(null);
+  const userDetailsToggleRef = useRef<HTMLButtonElement | null>(null);
+
+  const collapseUserDetails = () => {
+    const today = new Date().toISOString().split('T')[0];
+    setFormData({
+      docId: '',
+      userId: '',
+      username: '',
+      password: '',
+      confirmPassword: '',
+      fullName: '',
+      email: '',
+      contactNumber: '',
+      status: 'active',
+      role: 'employee',
+      dateCreated: today,
+    });
+    setSelectedRolesForUser([]);
+    setSelectedUserRow(null);
+    setIsEditing(false);
+    setShowPassword(false);
+    setShowConfirmPassword(false);
+    setIsPasswordFocused(false);
+    setIsConfirmFocused(false);
+    setPasswordDirty(false);
+    setPasswordUnlockedForRowId(null);
+    setStatusChangeConfirmed(false);
+    setIsUserDetailsExpanded(false);
+  };
+
+  useEffect(() => {
+    if (!isUserDetailsExpanded) return;
+
+    const handlePointerDown = (e: PointerEvent) => {
+      const target = e.target as Node | null;
+      if (!target) return;
+
+      const container = userDetailsRef.current;
+      const toggle = userDetailsToggleRef.current;
+
+      if (container && container.contains(target)) return;
+      if (toggle && toggle.contains(target)) return;
+
+      collapseUserDetails();
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    return () => document.removeEventListener('pointerdown', handlePointerDown);
+  }, [isUserDetailsExpanded]);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isPasswordFocused, setIsPasswordFocused] = useState(false);
@@ -470,35 +520,35 @@ export function Users() {
       if (!can(userRoles, 'users.view.developer') && (u.roles || []).some(r => r.toLowerCase() === 'developer')) {
         return false;
       }
-      
+
       // Filter by archived status
       if (!showArchivedFilter && u.archived) return false;
       if (showArchivedFilter && !canViewArchived && u.archived) return false;
-      
+
       // Search filter
       if (searchTerm) {
         const term = searchTerm.toLowerCase();
-        const matchesSearch = 
+        const matchesSearch =
           u.displayId.toLowerCase().includes(term) ||
           u.username.toLowerCase().includes(term) ||
           u.fullName.toLowerCase().includes(term) ||
           u.email.toLowerCase().includes(term);
         if (!matchesSearch) return false;
       }
-      
+
       // Role filter
       if (roleFilter) {
         const userRolesList = u.roles || [u.role];
         if (!userRolesList.some(r => r.toLowerCase() === roleFilter.toLowerCase())) return false;
       }
-      
+
       // Status filter
       if (statusFilter) {
         const userStatus = (u.status || '').toLowerCase();
         if (statusFilter === 'active' && userStatus !== 'active') return false;
         if (statusFilter === 'inactive' && userStatus === 'active') return false;
       }
-      
+
       return true;
     });
   };
@@ -507,7 +557,7 @@ export function Users() {
   const handleExportCsv = () => {
     const dataToExport = getFilteredUsers();
     if (dataToExport.length === 0) return;
-    
+
     const headers = ['ID', 'Username', 'Full Name', 'Email', 'Contact', 'Roles', 'Status', 'Last Login'];
     const rows = dataToExport.map(u => [
       u.displayId,
@@ -519,7 +569,7 @@ export function Users() {
       u.status,
       u.lastLogin
     ]);
-    
+
     const csvContent = [headers, ...rows].map(row => row.map(cell => `"${(cell || '').replace(/"/g, '""')}"`).join(',')).join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -856,33 +906,10 @@ export function Users() {
                   }}
                 >
                   <button
+                    ref={userDetailsToggleRef}
                     onClick={() => {
                       if (isUserDetailsExpanded) {
-                        const today = new Date().toISOString().split('T')[0];
-                        setFormData({
-                          docId: '',
-                          userId: '',
-                          username: '',
-                          password: '',
-                          confirmPassword: '',
-                          fullName: '',
-                          email: '',
-                          contactNumber: '',
-                          status: 'active',
-                          role: 'employee',
-                          dateCreated: today,
-                        });
-                        setSelectedRolesForUser([]);
-                        setSelectedUserRow(null);
-                        setIsEditing(false);
-                        setShowPassword(false);
-                        setShowConfirmPassword(false);
-                        setIsPasswordFocused(false);
-                        setIsConfirmFocused(false);
-                        setPasswordDirty(false);
-                        setPasswordUnlockedForRowId(null);
-                        setStatusChangeConfirmed(false);
-                        setIsUserDetailsExpanded(false);
+                        collapseUserDetails();
                       } else {
                         setIsUserDetailsExpanded(true);
                       }
@@ -923,7 +950,9 @@ export function Users() {
                   transition: 'max-height 0.3s ease-out',
                   padding: isUserDetailsExpanded ? '1.5rem' : '0 1.5rem',
                   backgroundColor: 'white'
-                }}>
+                }}
+                ref={userDetailsRef}
+                >
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.5rem' }}>
                     {/* Row: User ID - Date Created */}
                     <div>

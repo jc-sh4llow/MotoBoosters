@@ -1,7 +1,7 @@
 import { FaBars, FaSearch, FaTimes, FaFilter, FaFileExcel, FaTrash, FaUndoAlt } from 'react-icons/fa';
 
 import { useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy, getDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -106,6 +106,8 @@ export function Services() {
   const isLargePhoneOrTablet = viewportWidth >= 768 && viewportWidth < 992;
   const isPortraitPhone = viewportWidth >= 480 && viewportWidth < 768;
   const isSmallPhone = viewportWidth < 480;
+  const serviceDetailsRef = useRef<HTMLDivElement | null>(null);
+  const servicesTableRef = useRef<HTMLDivElement | null>(null);
 
   const handleTypeChange = (type: string) => {
     if (!canEditServices) return;
@@ -212,7 +214,40 @@ export function Services() {
   });
   const [serviceHasUnsavedChanges, setServiceHasUnsavedChanges] = useState(false);
   const [descriptionModalService, setDescriptionModalService] = useState<ServiceRow | null>(null);
+  const collapseServiceDetails = () => {
+    setSelectedService(null);
+    setServiceForm({
+      id: '',
+      name: '',
+      price: '',
+      description: '',
+      vehicleTypes: []
+    });
+    setSelectedTypes(new Set());
+    setServiceHasUnsavedChanges(false);
+    setIsDetailsVisible(false);
+    setTimeout(() => setShouldShowDetails(false), 300);
+  };
+  useEffect(() => {
+    if (!isDesktop) return;
+    if (!shouldShowDetails || !isDetailsVisible) return;
 
+    const handlePointerDown = (e: PointerEvent) => {
+      const target = e.target as Node | null;
+      if (!target) return;
+
+      const details = serviceDetailsRef.current;
+      const table = servicesTableRef.current;
+
+      if (details && details.contains(target)) return;
+      if (table && table.contains(target)) return;
+
+      collapseServiceDetails();
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    return () => document.removeEventListener('pointerdown', handlePointerDown);
+  }, [isDesktop, shouldShowDetails, isDetailsVisible]);
   // App-level confirmation / message modal
   const [modalState, setModalState] = useState<{
     open: boolean;
@@ -234,7 +269,7 @@ export function Services() {
 
   const handleSaveService = async () => {
     if (!canEditServices) return;
-    
+
     // Validate required fields based on settings
     if (servicesRequiredFields.serviceName && !serviceForm.name.trim()) {
       setModalState({
@@ -454,7 +489,7 @@ export function Services() {
   };
 
   const getFilteredServices = () => {
-    let filtered = canViewArchived 
+    let filtered = canViewArchived
       ? (showArchivedFilter ? services : services.filter(s => !s.archived))
       : services.filter(s => !s.archived);
 
@@ -733,7 +768,7 @@ export function Services() {
                       <button type="button" onClick={() => {
                         const rows = filteredServices;
                         if (!rows.length) return;
-                        const headers = ['Service ID','Name','Price','Status','Description','Vehicle Types','Archived'];
+                        const headers = ['Service ID', 'Name', 'Price', 'Status', 'Description', 'Vehicle Types', 'Archived'];
                         const escapeCell = (v: unknown) => { const s = (v ?? '').toString(); return s.includes('"') || s.includes(',') || s.includes('\n') ? '"' + s.replace(/"/g, '""') + '"' : s; };
                         const csv = [headers.join(','), ...rows.map(s => [s.serviceId, s.name, s.price, s.status, s.description, s.vehicleTypes.join('; '), s.archived ? 'Yes' : 'No'].map(escapeCell).join(','))].join('\r\n');
                         const blob = new Blob([csv], { type: 'text/csv' });
@@ -1011,7 +1046,7 @@ export function Services() {
               {shouldShowDetails && (
                 isDesktop ? (
                   // Desktop: keep inline sticky card beside the table
-                  <div style={{
+                  <div ref={serviceDetailsRef} style={{
                     backgroundColor: 'white',
                     backdropFilter: 'blur(12px)',
                     borderRadius: '0.5rem',
@@ -1029,7 +1064,6 @@ export function Services() {
                     transition: 'transform 0.3s ease, opacity 0.3s ease'
                   }}>
                     <h2 style={{
-                      color: '#111827',
                       marginBottom: '1.5rem',
                       fontSize: '1.25rem',
                       fontWeight: '600',
@@ -1224,18 +1258,7 @@ export function Services() {
                             <button
                               type="button"
                               onClick={() => {
-                                setSelectedService(null);
-                                setServiceForm({
-                                  id: '',
-                                  name: '',
-                                  price: '',
-                                  description: '',
-                                  vehicleTypes: []
-                                });
-                                setSelectedTypes(new Set());
-                                setServiceHasUnsavedChanges(false);
-                                setIsDetailsVisible(false);
-                                setTimeout(() => setShouldShowDetails(false), 300);
+                                collapseServiceDetails();
                               }}
                               style={{
                                 padding: '0.5rem 1rem',
@@ -1315,6 +1338,7 @@ export function Services() {
                               <button
                                 type="button"
                                 onClick={() => {
+                                  if (!selectedService) return;
                                   const svc = selectedService;
                                   setModalState({
                                     open: true,
@@ -1748,7 +1772,7 @@ export function Services() {
                 )
               )}
               {/* Services Table Section */}
-              <div style={{
+              <div ref={servicesTableRef} style={{
                 backgroundColor: 'rgba(255, 255, 255)',
                 backdropFilter: 'blur(12px)',
                 borderRadius: '0.5rem',
@@ -1899,7 +1923,7 @@ export function Services() {
                         >
                           {isSelectMode && (
                             <td style={{ padding: '0.75rem 0.5rem', textAlign: 'center' }}>
-                              <input type="checkbox" checked={selectedItems.has(service.id)} onChange={() => {}} onClick={(e) => e.stopPropagation()} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
+                              <input type="checkbox" checked={selectedItems.has(service.id)} onChange={() => { }} onClick={(e) => e.stopPropagation()} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
                             </td>
                           )}
                           <td style={{ padding: '0.75rem 1rem', color: '#111827' }}>

@@ -1,8 +1,8 @@
 import { FaHome, FaGripLinesVertical, FaBars, FaWarehouse, FaTag, FaWrench, FaFileInvoice, FaPlus, FaUser, FaSearch, FaTimes, FaChevronDown, FaFilter, FaUndoAlt, FaCog, FaFileExcel, FaTrash } from 'react-icons/fa';
 
 import { useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
-import { Footer } from '@/components/Footer';
+import { useState, useEffect, useRef } from 'react';
+import { Footer } from '../../components/Footer';
 import { collection, doc, addDoc, getDocs, updateDoc, deleteDoc, query, where, getDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -130,11 +130,62 @@ export function Inventory() {
   // UI state
   const [isItemDetailsExpanded, setIsItemDetailsExpanded] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-
+  const itemDetailsRef = useRef<HTMLDivElement | null>(null);
+  const itemDetailsToggleRef = useRef<HTMLButtonElement | null>(null);
   const [isCompactSearchOpen, setIsCompactSearchOpen] = useState(false);
 
   const isSmallDesktop = !isMobile && isCompactTable;
+  const collapseItemDetails = () => {
+    setSelectedInventoryItem(null);
+    setFormItem({
+      id: '',
+      brand: '',
+      itemName: '',
+      type: '',
+      purchasePrice: '',
+      sellingPrice: '',
+      stockQuantity: '',
+      restockLevel: '',
+      remarks: '',
+      discount: '',
+      markup: '',
+    });
+    setNewItem({
+      id: '',
+      brand: '',
+      customBrand: '',
+      itemName: '',
+      type: '',
+      customType: '',
+      purchasePrice: '',
+      sellingPrice: '',
+      stockQuantity: '',
+      status: 'in-stock'
+    });
+    setHasUnsavedChanges(false);
+    setIsEditMode(false);
+    setIsItemDetailsExpanded(false);
+  };
 
+  useEffect(() => {
+    if (!isItemDetailsExpanded) return;
+
+    const handlePointerDown = (e: PointerEvent) => {
+      const target = e.target as Node | null;
+      if (!target) return;
+
+      const container = itemDetailsRef.current;
+      const toggle = itemDetailsToggleRef.current;
+
+      if (container && container.contains(target)) return;
+      if (toggle && toggle.contains(target)) return;
+
+      collapseItemDetails();
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    return () => document.removeEventListener('pointerdown', handlePointerDown);
+  }, [isItemDetailsExpanded]);
   useEffect(() => {
     const handleResize = () => {
       const width = window.innerWidth;
@@ -469,7 +520,7 @@ export function Inventory() {
 
   const handleSaveItem = async () => {
     const isEditingExisting = !!(selectedInventoryItem as any)?.docId;
-    
+
     // Check appropriate permission based on whether adding or editing
     if (isEditingExisting && !canEditInventory) return;
     if (!isEditingExisting && !canAddInventory) return;
@@ -1138,8 +1189,8 @@ export function Inventory() {
                     ? '#dc2626'
                     : modalState.variant === 'confirm'
                       ? (modalState.title.toLowerCase().includes('unarchive')
-                          ? '#059669' // Green for unarchive
-                          : '#dc2626') // Red for archive/delete
+                        ? '#059669' // Green for unarchive
+                        : '#dc2626') // Red for archive/delete
                       : '#2563eb',
                 color: 'white',
                 fontSize: '0.875rem',
@@ -1147,14 +1198,14 @@ export function Inventory() {
                 cursor: 'pointer',
               }}
             >
-              {isConfirm 
+              {isConfirm
                 ? (modalState.title.toLowerCase().includes('archive') && !modalState.title.toLowerCase().includes('unarchive')
-                    ? 'Archive'
-                    : modalState.title.toLowerCase().includes('unarchive')
-                      ? 'Unarchive'
-                      : modalState.title.toLowerCase().includes('delete')
-                        ? 'Delete'
-                        : 'Confirm')
+                  ? 'Archive'
+                  : modalState.title.toLowerCase().includes('unarchive')
+                    ? 'Unarchive'
+                    : modalState.title.toLowerCase().includes('delete')
+                      ? 'Delete'
+                      : 'Confirm')
                 : 'OK'}
             </button>
           </div>
@@ -2837,7 +2888,7 @@ export function Inventory() {
                       {/* Bulk action buttons - visible when Select mode is active */}
                       {isSelectMode && (() => {
                         // Determine selection state
-                        const selectedItemsList = Array.from(selectedItems).map(docId => 
+                        const selectedItemsList = Array.from(selectedItems).map(docId =>
                           firestoreItems.find(item => item.docId === docId)
                         ).filter(Boolean);
                         const archivedCount = selectedItemsList.filter(item => item?.archived).length;
@@ -3519,7 +3570,7 @@ export function Inventory() {
                                     <input
                                       type="checkbox"
                                       checked={selectedItems.has(item.docId)}
-                                      onChange={() => {}}
+                                      onChange={() => { }}
                                       style={{ width: '18px', height: '18px', cursor: 'pointer' }}
                                     />
                                   </td>
@@ -3746,7 +3797,7 @@ export function Inventory() {
               >
                 <Switch
                   checked={true}
-                  onChange={() => {}}
+                  onChange={() => { }}
                   disabled
                   size="sm"
                 />

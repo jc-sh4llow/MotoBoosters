@@ -15,7 +15,7 @@ import { useEffectiveRoleIds } from '../hooks/useEffectiveRoleIds';
 import { useTheme } from '../contexts/ThemeContext';
 
 // Section title color (consistent with other pages)
-const SECTION_TITLE_COLOR = '#1e40af';
+const SECTION_TITLE_COLOR = 'var(--text-primary)';
 
 // Cache key for GCash QR URL
 const GCASH_QR_CACHE_KEY = 'gcashQrCache';
@@ -728,7 +728,7 @@ export const Settings: React.FC = () => {
                   style={{
                     fontSize: '1.875rem',
                     fontWeight: 'bold',
-                    color: '#1e40af',
+                    color: 'var(--text-primary)',
                     margin: 0,
                   }}
                 >

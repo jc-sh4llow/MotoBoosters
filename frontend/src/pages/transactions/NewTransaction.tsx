@@ -892,7 +892,7 @@ export function NewTransaction() {
               <h1 style={{
                 fontSize: '1.875rem',
                 fontWeight: 'bold',
-                color: '#1e40af',
+                color: 'var(--text-primary)',
                 margin: 0,
               }}>
                 New Transaction

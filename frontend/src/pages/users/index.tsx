@@ -710,38 +710,32 @@ export function Users() {
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            maxWidth: '1560px',
-            margin: '0 auto',
-            width: '100%',
-            position: 'relative'
+            marginLeft: 'auto', // This will push it to the right
+            marginRight: '1rem' // Add some space before the hamburger button
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                height: '1.875rem',
-                cursor: 'pointer',
+            <FaSearch style={{
+              position: 'absolute',
+              left: '12px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              color: '#9ca3af'
+            }} />
+            <input
+              type="text"
+              placeholder="Search by Brand or Item Name..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{
+                padding: '0.5rem 2.5rem 0.5rem 2.5rem', // Added right padding for the clear button
+                borderRadius: '0.5rem',
+                border: '1px solid #d1d5db',
+                backgroundColor: 'rgba(255, 255, 255)',
+                color: '#1f2937',
+                width: '320px',
+                outline: 'none'
               }}
-                onClick={() => navigate('/')}
-              >
-                <img
-                  src={logo}
-                  alt="Business Logo"
-                  style={{
-                    height: '100%',
-                    width: 'auto',
-              </div>
-            </div>
-
-            <div style={{
-              position: 'relative',
-              display: 'flex',
-              alignItems: 'center',
-              marginLeft: 'auto', // This will push it to the right
-              marginRight: '1rem' // Add some space before the hamburger button
-            }}>
-              <FaSearch style={{
+            />
+            {searchTerm && (
                 position: 'absolute',
                 left: '12px',
                 top: '50%',

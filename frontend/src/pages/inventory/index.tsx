@@ -1160,7 +1160,7 @@ export function Inventory() {
                   padding: '0.4rem 0.9rem',
                   borderRadius: '0.375rem',
                   border: '1px solid #e5e7eb',
-                  backgroundColor: 'white',
+                  backgroundColor: 'var(--surface-elevated)',
                   color: '#374151',
                   fontSize: '0.875rem',
                   fontWeight: 500,
@@ -1509,7 +1509,7 @@ export function Inventory() {
                       padding: '0.45rem 0.6rem',
                       borderRadius: '0.375rem',
                       border: '1px solid #d1d5db',
-                      backgroundColor: 'white',
+                      backgroundColor: 'var(--surface-elevated)',
                       color: '#111827',
                       fontSize: '0.9rem',
                     }}
@@ -1544,7 +1544,7 @@ export function Inventory() {
                       borderRadius: '0.375rem',
                       border: '1px solid #d1d5db',
                       fontSize: '0.9rem',
-                      backgroundColor: 'white',
+                      backgroundColor: 'var(--surface-elevated)',
                       color: '#111827',
                     }}
                   />
@@ -1604,7 +1604,7 @@ export function Inventory() {
                   padding: '0.4rem 0.9rem',
                   borderRadius: '0.375rem',
                   border: '1px solid #e5e7eb',
-                  backgroundColor: 'white',
+                  backgroundColor: 'var(--surface-elevated)',
                   color: '#374151',
                   fontSize: '0.875rem',
                   fontWeight: 500,
@@ -1643,12 +1643,12 @@ export function Inventory() {
         flex: 1
       }}>
         <header style={{
-          backgroundColor: 'rgba(255, 255, 255, 0.92)',
+          backgroundColor: 'var(--surface)',
           backdropFilter: 'blur(12px)',
           borderRadius: '1rem',
           padding: '1rem 2rem',
           boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.25)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
+          border: '1px solid var(--border)',
           marginBottom: '1.25rem',
           position: 'sticky',
           top: '1rem',
@@ -1688,13 +1688,13 @@ export function Inventory() {
                 <h1 style={{
                   fontSize: '1.875rem',
                   fontWeight: 'bold',
-                  color: '#1e40af',
+                  color: 'var(--header-title)',
                   margin: 0,
                 }}>
                   Inventory
                 </h1>
                 <span style={{
-                  color: '#374151',
+                  color: 'var(--text)',
                   fontSize: '0.9rem',
                   marginLeft: '1rem',
                 }}>
@@ -1724,7 +1724,7 @@ export function Inventory() {
                       height: '2.25rem',
                       borderRadius: '9999px',
                       border: '1px solid rgba(255, 255, 255, 0.6)',
-                      backgroundColor: 'white',              // white circle
+                      backgroundColor: 'var(--surface-elevated)',              // white circle
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -1742,7 +1742,7 @@ export function Inventory() {
                         position: 'absolute',
                         top: '2.75rem',
                         right: 0,
-                        backgroundColor: 'white',
+                        backgroundColor: 'var(--surface-elevated)',
                         borderRadius: '0.5rem',
                         padding: isCompactSearchOpen ? '0.5rem 0.75rem' : '0 0.75rem',
                         boxShadow: '0 8px 20px rgba(15, 23, 42, 0.25)',
@@ -1766,7 +1766,7 @@ export function Inventory() {
                             left: '10px',
                             top: '50%',
                             transform: 'translateY(-50%)',
-                            color: '#9ca3af',
+                            color: 'var(--text-muted)',
                             fontSize: '0.9rem',
                           }}
                         />
@@ -1798,7 +1798,7 @@ export function Inventory() {
                               transform: 'translateY(-50%)',
                               background: 'transparent',
                               border: 'none',
-                              color: '#9ca3af',
+                              color: 'var(--text-muted)',
                               cursor: 'pointer',
                               display: 'flex',
                               alignItems: 'center',
@@ -1822,7 +1822,7 @@ export function Inventory() {
                       left: '12px',
                       top: '50%',
                       transform: 'translateY(-50%)',
-                      color: '#9ca3af',
+                      color: 'var(--text-muted)',
                     }}
                   />
                   <input
@@ -1850,7 +1850,7 @@ export function Inventory() {
                         transform: 'translateY(-50%)',
                         background: 'transparent',
                         border: 'none',
-                        color: '#9ca3af',
+                        color: 'var(--text-muted)',
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
@@ -1875,8 +1875,8 @@ export function Inventory() {
 
                   style={{
                     backgroundColor: 'transparent',
-                    border: '1px solid #1e40af',
-                    color: '#1e40af',
+                    border: '1px solid var(--logout-button)',
+                    color: 'var(--logout-button)',
                     padding: '0.25rem 0.75rem',
                     borderRadius: '0.25rem',
                     cursor: 'pointer',
@@ -1908,7 +1908,7 @@ export function Inventory() {
                 style={{
                   background: 'transparent',
                   border: 'none',
-                  color: '#1e40af',
+                  color: 'var(--logout-button)',
                   fontSize: '1.5rem',
                   cursor: 'pointer',
                   padding: '0.5rem',
@@ -1945,7 +1945,7 @@ export function Inventory() {
 
         <main>
           <div style={{
-            backgroundColor: 'rgba(255, 255, 255, 0.65)',
+            backgroundColor: 'var(--surface)',
             borderRadius: '1rem',
             padding: '2rem',
             boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
@@ -1953,7 +1953,7 @@ export function Inventory() {
             {/* Item Details Section */}
             <section style={{ marginBottom: '2rem' }}>
               <div style={{
-                backgroundColor: 'white',
+                backgroundColor: 'var(--surface-elevated)',
                 borderRadius: '0.5rem',
                 border: '1px solid #e5e7eb',
                 boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
@@ -2073,7 +2073,7 @@ export function Inventory() {
                         padding: '0.35rem 0.9rem',
                         borderRadius: '9999px',
                         border: '1px solid #3b82f6',
-                        backgroundColor: 'white',
+                        backgroundColor: 'var(--surface-elevated)',
                         color: '#1d4ed8',
                         fontSize: '0.8rem',
                         fontWeight: 500,
@@ -2161,7 +2161,7 @@ export function Inventory() {
                               padding: '0.5rem 0.75rem',
                               borderRadius: '0.375rem',
                               border: '1px solid #d1d5db',
-                              backgroundColor: 'white',
+                              backgroundColor: 'var(--surface-elevated)',
                               color: '#111827'
                             }}
                             disabled={!canEditInventory}
@@ -2246,7 +2246,7 @@ export function Inventory() {
                               padding: '0.5rem 0.75rem',
                               borderRadius: '0.375rem',
                               border: '1px solid #d1d5db',
-                              backgroundColor: 'white',
+                              backgroundColor: 'var(--surface-elevated)',
                               color: '#111827'
                             }}
                             disabled={!canEditInventory}
@@ -2371,7 +2371,7 @@ export function Inventory() {
                             padding: '0.5rem 0.75rem',
                             borderRadius: '0.375rem',
                             border: '1px solid #d1d5db',
-                            backgroundColor: 'white',
+                            backgroundColor: 'var(--surface-elevated)',
                             color: '#111827'
                           }}
                           disabled={!isEditMode || !canEditInventory}
@@ -2535,7 +2535,7 @@ export function Inventory() {
                             style={{
                               flex: 1,
                               padding: '0.5rem 1.5rem',
-                              backgroundColor: 'white',
+                              backgroundColor: 'var(--surface-elevated)',
                               color: '#4b5563',
                               border: '1px solid #d1d5db',
                               borderRadius: '0.375rem',
@@ -2661,7 +2661,7 @@ export function Inventory() {
                             style={{
                               flex: 1,
                               padding: '0.5rem 1.5rem',
-                              backgroundColor: 'white',
+                              backgroundColor: 'var(--surface-elevated)',
                               color: '#4b5563',
                               border: '1px solid #d1d5db',
                               borderRadius: '0.375rem',
@@ -2750,7 +2750,7 @@ export function Inventory() {
             {/* System Users Section */}
             <section>
               <div style={{
-                backgroundColor: 'white',
+                backgroundColor: 'var(--surface-elevated)',
                 borderRadius: '0.5rem',
                 padding: '1.5rem',
                 border: '1px solid #e5e7eb',
@@ -2770,7 +2770,7 @@ export function Inventory() {
                 </h2>
 
                 <div style={{
-                  backgroundColor: 'white',
+                  backgroundColor: 'var(--surface-elevated)',
                   borderRadius: '0.5rem',
                   padding: '1rem',
                   marginBottom: '1rem',
@@ -3239,7 +3239,7 @@ export function Inventory() {
                               padding: '0.5rem',
                               borderRadius: '0.375rem',
                               border: '1px solid #d1d5db',
-                              backgroundColor: 'white',
+                              backgroundColor: 'var(--surface-elevated)',
                               color: '#111827',
                               textAlign: 'center',
                               height: '100%', // Make input take full height
@@ -3258,7 +3258,7 @@ export function Inventory() {
                               padding: '0.5rem',
                               borderRadius: '0.375rem',
                               border: '1px solid #d1d5db',
-                              backgroundColor: 'white',
+                              backgroundColor: 'var(--surface-elevated)',
                               color: '#111827',
                               textAlign: 'center',
                               height: '100%', // Make input take full height
@@ -3889,7 +3889,7 @@ export function Inventory() {
                   padding: '0.4rem 0.9rem',
                   borderRadius: '0.375rem',
                   border: '1px solid #e5e7eb',
-                  backgroundColor: 'white',
+                  backgroundColor: 'var(--surface-elevated)',
                   color: '#374151',
                   fontSize: '0.875rem',
                   fontWeight: 500,

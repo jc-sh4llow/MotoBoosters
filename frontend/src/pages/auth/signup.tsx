@@ -87,7 +87,7 @@ export function SignUp() {
       <div style={{
         width: '100%',
         maxWidth: '420px',
-        backgroundColor: 'white',
+        backgroundColor: 'var(--surface-elevated)',
         borderRadius: '0.75rem',
         boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
         overflow: 'hidden',
@@ -335,7 +335,7 @@ export function SignUp() {
           zIndex: 2000,
         }}>
           <div style={{
-            backgroundColor: 'white',
+            backgroundColor: 'var(--surface-elevated)',
             borderRadius: '0.75rem',
             padding: '1.5rem 2rem',
             width: '100%',

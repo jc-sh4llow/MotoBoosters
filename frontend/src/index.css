@@ -16,6 +16,7 @@
   --bg-gradient: linear-gradient(109deg, #1e88e5 0%, #1e88e5 50%, #0d47a1 50%, #0d47a1 100%);
   --surface: rgba(255, 255, 255, 0.92);
   --surface-elevated: rgba(255, 255, 255, 0.9);
+  --surface-hover: #f0f0f0;
   --text: #1f2937;
   --text-muted: #6b7280;
   --border: #d1d5db;
@@ -25,14 +26,18 @@
   --placeholder: #9ca3af;
   --primary: #3b82f6;
   --primary-text: #ffffff;
+  --login-button: #1e88e5;
+  --logout-button: #1e88e5;
+  --header-title: #1e40af;
 }
 
 .dark {
   /* Dark mode theme variables */
   --bg: #111827;
   --bg-gradient: linear-gradient(109deg, #0d47a1 0%, #0d47a1 50%, #051e3e 50%, #051e3e 100%);
-  --surface: rgba(31, 41, 55, 0.92);
+  --surface: rgba(31, 41, 55, 0.52);
   --surface-elevated: rgba(31, 41, 55, 0.95);
+  --surface-hover: rgba(55, 65, 81, 0.95);
   --text: #f9fafb;
   --text-muted: #9ca3af;
   --border: #374151;
@@ -42,6 +47,9 @@
   --placeholder: #6b7280;
   --primary: #3b82f6;
   --primary-text: #ffffff;
+  --header-title: #ffffff;
+  --login-button: #1e88e5;
+  --logout-button: #1e88e5;
 }
 
 body {

@@ -432,12 +432,12 @@ export function Transactions() {
         zIndex: 5
       }}>
         <header style={{
-          backgroundColor: 'rgba(255, 255, 255, 0.92)',
+          backgroundColor: 'var(--surface)',
           backdropFilter: 'blur(12px)',
           borderRadius: '1rem',
           padding: '1rem 2rem',
           boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.25)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
+          border: '1px solid var(--border)',
           marginBottom: '1rem',
           position: 'sticky',
           top: '1rem',
@@ -624,7 +624,7 @@ export function Transactions() {
 
         <main>
           <div style={{
-            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+            backgroundColor: 'var(--surface)',
             borderRadius: '1rem',
             padding: '2rem',
             boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
@@ -632,7 +632,7 @@ export function Transactions() {
             {/* Filter Section */}
             <section style={{ marginBottom: '2rem' }}>
               <div style={{
-                backgroundColor: 'white',
+                backgroundColor: 'var(--surface-elevated)',
                 borderRadius: '0.5rem',
                 padding: '1rem',
                 marginBottom: '1rem',
@@ -855,7 +855,7 @@ export function Transactions() {
                             top: '100%',
                             left: 0,
                             zIndex: 1000,
-                            backgroundColor: 'white',
+                            backgroundColor: 'var(--surface-elevated)',
                             borderRadius: '0.5rem',
                             boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
                             border: '1px solid #e5e7eb',
@@ -964,7 +964,7 @@ export function Transactions() {
                           padding: '0.5rem',
                           borderRadius: '0.375rem',
                           border: '1px solid #d1d5db',
-                          backgroundColor: 'white',
+                          backgroundColor: 'var(--surface-elevated)',
                           color: '#111827'
                         }}
                       >
@@ -1103,7 +1103,7 @@ export function Transactions() {
                 width: '100%'
               }}>
                 <div style={{
-                  backgroundColor: 'white',
+                  backgroundColor: 'var(--surface-elevated)',
                   borderRadius: '0.5rem',
                   padding: '1.25rem',
                   boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
@@ -1113,7 +1113,7 @@ export function Transactions() {
                   <p style={{ fontSize: '1.5rem', fontWeight: '600', color: '#111827' }}>{summary.totalTransactions}</p>
                 </div>
                 <div style={{
-                  backgroundColor: 'white',
+                  backgroundColor: 'var(--surface-elevated)',
                   borderRadius: '0.5rem',
                   padding: '1.25rem',
                   boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
@@ -1123,7 +1123,7 @@ export function Transactions() {
                   <p style={{ fontSize: '1.5rem', fontWeight: '600', color: '#111827' }}>{summary.partsOnly}</p>
                 </div>
                 <div style={{
-                  backgroundColor: 'white',
+                  backgroundColor: 'var(--surface-elevated)',
                   borderRadius: '0.5rem',
                   padding: '1.25rem',
                   boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
@@ -1133,7 +1133,7 @@ export function Transactions() {
                   <p style={{ fontSize: '1.5rem', fontWeight: '600', color: '#111827' }}>{summary.serviceOnly}</p>
                 </div>
                 <div style={{
-                  backgroundColor: 'white',
+                  backgroundColor: 'var(--surface-elevated)',
                   borderRadius: '0.5rem',
                   padding: '1.25rem',
                   boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
@@ -1143,7 +1143,7 @@ export function Transactions() {
                   <p style={{ fontSize: '1.5rem', fontWeight: '600', color: '#111827' }}>{summary.partsAndService}</p>
                 </div>
                 <div style={{
-                  backgroundColor: 'white',
+                  backgroundColor: 'var(--surface-elevated)',
                   borderRadius: '0.5rem',
                   padding: '1.25rem',
                   boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
@@ -1292,7 +1292,7 @@ export function Transactions() {
 
               <div style={{
                 overflowX: 'auto',
-                backgroundColor: 'white',
+                backgroundColor: 'var(--surface-elevated)',
                 borderRadius: '0.5rem',
                 boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
               }}>
@@ -1637,7 +1637,7 @@ export function Transactions() {
                     zIndex: 2000
                   }}>
                     <div style={{
-                      backgroundColor: 'white',
+                      backgroundColor: 'var(--surface-elevated)',
                       borderRadius: '0.75rem',
                       padding: '1.5rem 2rem',
                       maxWidth: '600px',
@@ -1766,7 +1766,7 @@ export function Transactions() {
                     zIndex: 2050
                   }}>
                     <div style={{
-                      backgroundColor: 'white',
+                      backgroundColor: 'var(--surface-elevated)',
                       borderRadius: '0.75rem',
                       padding: '1.5rem 2rem',
                       maxWidth: '700px',
@@ -1953,7 +1953,7 @@ export function Transactions() {
                                   padding: '0.35rem 0.85rem',
                                   borderRadius: '0.375rem',
                                   border: '1px solid #d1d5db',
-                                  backgroundColor: 'white',
+                                  backgroundColor: 'var(--surface-elevated)',
                                   color: '#374151',
                                   fontSize: '0.85rem',
                                   cursor: isPaymentReviewProcessing ? 'not-allowed' : 'pointer'
@@ -1995,7 +1995,7 @@ export function Transactions() {
                     zIndex: 2100
                   }}>
                     <div style={{
-                      backgroundColor: 'white',
+                      backgroundColor: 'var(--surface-elevated)',
                       borderRadius: '0.75rem',
                       padding: '1.5rem 2rem',
                       maxWidth: '400px',
@@ -2031,7 +2031,7 @@ export function Transactions() {
                             padding: '0.35rem 0.85rem',
                             borderRadius: '0.375rem',
                             border: '1px solid #d1d5db',
-                            backgroundColor: 'white',
+                            backgroundColor: 'var(--surface-elevated)',
                             color: '#374151',
                             fontSize: '0.85rem',
                             cursor: isActionProcessing ? 'not-allowed' : 'pointer'

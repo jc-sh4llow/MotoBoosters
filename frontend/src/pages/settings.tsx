@@ -677,12 +677,12 @@ export const Settings: React.FC = () => {
       >
         <header
           style={{
-            backgroundColor: 'rgba(255, 255, 255, 0.92)',
+            backgroundColor: 'var(--surface)',
             backdropFilter: 'blur(12px)',
             borderRadius: '1rem',
             padding: '1rem 2rem',
             boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.25)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
+            border: '1px solid var(--border)',
             marginBottom: '1.25rem',
             position: 'sticky',
             top: '1rem',

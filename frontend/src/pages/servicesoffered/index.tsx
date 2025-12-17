@@ -562,12 +562,12 @@ export function Services() {
       }}>
         {/* Header with Search and Add Button */}
         <header style={{
-          backgroundColor: 'rgba(255, 255, 255, 0.92)',
+          backgroundColor: 'var(--surface)',
           backdropFilter: 'blur(12px)',
           borderRadius: '1rem',
           padding: '1rem 2rem',
           boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.25)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
+          border: '1px solid var(--border)',
           marginBottom: '1rem',
           position: 'sticky',
           top: '1rem',
@@ -1047,7 +1047,7 @@ export function Services() {
                 isDesktop ? (
                   // Desktop: keep inline sticky card beside the table
                   <div ref={serviceDetailsRef} style={{
-                    backgroundColor: 'white',
+                    backgroundColor: 'var(--surface-elevated)',
                     backdropFilter: 'blur(12px)',
                     borderRadius: '0.5rem',
                     padding: '1.5rem',
@@ -1123,7 +1123,7 @@ export function Services() {
                             padding: '0.5rem 0.75rem',
                             borderRadius: '0.375rem',
                             border: '1px solid #d1d5db',
-                            backgroundColor: 'white',
+                            backgroundColor: 'var(--surface-elevated)',
                             color: '#111827'
                           }}
                         />
@@ -1156,7 +1156,7 @@ export function Services() {
                             padding: '0.5rem 0.75rem',
                             borderRadius: '0.375rem',
                             border: '1px solid #d1d5db',
-                            backgroundColor: 'white',
+                            backgroundColor: 'var(--surface-elevated)',
                             color: '#111827'
                           }}
                         />
@@ -1186,7 +1186,7 @@ export function Services() {
                             padding: '0.5rem 0.75rem',
                             borderRadius: '0.375rem',
                             border: '1px solid #d1d5db',
-                            backgroundColor: 'white',
+                            backgroundColor: 'var(--surface-elevated)',
                             color: '#111827',
                             resize: 'vertical',
                             minHeight: '6rem'
@@ -1217,7 +1217,7 @@ export function Services() {
                                   height: '1rem',
                                   borderRadius: '0.25rem',
                                   border: '1px solid #d1d5db',
-                                  backgroundColor: 'white',
+                                  backgroundColor: 'var(--surface-elevated)',
                                   cursor: 'pointer'
                                 }}
                               />
@@ -1262,7 +1262,7 @@ export function Services() {
                               }}
                               style={{
                                 padding: '0.5rem 1rem',
-                                backgroundColor: 'white',
+                                backgroundColor: 'var(--surface-elevated)',
                                 color: '#374151',
                                 border: '1px solid #d1d5db',
                                 borderRadius: '0.375rem',
@@ -1413,7 +1413,7 @@ export function Services() {
                       <div
                         onClick={(e) => e.stopPropagation()}
                         style={{
-                          backgroundColor: 'white',
+                          backgroundColor: 'var(--surface-elevated)',
                           backdropFilter: 'blur(12px)',
                           borderRadius: '0.75rem',
                           padding: '1.5rem',
@@ -1489,7 +1489,7 @@ export function Services() {
                                 padding: '0.5rem 0.75rem',
                                 borderRadius: '0.375rem',
                                 border: '1px solid #d1d5db',
-                                backgroundColor: 'white',
+                                backgroundColor: 'var(--surface-elevated)',
                                 color: '#111827'
                               }}
                             />
@@ -1522,7 +1522,7 @@ export function Services() {
                                 padding: '0.5rem 0.75rem',
                                 borderRadius: '0.375rem',
                                 border: '1px solid #d1d5db',
-                                backgroundColor: 'white',
+                                backgroundColor: 'var(--surface-elevated)',
                                 color: '#111827'
                               }}
                             />
@@ -1552,7 +1552,7 @@ export function Services() {
                                 padding: '0.5rem 0.75rem',
                                 borderRadius: '0.375rem',
                                 border: '1px solid #d1d5db',
-                                backgroundColor: 'white',
+                                backgroundColor: 'var(--surface-elevated)',
                                 color: '#111827',
                                 resize: 'vertical',
                                 minHeight: '6rem'
@@ -1583,7 +1583,7 @@ export function Services() {
                                       height: '1rem',
                                       borderRadius: '0.25rem',
                                       border: '1px solid #d1d5db',
-                                      backgroundColor: 'white',
+                                      backgroundColor: 'var(--surface-elevated)',
                                       cursor: 'pointer'
                                     }}
                                   />
@@ -1648,7 +1648,7 @@ export function Services() {
                                   }}
                                   style={{
                                     padding: '0.5rem 1rem',
-                                    backgroundColor: 'white',
+                                    backgroundColor: 'var(--surface-elevated)',
                                     color: '#374151',
                                     border: '1px solid #d1d5db',
                                     borderRadius: '0.375rem',
@@ -1843,7 +1843,7 @@ export function Services() {
                           padding: '0.35rem 0.9rem',
                           borderRadius: '9999px',
                           border: '1px solid #3b82f6',
-                          backgroundColor: 'white',
+                          backgroundColor: 'var(--surface-elevated)',
                           color: '#1d4ed8',
                           fontSize: '0.8rem',
                           fontWeight: 500,
@@ -1889,14 +1889,14 @@ export function Services() {
                           style={{
                             borderTop: '1px solid rgba(0, 0, 0, 0.1)',
                             transition: 'background-color 0.2s',
-                            backgroundColor: 'white',
+                            backgroundColor: 'var(--surface-elevated)',
                             cursor: 'pointer'
                           }}
                           onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = '#f0f0f0';
+                            e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
                           }}
                           onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = 'white';
+                            e.currentTarget.style.backgroundColor = 'var(--surface-elevated)';
                           }}
                           onClick={() => {
                             if (isSelectMode) {
@@ -1947,7 +1947,7 @@ export function Services() {
                                 padding: '0.25rem 0.75rem',
                                 borderRadius: '9999px',
                                 border: '1px solid #2563eb',
-                                backgroundColor: 'white',
+                                backgroundColor: 'var(--surface-elevated)',
                                 color: '#2563eb',
                                 fontSize: '0.75rem',
                                 fontWeight: 500,
@@ -2041,7 +2041,7 @@ export function Services() {
                     padding: '0.5rem 1rem',
                     borderRadius: '0.375rem',
                     border: '1px solid #d1d5db',
-                    backgroundColor: 'white',
+                    backgroundColor: 'var(--surface-elevated)',
                     color: '#374151',
                     cursor: 'pointer'
                   }}
@@ -2099,7 +2099,7 @@ export function Services() {
                       padding: '0.45rem 0.9rem',
                       borderRadius: '0.375rem',
                       border: '1px solid #d1d5db',
-                      backgroundColor: 'white',
+                      backgroundColor: 'var(--surface-elevated)',
                       color: '#374151',
                       cursor: 'pointer',
                       fontSize: '0.875rem',
@@ -2245,7 +2245,7 @@ export function Services() {
                     padding: '0.5rem 1rem',
                     borderRadius: '0.375rem',
                     border: '1px solid #d1d5db',
-                    backgroundColor: 'white',
+                    backgroundColor: 'var(--surface-elevated)',
                     color: '#374151',
                     cursor: 'pointer'
                   }}

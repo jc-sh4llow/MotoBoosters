@@ -80,77 +80,7 @@ export function Home() {
         backgroundRepeat: 'no-repeat'
       }} />
 
-      {/* Header */}
-      {/*<header style={{
-        backgroundColor: 'rgba(26, 86, 219, 0.95)',
-        padding: '1rem',
-        position: 'sticky',
-        top: 0,
-        zIndex: 10,
-        backdropFilter: 'blur(8px)',
-        boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)'
-      }}>
-        <div style={{
-          maxWidth: '1400px',
-          margin: '0 auto',
-          padding: '0 2rem',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between'
-        }}>
-          <div style={{
-            color: 'white',
-            fontWeight: 'bold',
-            fontSize: '1.5rem',
-            letterSpacing: '0.05em'
-          }}>
-            MotoBooster
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <div style={{
-              color: '#374151',
-              fontSize: '0.9rem'
-            }}>
-              Welcome, {user ? user.name : 'Guest'}
-            </div>
-            {user ? (
-              <button
-                onClick={() => {
-                  logout();
-                  navigate('/');
-                }}
-                style={{
-                  backgroundColor: 'transparent',
-                  border: '1px solid #1e40af',
-                  color: '#1e40af',
-                  padding: '0.25rem 0.75rem',
-                  borderRadius: '0.25rem',
-                  cursor: 'pointer',
-                  fontSize: '0.875rem'
-                }}
-              >
-                Logout
-              </button>
-            ) : (
-              <button
-                onClick={() => navigate('/login')}
-                style={{
-                  backgroundColor: 'white',
-                  border: 'none',
-                  color: '#1e88e5',
-                  padding: '0.25rem 0.75rem',
-                  borderRadius: '0.25rem',
-                  cursor: 'pointer',
-                  fontSize: '0.875rem',
-                  fontWeight: '500'
-                }}
-              >
-                Login
-              </button>
-            )}
-          </div>
-        </div>
-      </header>*/}
+      
       <div style={{
         width: '100%',
         maxWidth: '1400px',
@@ -158,12 +88,12 @@ export function Home() {
         padding: '0 2rem'
       }}>
         <header style={{
-          backgroundColor: 'rgba(255, 255, 255, 0.92)',
+          backgroundColor: 'var(--surface)',
           backdropFilter: 'blur(12px)',
           borderRadius: '1rem',
           padding: '1.5rem 2rem',
           boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.15)',
-          border: '1px solid rgba(255, 255, 255, 0.18)',
+          border: '1px solid var(--border)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between'
@@ -192,7 +122,7 @@ export function Home() {
             <h1 style={{
               fontSize: '1.875rem',
               fontWeight: 'bold',
-              color: '#1e40af',
+              color: 'var(--header-title)',
               margin: 0,
             }}>
               MotoBooster
@@ -204,7 +134,7 @@ export function Home() {
             gap: '1rem'
           }}>
             <div style={{
-              color: '#374151',
+              color: 'var(--text)',
               fontSize: '0.9rem'
             }}>
               Welcome, {user ? user.name : 'Guest'}
@@ -217,8 +147,8 @@ export function Home() {
                 }}
                 style={{
                   backgroundColor: 'transparent',
-                  border: '1px solid #1e40af',
-                  color: '#1e40af',
+                  border: '1px solid var(--logout-button)',
+                  color: 'var(--logout-button)',
                   padding: '0.25rem 0.75rem',
                   borderRadius: '0.25rem',
                   cursor: 'pointer',
@@ -233,7 +163,7 @@ export function Home() {
                 style={{
                   backgroundColor: 'white',
                   border: 'none',
-                  color: '#1e88e5',
+                  color: 'var(--login-button)',
                   padding: '0.25rem 0.75rem',
                   borderRadius: '0.25rem',
                   cursor: 'pointer',
@@ -261,12 +191,12 @@ export function Home() {
           padding: '0 2rem'
         }}>
           <div style={{
-            backgroundColor: 'rgba(255, 255, 255, 0.92)',
+            backgroundColor: 'var(--surface)',
             backdropFilter: 'blur(12px)',
             borderRadius: '1rem',
             padding: '2.5rem',
             boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.15)',
-            border: '1px solid rgba(255, 255, 255, 0.18)'
+            border: '1px solid var(--border)'
           }}>
             <div style={{
               width: '100%',
@@ -274,7 +204,7 @@ export function Home() {
               padding: '2.5rem'
             }}>
               <h1 style={{
-                color: '#1e40af',
+                color: 'var(--header-title)',
                 fontSize: '2rem',
                 fontWeight: 'bold',
                 marginBottom: '2rem',
@@ -299,7 +229,7 @@ export function Home() {
                     }}
                     style={{
                       height: '9rem',
-                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                      backgroundColor: 'var(--surface-elevated)',
                       border: 'none',
                       borderRadius: '0.75rem',
                       padding: '1.5rem',
@@ -308,7 +238,7 @@ export function Home() {
                       cursor: 'pointer',
                       transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                       fontSize: '1.1rem',
-                      color: '#1e293b',
+                      color: 'var(--text)',
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
@@ -318,12 +248,12 @@ export function Home() {
                     onMouseOver={(e) => {
                       e.currentTarget.style.transform = 'translateY(-4px)';
                       e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
-                      e.currentTarget.style.backgroundColor = 'white';
+                      e.currentTarget.style.backgroundColor = 'var(--surface-elevated)';
                     }}
                     onMouseOut={(e) => {
                       e.currentTarget.style.transform = 'translateY(0)';
                       e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)';
-                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.95)';
+                      e.currentTarget.style.backgroundColor = 'var(--surface-elevated)';
                     }}
                   >
                     <div style={{

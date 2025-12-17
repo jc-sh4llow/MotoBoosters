@@ -133,7 +133,7 @@ export function Login() {
       <div style={{
         width: '100%',
         maxWidth: '400px',
-        backgroundColor: 'white',
+        backgroundColor: 'var(--surface-elevated)',
         borderRadius: '0.75rem',
         boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
         overflow: 'hidden'
@@ -340,7 +340,7 @@ export function Login() {
           zIndex: 2000,
         }}>
           <div style={{
-            backgroundColor: 'white',
+            backgroundColor: 'var(--surface-elevated)',
             borderRadius: '0.75rem',
             padding: '1.5rem 2rem',
             width: '100%',
@@ -394,7 +394,7 @@ export function Login() {
                   }}
                   style={{
                     padding: '0.4rem 1rem',
-                    backgroundColor: 'white',
+                    backgroundColor: 'var(--surface-elevated)',
                     border: '1px solid #d1d5db',
                     borderRadius: '0.375rem',
                     fontSize: '0.875rem',

@@ -6,6 +6,7 @@ import { db } from '../../lib/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useRoles } from '../../contexts/PermissionsContext';
 import { can, type Role } from '../../config/permissions';
+import { useEffectiveRoleIds } from '../../hooks/useEffectiveRoleIds';
 import logo from '../../assets/logo.png';
 
 import bcrypt from 'bcryptjs';
@@ -105,7 +106,7 @@ export function Users() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [isNavExpanded, setIsNavExpanded] = useState(false);
   const [isUserSettingsOpen, setIsUserSettingsOpen] = useState(false);
-  const userRoles = user?.roles?.length ? user.roles : (user?.role ? [user.role] : []);
+  const { effectiveRoleIds } = useEffectiveRoleIds();
   let closeMenuTimeout: number | undefined;
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
@@ -152,7 +153,7 @@ export function Users() {
 
   const currentUsername = user?.name ?? '';
   const [isEditing, setIsEditing] = useState(false);
-  const isAdminLike = can(userRoles, 'users.edit.any');
+  const isAdminLike = can(effectiveRoleIds, 'users.edit.any');
 
   const canEditUserDetailsBase = isAdminLike; // Users with edit.any permission
   // Non-admins can edit only their own details when in edit mode
@@ -508,16 +509,16 @@ export function Users() {
   };
 
   // Permission checks for Users page
-  const canArchiveUsers = can(userRoles, 'users.archive');
-  const canDeleteUsers = can(userRoles, 'users.delete');
+  const canArchiveUsers = can(effectiveRoleIds, 'users.archive');
+  const canDeleteUsers = can(effectiveRoleIds, 'users.delete');
   const canExportUsers = isAdminLike; // Export is admin-only for now
-  const canViewArchived = can(userRoles, 'users.view.archived');
+  const canViewArchived = can(effectiveRoleIds, 'users.view.archived');
 
   // Get filtered users based on search and filters
   const getFilteredUsers = () => {
     return users.filter(u => {
       // Hide developer accounts from non-developers unless they have permission
-      if (!can(userRoles, 'users.view.developer') && (u.roles || []).some(r => r.toLowerCase() === 'developer')) {
+      if (!can(effectiveRoleIds, 'users.view.developer') && (u.roles || []).some(r => r.toLowerCase() === 'developer')) {
         return false;
       }
 
@@ -601,7 +602,7 @@ export function Users() {
 
   const visibleUsers = users.filter(u => {
     // Hide developer accounts from non-developers unless they have permission
-    if (!can(userRoles, 'users.view.developer') && (u.role || '').toLowerCase() === 'developer') {
+    if (!can(effectiveRoleIds, 'users.view.developer') && (u.role || '').toLowerCase() === 'developer') {
       return false;
     }
     return true;
@@ -861,7 +862,6 @@ export function Users() {
               isNavExpanded={isNavExpanded}
               setIsNavExpanded={setIsNavExpanded}
               isMobile={isMobile}
-              userRoles={userRoles}
               onMouseEnter={() => {
                 if (!isMobile && closeMenuTimeout) {
                   clearTimeout(closeMenuTimeout);
@@ -1293,7 +1293,7 @@ export function Users() {
                                   backgroundColor: roleData.color
                                 }} />
                                 {roleData.name}
-                                {canEditUserDetails && can(userRoles, 'users.edit.any') && (
+                                {canEditUserDetails && can(effectiveRoleIds, 'users.edit.any') && (
                                   <button
                                     type="button"
                                     onClick={() => setRolesAndSyncIds(selectedRolesForUser.filter(r => r !== roleId))}
@@ -1315,7 +1315,7 @@ export function Users() {
                           })}
                         </div>
                         {/* Role selection dropdown */}
-                        {canEditUserDetails && can(userRoles, 'users.edit.any') && (
+                        {canEditUserDetails && can(effectiveRoleIds, 'users.edit.any') && (
                           <select
                             value=""
                             onChange={(e) => {
@@ -1359,7 +1359,7 @@ export function Users() {
                         name="status"
                         value={formData.status}
                         onChange={handleInputChange}
-                        disabled={!can(userRoles, 'users.edit.any') || !canEditUserDetails}
+                        disabled={!can(effectiveRoleIds, 'users.edit.any') || !canEditUserDetails}
                         style={{
                           width: '100%',
                           padding: '0.5rem 0.75rem',
@@ -1991,7 +1991,7 @@ export function Users() {
                             return (
                               <button
                                 type="button"
-                                disabled={!can(userRoles, 'users.edit.any')}
+                                disabled={!can(effectiveRoleIds, 'users.edit.any')}
                                 onClick={() => {
                                   setStatusConfirmState({
                                     mode: 'table',
@@ -2007,7 +2007,7 @@ export function Users() {
                                   color,
                                   fontSize: '0.75rem',
                                   fontWeight: 600,
-                                  cursor: can(userRoles, 'users.edit.any') ? 'pointer' : 'default',
+                                  cursor: can(effectiveRoleIds, 'users.edit.any') ? 'pointer' : 'default',
                                   textTransform: 'none',
                                   minWidth: '72px',
                                 }}
@@ -2032,7 +2032,7 @@ export function Users() {
                             whiteSpace: 'nowrap'
                           }}>
                             {/* Users with edit.any permission: can edit/archive any user (subject to existing filters) */}
-                            {can(userRoles, 'users.edit.any') && (
+                            {can(effectiveRoleIds, 'users.edit.any') && (
                               <>
                                 <button
                                   onClick={(e) => {
@@ -2054,7 +2054,7 @@ export function Users() {
                                 >
                                   Edit
                                 </button>
-                                {can(userRoles, 'users.archive') && (
+                                {can(effectiveRoleIds, 'users.archive') && (
                                   <button
                                     onClick={async (e) => {
                                       e.stopPropagation();
@@ -2086,7 +2086,7 @@ export function Users() {
                             )}
 
                             {/* Non-admin roles: can only edit their own row, no delete */}
-                            {!can(userRoles, 'users.edit.any') && (user.username === currentUsername || user.fullName === currentUsername) && (
+                            {!can(effectiveRoleIds, 'users.edit.any') && (user.username === currentUsername || user.fullName === currentUsername) && (
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();

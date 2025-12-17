@@ -11,6 +11,8 @@ import { Customers } from './pages/customers';
 import { Returns } from './pages/returns';
 import { AuthProvider } from './contexts/AuthContext';
 import { PermissionsProvider } from './contexts/PermissionsContext';
+import { RolePreviewProvider } from './contexts/RolePreviewContext';
+import { RolePreviewBanner } from './components/RolePreviewBanner';
 import { Login } from './pages/auth/login';
 import { SignUp } from './pages/auth/signup';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -22,34 +24,37 @@ function App() {
   return (
     <AuthProvider>
       <PermissionsProvider>
-        <QueryClientProvider client={queryClient}>
-          <Router>
-            <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<SignUp />} />
+        <RolePreviewProvider>
+          <QueryClientProvider client={queryClient}>
+            <Router>
+              <RolePreviewBanner />
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<SignUp />} />
 
-            {/* Protected Routes - any authenticated user for main pages */}
-            <Route element={<ProtectedRoute />}>
-              <Route path="/inventory" element={<Inventory />} />
-              <Route path="/sales" element={<Sales />} />
-              <Route path="/services" element={<Services />} />
-              <Route path="/customers" element={<Customers />} />
-              <Route path="/returns" element={<Returns />} />
-              <Route path="/transactions/new" element={<NewTransaction />} />
-              <Route path="/transactions" element={<Transactions />} />
-              <Route path="/users" element={<Users />} />
-            </Route>
+                {/* Protected Routes - any authenticated user for main pages */}
+                <Route element={<ProtectedRoute />}>
+                  <Route path="/inventory" element={<Inventory />} />
+                  <Route path="/sales" element={<Sales />} />
+                  <Route path="/services" element={<Services />} />
+                  <Route path="/customers" element={<Customers />} />
+                  <Route path="/returns" element={<Returns />} />
+                  <Route path="/transactions/new" element={<NewTransaction />} />
+                  <Route path="/transactions" element={<Transactions />} />
+                  <Route path="/users" element={<Users />} />
+                </Route>
 
-            {/* Settings - only roles allowed by page.settings.view (superadmin/admin) */}
-            <Route element={<ProtectedRoute requiredPermission="page.settings.view" />}>
-              <Route path="/settings" element={<Settings />} />
-            </Route>
+                {/* Settings - only roles allowed by page.settings.view (superadmin/admin) */}
+                <Route element={<ProtectedRoute requiredPermission="page.settings.view" />}>
+                  <Route path="/settings" element={<Settings />} />
+                </Route>
 
-            <Route path="*" element={<div>404 - Not Found</div>} />
-            </Routes>
-          </Router>
-        </QueryClientProvider>
+                <Route path="*" element={<div>404 - Not Found</div>} />
+              </Routes>
+            </Router>
+          </QueryClientProvider>
+        </RolePreviewProvider>
       </PermissionsProvider>
     </AuthProvider>
   );

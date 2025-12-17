@@ -21,9 +21,10 @@ import {
   FaUndoAlt,
   FaCog
 } from 'react-icons/fa';
-import { Footer } from '@/components/Footer';
+import { Footer } from '../../components/Footer';
 import { useAuth } from '../../contexts/AuthContext';
 import { can } from '../../config/permissions';
+import { useEffectiveRoleIds } from '../../hooks/useEffectiveRoleIds';
 import logo from '../../assets/logo.png';
 import { HeaderDropdown } from '../../components/HeaderDropdown';
 import Switch from '../../components/ui/Switch';
@@ -54,12 +55,9 @@ export function NewTransaction() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
-  // Use roles array with fallback to legacy single role
-  const userRoles = (user?.roles && user.roles.length > 0)
-    ? user.roles
-    : (user?.role ? [user.role] : []);
-  const canCreateTransaction = can(userRoles, 'transactions.create');
-  const canAddCustomer = can(userRoles, 'customers.add');
+  const { effectiveRoleIds } = useEffectiveRoleIds();
+  const canCreateTransaction = can(effectiveRoleIds, 'transactions.create');
+  const canAddCustomer = can(effectiveRoleIds, 'customers.add');
 
   // Block access if user doesn't have transactions.create permission
   useEffect(() => {
@@ -965,7 +963,6 @@ export function NewTransaction() {
               isNavExpanded={isNavExpanded}
               setIsNavExpanded={setIsNavExpanded}
               isMobile={isMobile}
-              userRoles={userRoles}
               onMouseEnter={() => {
                 if (!isMobile && closeMenuTimeout) {
                   clearTimeout(closeMenuTimeout);
@@ -981,8 +978,6 @@ export function NewTransaction() {
             />
           </div>
         </header>
-
-        {/* Main card */}
         <main>
           <div style={{
             backgroundColor: 'rgba(255, 255, 255, 0.95)',

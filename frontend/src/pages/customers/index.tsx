@@ -5,6 +5,7 @@ import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy,
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { can } from '../../config/permissions';
+import { useEffectiveRoleIds } from '../../hooks/useEffectiveRoleIds';
 import logo from '../../assets/logo.png';
 import { HeaderDropdown } from '../../components/HeaderDropdown';
 import Switch from '../../components/ui/Switch';
@@ -23,14 +24,14 @@ export type CustomerRow = {
 export function Customers() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const userRoles = user?.roles?.length ? user.roles : (user?.role ? [user.role] : []);
+  const { effectiveRoleIds } = useEffectiveRoleIds();
 
   // Permission checks using the can utility
-  const canViewArchived = can(userRoles, 'customers.view.archived');
-  const canAddCustomers = can(userRoles, 'customers.add');
-  const canEditCustomers = can(userRoles, 'customers.edit');
-  const canArchiveCustomers = can(userRoles, 'customers.archive');
-  const canDeleteCustomers = can(userRoles, 'customers.delete');
+  const canViewArchived = can(effectiveRoleIds, 'customers.view.archived');
+  const canAddCustomers = can(effectiveRoleIds, 'customers.add');
+  const canEditCustomers = can(effectiveRoleIds, 'customers.edit');
+  const canArchiveCustomers = can(effectiveRoleIds, 'customers.archive');
+  const canDeleteCustomers = can(effectiveRoleIds, 'customers.delete');
 
 
 
@@ -693,7 +694,6 @@ export function Customers() {
                 isNavExpanded={isNavExpanded}
                 setIsNavExpanded={setIsNavExpanded}
                 isMobile={isMobile}
-                userRoles={userRoles}
                 onMouseEnter={() => {
                   if (!isMobile && closeMenuTimeout) {
                     clearTimeout(closeMenuTimeout);

@@ -1,12 +1,15 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FaHome, FaWarehouse, FaTag, FaWrench, FaFileInvoice, FaPlus, FaUser, FaUndoAlt, FaCog } from 'react-icons/fa';
-import { can } from '../config/permissions';
+import { FaHome, FaWarehouse, FaTag, FaWrench, FaFileInvoice, FaPlus, FaUser, FaUndoAlt, FaCog, FaTimes } from 'react-icons/fa';
+import { can, DEVELOPER_ROLE_ID } from '../config/permissions';
+import { useRolePreview } from '../contexts/RolePreviewContext';
+import { useRoles } from '../contexts/PermissionsContext';
+import { useEffectiveRoleIds } from '../hooks/useEffectiveRoleIds';
+import { useState } from 'react';
 
 interface HeaderDropdownProps {
   isNavExpanded: boolean;
   setIsNavExpanded: (expanded: boolean) => void;
   isMobile: boolean;
-  userRoles: string[];
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
 }
@@ -42,7 +45,6 @@ export function HeaderDropdown({
   isNavExpanded,
   setIsNavExpanded,
   isMobile,
-  userRoles,
   onMouseEnter,
   onMouseLeave,
 }: HeaderDropdownProps) {
@@ -50,12 +52,29 @@ export function HeaderDropdown({
   const location = useLocation();
   const currentPath = location.pathname;
 
-  // Check if user can see a path based on permissions
+  const { enabled: previewEnabled, previewRoleId, startPreview, stopPreview } = useRolePreview();
+  const { roles } = useRoles();
+  const { actualRoleIds, effectiveRoleIds } = useEffectiveRoleIds();
+  const [selectedRoleId, setSelectedRoleId] = useState<string>('');
+
+  // Check if user can see a path based on permissions (using effective roles for preview)
   const canSeePath = (path: string) => {
     const key = pathPermissionMap[path];
     if (!key) return true;
-    return can(userRoles, key as any);
+    return can(effectiveRoleIds, key as any);
   };
+
+  // Compute allowed preview roles (only when preview is enabled)
+  const allowedPreviewRoles = previewEnabled ? roles.filter((role) => {
+    const actualPositions = actualRoleIds.map((id) => {
+      if (id === DEVELOPER_ROLE_ID) return 0;
+      const r = roles.find((r) => r.id === id);
+      return typeof r?.position === 'number' ? r.position : Infinity;
+    });
+    const myTopPosition = Math.min(...actualPositions);
+    const rolePosition = role.id === DEVELOPER_ROLE_ID ? 0 : role.position;
+    return rolePosition >= myTopPosition;
+  }) : [];
 
   // Find current page info
   const currentPageItem = allMenuItems.find(item => item.path === currentPath);
@@ -221,6 +240,114 @@ export function HeaderDropdown({
           </span>
         </button>
       ))}
+
+      {/* Role Preview Controls - Only visible when preview is enabled */}
+      {previewEnabled && (
+        <>
+          <div
+            style={{
+              height: '1px',
+              backgroundColor: '#e5e7eb',
+              margin: '0.25rem 0',
+            }}
+          />
+          <div
+            style={{
+              padding: '0.75rem 1.25rem',
+              backgroundColor: '#eff6ff',
+            }}
+          >
+            <p
+              style={{
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                color: '#1e40af',
+                margin: '0 0 0.5rem 0',
+              }}
+            >
+              Role Preview Active
+            </p>
+            <p
+              style={{
+                fontSize: '0.7rem',
+                color: '#6b7280',
+                margin: '0 0 0.5rem 0',
+              }}
+            >
+              Viewing as: {roles.find(r => r.id === previewRoleId)?.name || previewRoleId}
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <select
+                value={selectedRoleId}
+                onChange={(e) => setSelectedRoleId(e.target.value)}
+                style={{
+                  padding: '0.4rem 0.5rem',
+                  borderRadius: '0.25rem',
+                  border: '1px solid #d1d5db',
+                  fontSize: '0.8rem',
+                  backgroundColor: 'white',
+                }}
+              >
+                <option value="">Switch role...</option>
+                {allowedPreviewRoles.map((role) => (
+                  <option key={role.id} value={role.id}>
+                    {role.name}
+                  </option>
+                ))}
+              </select>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (selectedRoleId) {
+                      startPreview(selectedRoleId);
+                      setSelectedRoleId('');
+                    }
+                  }}
+                  disabled={!selectedRoleId}
+                  style={{
+                    flex: 1,
+                    padding: '0.4rem 0.6rem',
+                    borderRadius: '0.25rem',
+                    border: 'none',
+                    backgroundColor: selectedRoleId ? '#2563eb' : '#d1d5db',
+                    color: 'white',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    cursor: selectedRoleId ? 'pointer' : 'not-allowed',
+                  }}
+                >
+                  Switch
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    stopPreview();
+                    setIsNavExpanded(false);
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: '0.4rem 0.6rem',
+                    borderRadius: '0.25rem',
+                    border: '1px solid #dc2626',
+                    backgroundColor: '#fef2f2',
+                    color: '#dc2626',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.25rem',
+                  }}
+                >
+                  <FaTimes style={{ fontSize: '0.7rem' }} /> Exit
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

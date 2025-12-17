@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useRoles } from '../contexts/PermissionsContext';
 import { can } from '../config/permissions';
+import { useEffectiveRoleIds } from '../hooks/useEffectiveRoleIds';
 import logo from '../assets/logo.png';
 
 import {
@@ -20,11 +21,7 @@ export function Home() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();  // Moved inside the component
   const { loading: rolesLoading } = useRoles();
-  // Use roles array for permission checks (new Discord-style system)
-  // Fall back to legacy single role if roles array is empty (pre-migration)
-  const userRoles = (user?.roles && user.roles.length > 0) 
-    ? user.roles 
-    : (user?.role ? [user.role] : []);
+  const { effectiveRoleIds } = useEffectiveRoleIds();
 
   const pathPermissionMap: Record<string, string> = {
     '/': 'page.home.view',
@@ -54,12 +51,11 @@ export function Home() {
   const canSeePath = (path: string) => {
     const key = pathPermissionMap[path];
     if (!key) return true;
-    // Use legacy role fallback - can() handles this internally
-    return can(userRoles, key as any);
+    return can(effectiveRoleIds, key as any);
   };
 
   // Show all menu items while loading to prevent empty dashboard flash
-  const menuItems = rolesLoading && userRoles.length === 0
+  const menuItems = rolesLoading && effectiveRoleIds.length === 0
     ? baseMenuItems
     : baseMenuItems.filter((item) => canSeePath(item.path));
 

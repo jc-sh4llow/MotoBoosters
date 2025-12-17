@@ -10,6 +10,8 @@ import { useRoles } from '../contexts/PermissionsContext';
 import { RoleBadge } from '../components/RoleBadge';
 import { HeaderDropdown } from '../components/HeaderDropdown';
 import Switch from '../components/ui/Switch';
+import { useRolePreview } from '../contexts/RolePreviewContext';
+import { useEffectiveRoleIds } from '../hooks/useEffectiveRoleIds';
 
 // Section title color (consistent with other pages)
 const SECTION_TITLE_COLOR = '#1e40af';
@@ -184,23 +186,44 @@ export const Settings: React.FC = () => {
   const [isSavingQrUrl, setIsSavingQrUrl] = useState(false);
   const [qrUrlError, setQrUrlError] = useState<string | null>(null);
 
-  // Use roles array with fallback to legacy single role
-  const userRoles = user?.roles?.length ? user.roles : (user?.role ? [user.role] : []);
+  // Role Preview state
+  const { enabled: previewEnabled, previewRoleId, startPreview, stopPreview } = useRolePreview();
+  const { actualRoleIds, effectiveRoleIds } = useEffectiveRoleIds();
+  const [selectedPreviewRoleId, setSelectedPreviewRoleId] = useState<string>('');
 
-  // Permission-based checks (Developer role automatically has all permissions)
-  const canManageRoles = can(userRoles, 'roles.view');
-  const canCreateRoles = can(userRoles, 'roles.create');
-  const canEditRoles = can(userRoles, 'roles.edit');
-  const canDeleteRoles = can(userRoles, 'roles.delete');
-  const canViewInventory = can(userRoles, 'page.inventory.view');
-  const canViewSales = can(userRoles, 'page.sales.view');
-  const canViewServices = can(userRoles, 'page.services.view');
-  const canViewTransactions = can(userRoles, 'page.transactions.view');
-  const canViewNewTransaction = can(userRoles, 'page.newtransaction.view');
-  const canViewReturns = can(userRoles, 'page.returns.view');
-  const canViewCustomers = can(userRoles, 'page.customers.view');
-  const canViewUsers = can(userRoles, 'page.users.view');
-  const isAdminLike = can(userRoles, 'users.edit.any');
+  // Permission-based checks using effectiveRoleIds (respects role preview)
+  const canManageRoles = can(effectiveRoleIds, 'roles.view');
+  const canCreateRoles = can(effectiveRoleIds, 'roles.create');
+  const canEditRoles = can(effectiveRoleIds, 'roles.edit');
+  const canDeleteRoles = can(effectiveRoleIds, 'roles.delete');
+  const canViewInventory = can(effectiveRoleIds, 'page.inventory.view');
+  const canViewSales = can(effectiveRoleIds, 'page.sales.view');
+  const canViewServices = can(effectiveRoleIds, 'page.services.view');
+  const canViewTransactions = can(effectiveRoleIds, 'page.transactions.view');
+  const canViewNewTransaction = can(effectiveRoleIds, 'page.newtransaction.view');
+  const canViewReturns = can(effectiveRoleIds, 'page.returns.view');
+  const canViewCustomers = can(effectiveRoleIds, 'page.customers.view');
+  const canViewUsers = can(effectiveRoleIds, 'page.users.view');
+  const isAdminLike = can(effectiveRoleIds, 'users.edit.any');
+
+  // Compute allowed preview roles (based on actual roles, not effective)
+  const allowedPreviewRoles = React.useMemo(() => {
+    if (!canManageRoles || actualRoleIds.length === 0) return [];
+
+    // Get user's highest authority (lowest position number)
+    const actualPositions = actualRoleIds.map((id) => {
+      if (id === DEVELOPER_ROLE_ID) return 0;
+      const role = roles.find((r) => r.id === id);
+      return typeof role?.position === 'number' ? role.position : Infinity;
+    });
+    const myTopPosition = Math.min(...actualPositions);
+
+    // Filter roles: only those with position >= myTopPosition (same or lower authority)
+    return roles.filter((role) => {
+      const rolePosition = role.id === DEVELOPER_ROLE_ID ? 0 : role.position;
+      return rolePosition >= myTopPosition;
+    });
+  }, [canManageRoles, actualRoleIds, roles]);
 
   // Toggle section accordion
   const toggleSection = (sectionId: string) => {
@@ -444,7 +467,7 @@ export const Settings: React.FC = () => {
     if (!canEditRoles) return;
 
     const visibleRoles = roles
-      .filter((role) => role.id !== DEVELOPER_ROLE_ID || can(userRoles, 'users.view.developer'))
+      .filter((role) => role.id !== DEVELOPER_ROLE_ID || can(effectiveRoleIds, 'users.view.developer'))
       .sort((a, b) => a.position - b.position);
 
     const idx = visibleRoles.findIndex(r => r.id === roleId);
@@ -841,7 +864,6 @@ export const Settings: React.FC = () => {
                 isNavExpanded={isNavExpanded}
                 setIsNavExpanded={setIsNavExpanded}
                 isMobile={isMobile}
-                userRoles={userRoles}
                 onMouseEnter={() => {
                   if (!isMobile && closeMenuTimeout) {
                     clearTimeout(closeMenuTimeout);
@@ -958,7 +980,7 @@ export const Settings: React.FC = () => {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                           {roles
                             // Hide Developer role from users without users.view.developer permission
-                            .filter((role) => role.id !== DEVELOPER_ROLE_ID || can(userRoles, 'users.view.developer'))
+                            .filter((role) => role.id !== DEVELOPER_ROLE_ID || can(effectiveRoleIds, 'users.view.developer'))
                             .map((role, index, arr) => (
                               <div
                                 key={role.id}
@@ -1067,6 +1089,213 @@ export const Settings: React.FC = () => {
                                 </div>
                               </div>
                             ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Role Preview Section - Accordion */}
+              {canManageRoles && (
+                <div
+                  style={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    borderRadius: '1rem',
+                    boxShadow: '0 8px 32px rgba(15, 23, 42, 0.15)',
+                    overflow: 'hidden',
+                    marginBottom: '1.25rem',
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => toggleSection('rolePreview')}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '1.25rem 1.75rem',
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                    }}
+                  >
+                    <h2 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0, color: SECTION_TITLE_COLOR }}>
+                      Role Preview
+                    </h2>
+                    <FaChevronDown style={{
+                      color: SECTION_TITLE_COLOR,
+                      transition: 'transform 0.2s',
+                      transform: expandedSections.includes('rolePreview') ? 'rotate(180deg)' : 'rotate(0)',
+                    }} />
+                  </button>
+
+                  {expandedSections.includes('rolePreview') && (
+                    <div style={{ padding: '0 1.75rem 1.75rem 1.75rem' }}>
+                      <p
+                        style={{
+                          fontSize: '0.85rem',
+                          color: '#6b7280',
+                          marginBottom: '1rem',
+                        }}
+                      >
+                        Preview how the application appears with a different role. This is a UI-only preview and does not grant actual permissions.
+                      </p>
+
+                      {previewEnabled ? (
+                        <div
+                          style={{
+                            backgroundColor: '#eff6ff',
+                            border: '1px solid #3b82f6',
+                            borderRadius: '0.5rem',
+                            padding: '1rem',
+                            marginBottom: '1rem',
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                            <div>
+                              <p style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1e40af', margin: 0 }}>
+                                Preview Active
+                              </p>
+                              <p style={{ fontSize: '0.8rem', color: '#6b7280', margin: '0.25rem 0 0 0' }}>
+                                Viewing as: {roles.find(r => r.id === previewRoleId)?.name || previewRoleId}
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => stopPreview()}
+                              style={{
+                                padding: '0.5rem 1rem',
+                                borderRadius: '0.375rem',
+                                border: '1px solid #dc2626',
+                                backgroundColor: '#fef2f2',
+                                color: '#dc2626',
+                                fontSize: '0.85rem',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              Exit Preview
+                            </button>
+                          </div>
+                          <div style={{ marginTop: '0.75rem' }}>
+                            <label
+                              style={{
+                                display: 'block',
+                                fontSize: '0.8rem',
+                                fontWeight: 500,
+                                color: '#374151',
+                                marginBottom: '0.5rem',
+                              }}
+                            >
+                              Switch to different role:
+                            </label>
+                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                              <select
+                                value={selectedPreviewRoleId}
+                                onChange={(e) => setSelectedPreviewRoleId(e.target.value)}
+                                style={{
+                                  flex: 1,
+                                  padding: '0.5rem',
+                                  borderRadius: '0.375rem',
+                                  border: '1px solid #d1d5db',
+                                  fontSize: '0.85rem',
+                                }}
+                              >
+                                <option value="">Select a role...</option>
+                                {allowedPreviewRoles.map((role) => (
+                                  <option key={role.id} value={role.id}>
+                                    {role.name} (Position: {role.position})
+                                  </option>
+                                ))}
+                              </select>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (selectedPreviewRoleId) {
+                                    startPreview(selectedPreviewRoleId);
+                                  }
+                                }}
+                                disabled={!selectedPreviewRoleId}
+                                style={{
+                                  padding: '0.5rem 1rem',
+                                  borderRadius: '0.375rem',
+                                  border: 'none',
+                                  backgroundColor: selectedPreviewRoleId ? '#2563eb' : '#d1d5db',
+                                  color: 'white',
+                                  fontSize: '0.85rem',
+                                  fontWeight: 600,
+                                  cursor: selectedPreviewRoleId ? 'pointer' : 'not-allowed',
+                                }}
+                              >
+                                Switch
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          <label
+                            style={{
+                              display: 'block',
+                              fontSize: '0.85rem',
+                              fontWeight: 500,
+                              color: '#374151',
+                              marginBottom: '0.5rem',
+                            }}
+                          >
+                            Select a role to preview:
+                          </label>
+                          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                            <select
+                              value={selectedPreviewRoleId}
+                              onChange={(e) => setSelectedPreviewRoleId(e.target.value)}
+                              style={{
+                                flex: 1,
+                                padding: '0.5rem',
+                                borderRadius: '0.375rem',
+                                border: '1px solid #d1d5db',
+                                fontSize: '0.85rem',
+                              }}
+                            >
+                              <option value="">Select a role...</option>
+                              {allowedPreviewRoles.map((role) => (
+                                <option key={role.id} value={role.id}>
+                                  {role.name} (Position: {role.position})
+                                </option>
+                              ))}
+                            </select>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (selectedPreviewRoleId) {
+                                  startPreview(selectedPreviewRoleId);
+                                }
+                              }}
+                              disabled={!selectedPreviewRoleId}
+                              style={{
+                                padding: '0.5rem 1rem',
+                                borderRadius: '0.375rem',
+                                border: 'none',
+                                backgroundColor: selectedPreviewRoleId ? '#2563eb' : '#d1d5db',
+                                color: 'white',
+                                fontSize: '0.85rem',
+                                fontWeight: 600,
+                                cursor: selectedPreviewRoleId ? 'pointer' : 'not-allowed',
+                              }}
+                            >
+                              Start Preview
+                            </button>
+                          </div>
+                          <p style={{ fontSize: '0.75rem', color: '#6b7280', margin: 0 }}>
+                            You can preview roles at or below your current authority level (Position: {Math.min(...actualRoleIds.map(id => {
+                              if (id === DEVELOPER_ROLE_ID) return 0;
+                              const role = roles.find(r => r.id === id);
+                              return typeof role?.position === 'number' ? role.position : Infinity;
+                            }))}).
+                          </p>
                         </div>
                       )}
                     </div>

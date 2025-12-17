@@ -8,6 +8,7 @@ import { db } from '../../lib/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import logo from '../../assets/logo.png';
 import { can } from '../../config/permissions';
+import { useEffectiveRoleIds } from '../../hooks/useEffectiveRoleIds';
 import Switch from '../../components/ui/Switch';
 
 type TransactionRow = {
@@ -84,12 +85,12 @@ export function Transactions() {
   const [showMonthPicker, setShowMonthPicker] = useState(false);
   const [showYearPicker, setShowYearPicker] = useState(false);
 
-  const userRoles = user?.roles?.length ? user.roles : (user?.role ? [user.role] : []);
-  const canDeleteTransactions = can(userRoles, 'transactions.delete');
-  const canArchiveTransactions = can(userRoles, 'transactions.archive');
-  const canUnarchiveTransactions = can(userRoles, 'transactions.unarchive');
-  const canExportTransactions = can(userRoles, 'transactions.export');
-  const canViewArchived = can(userRoles, 'transactions.view.archived');
+  const { effectiveRoleIds } = useEffectiveRoleIds();
+  const canDeleteTransactions = can(effectiveRoleIds, 'transactions.delete');
+  const canArchiveTransactions = can(effectiveRoleIds, 'transactions.archive');
+  const canUnarchiveTransactions = can(effectiveRoleIds, 'transactions.unarchive');
+  const canExportTransactions = can(effectiveRoleIds, 'transactions.export');
+  const canViewArchived = can(effectiveRoleIds, 'transactions.view.archived');
 
   const loadTransactions = async () => {
     setIsLoading(true);
@@ -604,7 +605,6 @@ export function Transactions() {
                 isNavExpanded={isNavExpanded}
                 setIsNavExpanded={setIsNavExpanded}
                 isMobile={isMobile}
-                userRoles={userRoles}
                 onMouseEnter={() => {
                   if (!isMobile && closeMenuTimeout) {
                     clearTimeout(closeMenuTimeout);

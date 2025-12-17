@@ -5,6 +5,7 @@ import { collection, getDocs, query, where, addDoc, writeBatch, doc, updateDoc }
 import { useAuth } from '../../contexts/AuthContext';
 import { Footer } from '../../components/Footer';
 import { can } from '../../config/permissions';
+import { useEffectiveRoleIds } from '../../hooks/useEffectiveRoleIds';
 import { db } from '../../lib/firebase';
 import logo from '../../assets/logo.png';
 import { HeaderDropdown } from '../../components/HeaderDropdown';
@@ -63,7 +64,7 @@ export const Returns: React.FC = () => {
     document.addEventListener('pointerdown', handlePointerDown);
     return () => document.removeEventListener('pointerdown', handlePointerDown);
   }, [isReturnDetailsExpanded]);
-  const userRoles = user?.roles?.length ? user.roles : (user?.role ? [user.role] : []);
+  const { effectiveRoleIds } = useEffectiveRoleIds();
   const [transactions, setTransactions] = useState<TransactionRow[]>([]);
   const [transactionsLoading, setTransactionsLoading] = useState(false);
   const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null);
@@ -116,13 +117,13 @@ export const Returns: React.FC = () => {
     }>
   >([]);
 
-  const canProcessReturns = can(userRoles, 'returns.process');
-  const canViewArchivedReturns = can(userRoles, 'returns.view.archived');
-  const canArchiveReturns = can(userRoles, 'returns.archive');
-  const canUnarchiveReturns = can(userRoles, 'returns.unarchive');
-  const canDeleteReturns = can(userRoles, 'returns.delete');
-  const canExportReturns = can(userRoles, 'returns.export');
-  const canViewReturnsPage = can(userRoles, 'page.returns.view');
+  const canProcessReturns = can(effectiveRoleIds, 'returns.process');
+  const canViewArchivedReturns = can(effectiveRoleIds, 'returns.view.archived');
+  const canArchiveReturns = can(effectiveRoleIds, 'returns.archive');
+  const canUnarchiveReturns = can(effectiveRoleIds, 'returns.unarchive');
+  const canDeleteReturns = can(effectiveRoleIds, 'returns.delete');
+  const canExportReturns = can(effectiveRoleIds, 'returns.export');
+  const canViewReturnsPage = can(effectiveRoleIds, 'page.returns.view');
 
 
 
@@ -974,7 +975,6 @@ export const Returns: React.FC = () => {
                 isNavExpanded={isNavExpanded}
                 setIsNavExpanded={setIsNavExpanded}
                 isMobile={isMobile}
-                userRoles={userRoles}
                 onMouseEnter={() => {
                   if (!isMobile && closeMenuTimeout) {
                     clearTimeout(closeMenuTimeout);

@@ -8,6 +8,7 @@ import { db } from '../../lib/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import logo from '../../assets/logo.png';
 import { can } from '../../config/permissions';
+import { useEffectiveRoleIds } from '../../hooks/useEffectiveRoleIds';
 import { HeaderDropdown } from '../../components/HeaderDropdown';
 import Switch from '../../components/ui/Switch';
 
@@ -34,15 +35,15 @@ export function Inventory() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
-  const userRoles = user?.roles?.length ? user.roles : (user?.role ? [user.role] : []);
-  const canAddInventory = can(userRoles, 'inventory.add');
-  const canEditInventory = can(userRoles, 'inventory.edit');
-  const canViewPurchasePrice = can(userRoles, 'inventory.view.purchaseprice');
-  const canViewArchived = can(userRoles, 'inventory.view.archived');
-  const canExportInventory = can(userRoles, 'inventory.export');
-  const canAddStockMultiple = can(userRoles, 'inventory.addstock.multiple');
-  const canArchiveInventory = can(userRoles, 'inventory.archive');
-  const canDeleteInventory = can(userRoles, 'inventory.delete');
+  const { effectiveRoleIds } = useEffectiveRoleIds();
+  const canAddInventory = can(effectiveRoleIds, 'inventory.add');
+  const canEditInventory = can(effectiveRoleIds, 'inventory.edit');
+  const canViewPurchasePrice = can(effectiveRoleIds, 'inventory.view.purchaseprice');
+  const canViewArchived = can(effectiveRoleIds, 'inventory.view.archived');
+  const canExportInventory = can(effectiveRoleIds, 'inventory.export');
+  const canAddStockMultiple = can(effectiveRoleIds, 'inventory.addstock.multiple');
+  const canArchiveInventory = can(effectiveRoleIds, 'inventory.archive');
+  const canDeleteInventory = can(effectiveRoleIds, 'inventory.delete');
 
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [isNavExpanded, setIsNavExpanded] = useState(false);
@@ -1926,7 +1927,6 @@ export function Inventory() {
               isNavExpanded={isNavExpanded}
               setIsNavExpanded={setIsNavExpanded}
               isMobile={isMobile}
-              userRoles={userRoles}
               onMouseEnter={() => {
                 if (!isMobile && closeMenuTimeout) {
                   clearTimeout(closeMenuTimeout);

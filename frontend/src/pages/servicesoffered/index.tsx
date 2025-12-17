@@ -7,6 +7,7 @@ import { db } from '../../lib/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import logo from '../../assets/logo.png';
 import { can } from '../../config/permissions';
+import { useEffectiveRoleIds } from '../../hooks/useEffectiveRoleIds';
 import { HeaderDropdown } from '../../components/HeaderDropdown';
 import Switch from '../../components/ui/Switch';
 
@@ -25,16 +26,16 @@ export function Services() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
-  const userRoles = user?.roles?.length ? user.roles : (user?.role ? [user.role] : []);
+  const { effectiveRoleIds } = useEffectiveRoleIds();
 
   // Permission checks
-  const canViewArchived = can(userRoles, 'services.view.archived');
-  const canAddServices = can(userRoles, 'services.add');
-  const canEditServices = can(userRoles, 'services.edit');
-  const canArchiveServices = can(userRoles, 'services.archive');
-  const canDeleteServices = can(userRoles, 'services.delete');
-  const canToggleStatus = can(userRoles, 'services.toggle.status');
-  const canExportServices = can(userRoles, 'services.export');
+  const canViewArchived = can(effectiveRoleIds, 'services.view.archived');
+  const canAddServices = can(effectiveRoleIds, 'services.add');
+  const canEditServices = can(effectiveRoleIds, 'services.edit');
+  const canArchiveServices = can(effectiveRoleIds, 'services.archive');
+  const canDeleteServices = can(effectiveRoleIds, 'services.delete');
+  const canToggleStatus = can(effectiveRoleIds, 'services.toggle.status');
+  const canExportServices = can(effectiveRoleIds, 'services.export');
 
   const [isDetailsVisible, setIsDetailsVisible] = useState(false);
   const [shouldShowDetails, setShouldShowDetails] = useState(false);
@@ -732,7 +733,6 @@ export function Services() {
               isNavExpanded={isNavExpanded}
               setIsNavExpanded={setIsNavExpanded}
               isMobile={isMobile}
-              userRoles={userRoles}
               onMouseEnter={() => {
                 if (!isMobile && closeMenuTimeout) {
                   clearTimeout(closeMenuTimeout);

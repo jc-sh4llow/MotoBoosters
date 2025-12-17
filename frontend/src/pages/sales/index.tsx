@@ -50,8 +50,6 @@ export function Sales() {
 
   const [firestoreSales, setFirestoreSales] = useState<any[]>([]);
 
-  const userRoles = user?.roles?.length ? user.roles : (user?.role ? [user.role] : []);
-
   // Sample data - used as fallback if Firestore has no data
   const salesData = [
     // Parts Only
@@ -506,7 +504,6 @@ export function Sales() {
                 isNavExpanded={isNavExpanded}
                 setIsNavExpanded={setIsNavExpanded}
                 isMobile={isMobile}
-                userRoles={userRoles}
                 onMouseEnter={() => {
                   if (!isMobile && closeMenuTimeout) {
                     clearTimeout(closeMenuTimeout);

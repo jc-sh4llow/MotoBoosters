@@ -731,23 +731,6 @@ export function Users() {
                   style={{
                     height: '100%',
                     width: 'auto',
-                    objectFit: 'contain'
-                  }}
-                />
-              </div>
-
-              <h1 style={{
-                fontSize: '1.875rem',
-                fontWeight: 'bold',
-                color: '#1e40af',
-                margin: 0,
-              }}>
-                Users
-              </h1>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginLeft: '1rem' }}>
-                <span style={{ color: '#374151', fontSize: '0.9rem' }}>
-                  Welcome, {user?.name || 'Guest'}
-                </span>
               </div>
             </div>
 
@@ -925,7 +908,7 @@ export function Users() {
                       margin: 0,
                       fontSize: '1.125rem',
                       fontWeight: 600,
-                      color: '#1e40af',
+                      color: 'var(--text-primary)',
                       textAlign: 'left'
                     }}
                   >

@@ -570,7 +570,7 @@ export function Customers() {
               <h1 style={{
                 fontSize: '1.875rem',
                 fontWeight: 'bold',
-                color: '#1e40af',
+                color: 'var(--text-primary)',
                 margin: 0,
               }}>
                 Customers
@@ -718,7 +718,7 @@ export function Customers() {
         >
           {/* Action Bar */}
           <section style={{ marginBottom: '1rem' }}>
-            <div style={{ backgroundColor: 'white', borderRadius: '0.5rem', padding: '1rem', border: '1px solid #e5e7eb' }}>
+            <div style={{ backgroundColor: 'var(--surface-elevated)', borderRadius: '0.5rem', padding: '1rem', border: '1px solid var(--border)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: showFilters ? '1rem' : 0 }}>
                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                   {canEditCustomers && (
@@ -1013,11 +1013,11 @@ export function Customers() {
                 <div
                   data-details-section
                   style={{
-                    backgroundColor: 'white',
+                    backgroundColor: 'var(--surface-elevated)',
                     backdropFilter: 'blur(12px)',
                     borderRadius: '0.5rem',
                     padding: '1.5rem',
-                    border: '1px solid #e5e7eb',
+                    border: '1px solid var(--border)',
                     boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.15)',
                     height: 'fit-content',
                     position: 'sticky',
@@ -1033,7 +1033,7 @@ export function Customers() {
                 >
                   <h2
                     style={{
-                      color: '#1e40af',
+                      color: 'var(--text-primary)',
                       marginBottom: '1.5rem',
                       fontSize: '1.25rem',
                       fontWeight: '600',
@@ -1050,7 +1050,7 @@ export function Customers() {
                           marginBottom: '0.5rem',
                           fontSize: '0.875rem',
                           fontWeight: '500',
-                          color: '#374151',
+                          color: 'var(--field-label-text)',
                         }}
                       >
                         Customer ID
@@ -1078,7 +1078,7 @@ export function Customers() {
                           marginBottom: '0.5rem',
                           fontSize: '0.875rem',
                           fontWeight: '500',
-                          color: '#374151',
+                          color: 'var(--field-label-text)',
                         }}
                       >
                         Customer Name{customersRequiredFields.customerName ? ' *' : ''}
@@ -1098,8 +1098,8 @@ export function Customers() {
                           padding: '0.5rem 0.75rem',
                           borderRadius: '0.375rem',
                           border: '1px solid #d1d5db',
-                          backgroundColor: 'white',
-                          color: '#111827',
+                          backgroundColor: 'var(--surface-elevated)',
+                          color: 'var(--text-primary)',
                         }}
                       />
                     </div>
@@ -1112,7 +1112,7 @@ export function Customers() {
                           marginBottom: '0.5rem',
                           fontSize: '0.875rem',
                           fontWeight: '500',
-                          color: '#374151',
+                          color: 'var(--field-label-text)',
                         }}
                       >
                         Contact Number{customersRequiredFields.contactNumber ? ' *' : ''}
@@ -1131,8 +1131,8 @@ export function Customers() {
                           padding: '0.5rem 0.75rem',
                           borderRadius: '0.375rem',
                           border: '1px solid #d1d5db',
-                          backgroundColor: 'white',
-                          color: '#111827',
+                          backgroundColor: 'var(--surface-elevated)',
+                          color: 'var(--text-primary)',
                         }}
                       />
                     </div>
@@ -1145,7 +1145,7 @@ export function Customers() {
                           marginBottom: '0.5rem',
                           fontSize: '0.875rem',
                           fontWeight: '500',
-                          color: '#374151',
+                          color: 'var(--field-label-text)',
                         }}
                       >
                         Email{customersRequiredFields.email ? ' *' : ''}
@@ -1164,8 +1164,8 @@ export function Customers() {
                           padding: '0.5rem 0.75rem',
                           borderRadius: '0.375rem',
                           border: '1px solid #d1d5db',
-                          backgroundColor: 'white',
-                          color: '#111827',
+                          backgroundColor: 'var(--surface-elevated)',
+                          color: 'var(--text-primary)',
                         }}
                       />
                     </div>
@@ -1178,7 +1178,7 @@ export function Customers() {
                           marginBottom: '0.5rem',
                           fontSize: '0.875rem',
                           fontWeight: '500',
-                          color: '#374151',
+                          color: 'var(--field-label-text)',
                         }}
                       >
                         Address{customersRequiredFields.address ? ' *' : ''}
@@ -1197,8 +1197,8 @@ export function Customers() {
                           padding: '0.5rem 0.75rem',
                           borderRadius: '0.375rem',
                           border: '1px solid #d1d5db',
-                          backgroundColor: 'white',
-                          color: '#111827',
+                          backgroundColor: 'var(--surface-elevated)',
+                          color: 'var(--text-primary)',
                           resize: 'vertical',
                           minHeight: '4.5rem',
                         }}
@@ -1213,7 +1213,7 @@ export function Customers() {
                           marginBottom: '0.5rem',
                           fontSize: '0.875rem',
                           fontWeight: '500',
-                          color: '#374151',
+                          color: 'var(--field-label-text)',
                         }}
                       >
                         Vehicle Type(s){customersRequiredFields.vehicleType ? ' *' : ''}
@@ -1284,7 +1284,7 @@ export function Customers() {
                             style={{
                               padding: '0.5rem 1rem',
                               backgroundColor: 'white',
-                              color: '#374151',
+                              color: 'var(--field-label-text)',
                               border: '1px solid #d1d5db',
                               borderRadius: '0.375rem',
                               fontWeight: '500',

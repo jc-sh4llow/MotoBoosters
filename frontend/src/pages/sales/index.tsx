@@ -380,7 +380,7 @@ export function Sales() {
               <h1 style={{
                 fontSize: '1.875rem',
                 fontWeight: 'bold',
-                color: '#1e40af',
+                color: 'var(--text-primary)',
                 margin: 0,
               }}>
                 Item Sales
@@ -523,7 +523,7 @@ export function Sales() {
 
         <main>
           <div style={{
-            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+            backgroundColor: 'var(--surface)',
             borderRadius: '1rem',
             padding: '2rem',
             boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
@@ -531,11 +531,11 @@ export function Sales() {
             {/* Action Bar - matching inventory page style */}
             <section style={{ marginBottom: '2rem' }}>
               <div style={{
-                backgroundColor: 'white',
+                backgroundColor: 'var(--surface-elevated)',
                 borderRadius: '0.5rem',
                 padding: '1rem',
                 marginBottom: '1rem',
-                border: '1px solid #e5e7eb'
+                border: '1px solid var(--border)'
               }}>
                 <div style={{
                   display: 'flex',
@@ -764,10 +764,10 @@ export function Sales() {
                             top: '100%',
                             left: 0,
                             zIndex: 1000,
-                            backgroundColor: 'white',
+                            backgroundColor: 'var(--surface-elevated)',
                             borderRadius: '0.5rem',
                             boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                            border: '1px solid #e5e7eb',
+                            border: '1px solid var(--border)',
                             padding: '1rem',
                             marginTop: '0.25rem',
                             minWidth: '300px'
@@ -775,7 +775,7 @@ export function Sales() {
                             {/* Date inputs row */}
                             <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
                               <div style={{ flex: 1 }}>
-                                <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.75rem', color: '#4b5563' }}>Start</label>
+                                <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.75rem', color: 'var(--field-label-text)' }}>Start</label>
                                 <input
                                   type="text"
                                   readOnly
@@ -786,8 +786,8 @@ export function Sales() {
                                     padding: '0.4rem',
                                     borderRadius: '0.375rem',
                                     border: selectingDate === 'start' ? '2px solid #1e40af' : '1px solid #d1d5db',
-                                    backgroundColor: 'white',
-                                    color: customStart ? '#111827' : '#9ca3af',
+                                    backgroundColor: 'var(--surface-elevated)',
+                                    color: customStart ? 'var(--text-primary)' : '#9ca3af',
                                     fontSize: '0.8rem',
                                     cursor: 'pointer',
                                     boxSizing: 'border-box'
@@ -795,7 +795,7 @@ export function Sales() {
                                 />
                               </div>
                               <div style={{ flex: 1 }}>
-                                <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.75rem', color: '#4b5563' }}>End</label>
+                                <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.75rem', color: 'var(--field-label-text)' }}>End</label>
                                 <input
                                   type="text"
                                   readOnly
@@ -806,8 +806,8 @@ export function Sales() {
                                     padding: '0.4rem',
                                     borderRadius: '0.375rem',
                                     border: selectingDate === 'end' ? '2px solid #1e40af' : '1px solid #d1d5db',
-                                    backgroundColor: 'white',
-                                    color: customEnd ? '#111827' : '#9ca3af',
+                                    backgroundColor: 'var(--surface-elevated)',
+                                    color: customEnd ? 'var(--text-primary)' : '#9ca3af',
                                     fontSize: '0.8rem',
                                     cursor: 'pointer',
                                     boxSizing: 'border-box'
@@ -826,7 +826,7 @@ export function Sales() {
                                   background: 'none',
                                   border: 'none',
                                   cursor: canGoPrev ? 'pointer' : 'not-allowed',
-                                  color: canGoPrev ? '#374151' : '#d1d5db',
+                                  color: canGoPrev ? 'var(--text-primary)' : '#d1d5db',
                                   fontSize: '1rem',
                                   padding: '0.25rem 0.5rem'
                                 }}
@@ -1181,7 +1181,7 @@ export function Sales() {
                 fontSize: '1.25rem',
                 fontWeight: '600',
                 marginBottom: '1rem',
-                color: '#1e40af'
+                color: 'var(--text-primary)'
               }}>
                 {activeTab === 'all' && 'Overall Sales Summary'}
                 {activeTab === 'parts' && 'Parts Only Sales Summary'}
@@ -1201,7 +1201,7 @@ export function Sales() {
                   { title: 'Total Revenue', value: `₱${summaryData.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, color: '#8b5cf6' }
                 ].map((item, index) => (
                   <div key={index} style={{
-                    backgroundColor: 'white',
+                    backgroundColor: 'var(--surface-elevated)',
                     borderRadius: '0.5rem',
                     padding: '1.25rem',
                     boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
@@ -1209,7 +1209,7 @@ export function Sales() {
                   }}>
                     <p style={{
                       fontSize: '0.875rem',
-                      color: '#6b7280',
+                      color: 'var(--field-label-text)',
                       margin: '0 0 0.5rem 0'
                     }}>
                       {item.title}
@@ -1217,7 +1217,7 @@ export function Sales() {
                     <p style={{
                       fontSize: '1.5rem',
                       fontWeight: '600',
-                      color: '#1f2937',
+                      color: 'var(--text-primary)',
                       margin: 0
                     }}>
                       {item.value}
@@ -1232,7 +1232,7 @@ export function Sales() {
               <h2 style={{
                 fontSize: '1.25rem',
                 fontWeight: '600',
-                color: '#1e40af',
+                color: 'var(--text-primary)',
                 marginBottom: '1rem'
               }}>
                 Sales Detail Records
@@ -1409,7 +1409,7 @@ export function Sales() {
             zIndex: 2000
           }}>
             <div style={{
-              backgroundColor: 'white',
+              backgroundColor: 'var(--surface-elevated)',
               borderRadius: '0.75rem',
               padding: '1.5rem',
               width: '100%',
@@ -1419,7 +1419,7 @@ export function Sales() {
               flexDirection: 'column',
               boxShadow: '0 10px 25px rgba(0,0,0,0.2)'
             }}>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0, marginBottom: '1rem', color: '#111827' }}>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0, marginBottom: '1rem', color: 'var(--text-primary)' }}>
                 Select Customer
               </h3>
               <div style={{ position: 'relative', marginBottom: '1rem' }}>
@@ -1434,8 +1434,8 @@ export function Sales() {
                     padding: '0.5rem 0.5rem 0.5rem 2.5rem',
                     borderRadius: '0.375rem',
                     border: '1px solid #d1d5db',
-                    backgroundColor: 'white',
-                    color: '#111827',
+                    backgroundColor: 'var(--surface-elevated)',
+                    color: 'var(--text-primary)',
                     boxSizing: 'border-box'
                   }}
                 />
@@ -1461,11 +1461,11 @@ export function Sales() {
                         padding: '0.75rem 1rem',
                         cursor: 'pointer',
                         borderBottom: '1px solid #e5e7eb',
-                        backgroundColor: customerFilter === name ? '#eff6ff' : 'white',
+                        backgroundColor: customerFilter === name ? '#eff6ff' : 'var(--surface-elevated)',
                         transition: 'background-color 0.15s'
                       }}
-                      onMouseOver={(e) => { if (customerFilter !== name) e.currentTarget.style.backgroundColor = '#f9fafb'; }}
-                      onMouseOut={(e) => { if (customerFilter !== name) e.currentTarget.style.backgroundColor = 'white'; }}
+                      onMouseOver={(e) => { if (customerFilter !== name) e.currentTarget.style.backgroundColor = 'var(--surface-hover)'; }}
+                      onMouseOut={(e) => { if (customerFilter !== name) e.currentTarget.style.backgroundColor = 'var(--surface-elevated)'; }}
                     >
                       {name}
                     </div>
@@ -1512,7 +1512,7 @@ export function Sales() {
             zIndex: 2000
           }}>
             <div style={{
-              backgroundColor: 'white',
+              backgroundColor: 'var(--surface-elevated)',
               borderRadius: '0.75rem',
               padding: '1.5rem',
               width: '100%',
@@ -1522,7 +1522,7 @@ export function Sales() {
               flexDirection: 'column',
               boxShadow: '0 10px 25px rgba(0,0,0,0.2)'
             }}>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0, marginBottom: '1rem', color: '#111827' }}>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0, marginBottom: '1rem', color: 'var(--text-primary)' }}>
                 Select Item
               </h3>
               <div style={{ position: 'relative', marginBottom: '1rem' }}>
@@ -1537,8 +1537,8 @@ export function Sales() {
                     padding: '0.5rem 0.5rem 0.5rem 2.5rem',
                     borderRadius: '0.375rem',
                     border: '1px solid #d1d5db',
-                    backgroundColor: 'white',
-                    color: '#111827',
+                    backgroundColor: 'var(--surface-elevated)',
+                    color: 'var(--text-primary)',
                     boxSizing: 'border-box'
                   }}
                 />
@@ -1564,11 +1564,11 @@ export function Sales() {
                         padding: '0.75rem 1rem',
                         cursor: 'pointer',
                         borderBottom: '1px solid #e5e7eb',
-                        backgroundColor: itemFilter === code ? '#eff6ff' : 'white',
+                        backgroundColor: itemFilter === code ? '#eff6ff' : 'var(--surface-elevated)',
                         transition: 'background-color 0.15s'
                       }}
-                      onMouseOver={(e) => { if (itemFilter !== code) e.currentTarget.style.backgroundColor = '#f9fafb'; }}
-                      onMouseOut={(e) => { if (itemFilter !== code) e.currentTarget.style.backgroundColor = 'white'; }}
+                      onMouseOver={(e) => { if (itemFilter !== code) e.currentTarget.style.backgroundColor = 'var(--surface-hover)'; }}
+                      onMouseOut={(e) => { if (itemFilter !== code) e.currentTarget.style.backgroundColor = 'var(--surface-elevated)'; }}
                     >
                       {code}
                     </div>
@@ -1591,7 +1591,7 @@ export function Sales() {
                     padding: '0.5rem 1rem',
                     borderRadius: '0.375rem',
                     border: '1px solid #d1d5db',
-                    backgroundColor: 'white',
+                    backgroundColor: 'var(--surface-elevated)',
                     color: '#374151',
                     cursor: 'pointer'
                   }}
@@ -1604,5 +1604,4 @@ export function Sales() {
         )}
       </div>
     </div>
-  );
 }

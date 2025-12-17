@@ -1645,7 +1645,7 @@ export function Transactions() {
                       maxHeight: '80vh',
                       overflowY: 'auto',
                       boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
-                      color: '#111827'
+                      color: 'var(--text-primary)'
                     }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                         <h3 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0 }}>
@@ -1666,36 +1666,36 @@ export function Transactions() {
                       </div>
 
                       {/* Basic info */}
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '0.75rem', marginBottom: '1rem', color: '#111827' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '0.75rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>
                         <div>
-                          <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>Date</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--field-label-text)' }}>Date</div>
                           <div style={{ fontSize: '0.9rem', fontWeight: 500 }}>
                             {new Date(selectedTransaction.date).toLocaleDateString()}
                           </div>
                         </div>
                         <div>
-                          <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>Customer</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--field-label-text)' }}>Customer</div>
                           <div style={{ fontSize: '0.9rem', fontWeight: 500 }}>{selectedTransaction.customer}</div>
                         </div>
                         <div>
-                          <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>Type</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--field-label-text)' }}>Type</div>
                           <div style={{ fontSize: '0.9rem', fontWeight: 500 }}>{selectedTransaction.type}</div>
                         </div>
                         <div>
-                          <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>Status</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--field-label-text)' }}>Status</div>
                           <div style={{ fontSize: '0.9rem', fontWeight: 500 }}>{selectedTransaction.status}</div>
                         </div>
                         <div>
-                          <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>Items</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--field-label-text)' }}>Items</div>
                           <div style={{ fontSize: '0.9rem', fontWeight: 500 }}>{selectedTransaction.itemCount}</div>
                         </div>
 
                         <div>
-                          <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>Payment Type</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--field-label-text)' }}>Payment Type</div>
                           <div style={{ fontSize: '0.9rem', fontWeight: 500 }}>{selectedTransaction.paymentType}</div>
                         </div>
                         <div>
-                          <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>Grand Total</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--field-label-text)' }}>Grand Total</div>
                           <div style={{ fontSize: '1rem', fontWeight: 600 }}>
                             ₱{selectedTransaction.grandTotal.toLocaleString()}
                           </div>
@@ -1704,9 +1704,9 @@ export function Transactions() {
 
                       {/* Line items */}
                       <div>
-                        <h4 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.5rem', color: '#111827' }}>Items in this transaction</h4>
+                        <h4 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.5rem', color: 'var(--text-primary)' }}>Items in this transaction</h4>
                         {selectedTransaction.items && selectedTransaction.items.length > 0 ? (
-                          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem', color: '#111827' }}>
+                          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem', color: 'var(--text-primary)' }}>
                             <thead>
                               <tr>
                                 <th style={{ textAlign: 'left', padding: '0.5rem' }}>Item</th>

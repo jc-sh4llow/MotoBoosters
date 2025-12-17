@@ -606,7 +606,7 @@ export function Services() {
               <h1 style={{
                 fontSize: '1.875rem',
                 fontWeight: 'bold',
-                color: '#1e40af',
+                color: 'var(--text-primary)',
                 margin: 0,
               }}>
                 Services
@@ -754,14 +754,14 @@ export function Services() {
         }}>
           {/* Main Content */}
           <div style={{
-            backgroundColor: 'rgba(255, 255, 255, 0.65)',
+            backgroundColor: 'var(--surface)',
             borderRadius: '1rem',
             padding: '2rem',
             boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
           }}>
             {/* Action Bar */}
             <section style={{ marginBottom: '1rem' }}>
-              <div style={{ backgroundColor: 'white', borderRadius: '0.5rem', padding: '1rem', border: '1px solid #e5e7eb' }}>
+              <div style={{ backgroundColor: 'var(--surface-elevated)', borderRadius: '0.5rem', padding: '1rem', border: '1px solid #e5e7eb' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: showFilters ? '1rem' : 0 }}>
                   <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                     {canExportServices && (
@@ -795,6 +795,9 @@ export function Services() {
                           borderRadius: '0.375rem',
                           border: 'none',
                           cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
                           fontWeight: 500,
                           fontSize: '0.875rem',
                           height: '40px',
@@ -1067,7 +1070,7 @@ export function Services() {
                       marginBottom: '1.5rem',
                       fontSize: '1.25rem',
                       fontWeight: '600',
-                      color: '#1e40af'
+                      color: 'var(--text-primary)'
                     }}>
                       Service Details
                     </h2>
@@ -1079,7 +1082,7 @@ export function Services() {
                           marginBottom: '0.5rem',
                           fontSize: '0.875rem',
                           fontWeight: '500',
-                          color: '#374151'
+                          color: 'var(--field-label-text)'
                         }}>
                           Service ID
                         </label>
@@ -1104,7 +1107,7 @@ export function Services() {
                           marginBottom: '0.5rem',
                           fontSize: '0.875rem',
                           fontWeight: '500',
-                          color: '#374151'
+                          color: 'var(--field-label-text)'
                         }}>
                           Service Name{servicesRequiredFields.serviceName ? ' *' : ''}
                         </label>
@@ -1135,7 +1138,7 @@ export function Services() {
                           marginBottom: '0.5rem',
                           fontSize: '0.875rem',
                           fontWeight: '500',
-                          color: '#374151'
+                          color: 'var(--field-label-text)'
                         }}>
                           Service Price (₱){servicesRequiredFields.servicePrice ? ' *' : ''}
                         </label>
@@ -1168,7 +1171,7 @@ export function Services() {
                           marginBottom: '0.5rem',
                           fontSize: '0.875rem',
                           fontWeight: '500',
-                          color: '#374151'
+                          color: 'var(--field-label-text)'
                         }}>
                           Description{servicesRequiredFields.description ? ' *' : ''}
                         </label>
@@ -1200,7 +1203,7 @@ export function Services() {
                           marginBottom: '0.5rem',
                           fontSize: '0.875rem',
                           fontWeight: '500',
-                          color: '#374151'
+                          color: 'var(--field-label-text)'
                         }}>
                           Vehicle Type(s){servicesRequiredFields.vehicleType ? ' *' : ''}
                         </label>
@@ -1221,7 +1224,7 @@ export function Services() {
                                   cursor: 'pointer'
                                 }}
                               />
-                              <span style={{ fontSize: '0.875rem', color: '#111827' }}>{type}</span>
+                              <span style={{ fontSize: '0.875rem', color: 'var(--text-primary)' }}>{type}</span>
                             </label>
                           ))}
                         </div>
@@ -1276,7 +1279,7 @@ export function Services() {
                                 e.currentTarget.style.borderColor = '#9ca3af';
                               }}
                               onMouseOut={(e) => {
-                                e.currentTarget.style.backgroundColor = 'white';
+                                e.currentTarget.style.backgroundColor = 'var(--surface-elevated)';
                                 e.currentTarget.style.borderColor = '#d1d5db';
                               }}
                             >
@@ -1429,11 +1432,10 @@ export function Services() {
                         }}
                       >
                         <h2 style={{
-                          color: '#111827',
                           marginBottom: '1.5rem',
                           fontSize: '1.25rem',
                           fontWeight: '600',
-                          color: '#1e40af'
+                          color: 'var(--text-primary)'
                         }}>
                           Service Details
                         </h2>
@@ -1445,7 +1447,7 @@ export function Services() {
                               marginBottom: '0.5rem',
                               fontSize: '0.875rem',
                               fontWeight: '500',
-                              color: '#374151'
+                              color: 'var(--field-label-text)'
                             }}>
                               Service ID
                             </label>
@@ -1470,7 +1472,7 @@ export function Services() {
                               marginBottom: '0.5rem',
                               fontSize: '0.875rem',
                               fontWeight: '500',
-                              color: '#374151'
+                              color: 'var(--field-label-text)'
                             }}>
                               Service Name{servicesRequiredFields.serviceName ? ' *' : ''}
                             </label>
@@ -1501,7 +1503,7 @@ export function Services() {
                               marginBottom: '0.5rem',
                               fontSize: '0.875rem',
                               fontWeight: '500',
-                              color: '#374151'
+                              color: 'var(--field-label-text)'
                             }}>
                               Service Price (₱) *
                             </label>
@@ -1534,7 +1536,7 @@ export function Services() {
                               marginBottom: '0.5rem',
                               fontSize: '0.875rem',
                               fontWeight: '500',
-                              color: '#374151'
+                              color: 'var(--field-label-text)'
                             }}>
                               Description
                             </label>
@@ -1566,7 +1568,7 @@ export function Services() {
                               marginBottom: '0.5rem',
                               fontSize: '0.875rem',
                               fontWeight: '500',
-                              color: '#374151'
+                              color: 'var(--field-label-text)'
                             }}>
                               Vehicle Type(s) *
                             </label>
@@ -1587,7 +1589,7 @@ export function Services() {
                                       cursor: 'pointer'
                                     }}
                                   />
-                                  <span style={{ fontSize: '0.875rem', color: '#111827' }}>{type}</span>
+                                  <span style={{ fontSize: '0.875rem', color: 'var(--text-primary)' }}>{type}</span>
                                 </label>
                               ))}
                             </div>
@@ -1773,7 +1775,7 @@ export function Services() {
               )}
               {/* Services Table Section */}
               <div ref={servicesTableRef} style={{
-                backgroundColor: 'rgba(255, 255, 255)',
+                backgroundColor: 'var(--surface-elevated)',
                 backdropFilter: 'blur(12px)',
                 borderRadius: '0.5rem',
                 padding: '1.5rem',
@@ -1801,10 +1803,9 @@ export function Services() {
                   marginBottom: '1.5rem'
                 }}>
                   <h2 style={{
-                    color: 'black',
+                    color: 'var(--text-primary)',
                     fontSize: '1.25rem',
                     fontWeight: '600',
-                    color: '#1e40af'
                   }}>
                     Available Services
                   </h2>
@@ -1816,7 +1817,7 @@ export function Services() {
                     <div style={{
                       display: 'flex',
                       gap: '0.5rem',
-                      color: '#1f2937',
+                      color: 'var(--text-secondary)',
                       fontSize: '0.9rem'
                     }}>
                       <span>Total: {filteredServices.length}</span>
@@ -1842,9 +1843,9 @@ export function Services() {
                         style={{
                           padding: '0.35rem 0.9rem',
                           borderRadius: '9999px',
-                          border: '1px solid #3b82f6',
+                          border: '1px solid white',
                           backgroundColor: 'var(--surface-elevated)',
-                          color: '#1d4ed8',
+                          color: 'white',
                           fontSize: '0.8rem',
                           fontWeight: 500,
                           cursor: 'pointer'
@@ -1987,11 +1988,12 @@ export function Services() {
                                 <span
                                   key={i}
                                   style={{
-                                    backgroundColor: 'rgba(0, 0, 0, 0.05)',
-                                    color: '#111827',
+                                    backgroundColor: 'var(--surface-hover)',
+                                    color: 'var(--text-primary)',
                                     padding: '0.25rem 0.5rem',
                                     borderRadius: '0.25rem',
-                                    fontSize: '0.75rem'
+                                    fontSize: '0.75rem',
+                                    border: '1px solid var(--border)'
                                   }}
                                 >
                                   {type}
@@ -2020,17 +2022,17 @@ export function Services() {
             zIndex: 2000
           }}>
             <div style={{
-              backgroundColor: 'white',
+              backgroundColor: 'var(--surface-elevated)',
               borderRadius: '0.75rem',
               padding: '1.5rem 2rem',
               maxWidth: '500px',
               width: '100%',
               boxShadow: '0 10px 25px rgba(0,0,0,0.2)'
             }}>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0, marginBottom: '0.75rem', color: '#111827' }}>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0, marginBottom: '0.75rem', color: 'var(--text-primary)' }}>
                 {descriptionModalService.name}
               </h3>
-              <p style={{ fontSize: '0.9rem', color: '#111827', marginBottom: '1.5rem' }}>
+              <p style={{ fontSize: '0.9rem', color: 'var(--text-primary)', marginBottom: '1.5rem' }}>
                 {descriptionModalService.description || 'No description provided.'}
               </p>
               <div style={{ textAlign: 'right' }}>
@@ -2058,13 +2060,10 @@ export function Services() {
             position: 'fixed',
             inset: 0,
             backgroundColor: 'rgba(0,0,0,0.45)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
             zIndex: 2200,
           }}>
             <div style={{
-              backgroundColor: 'white',
+              backgroundColor: 'var(--surface-elevated)',
               borderRadius: '0.75rem',
               padding: '1.5rem 2rem',
               maxWidth: '480px',
@@ -2077,13 +2076,13 @@ export function Services() {
                 fontWeight: 600,
                 margin: 0,
                 marginBottom: '0.75rem',
-                color: modalState.tone === 'danger' ? '#b91c1c' : '#111827',
+                color: modalState.tone === 'danger' ? '#b91c1c' : 'var(--text-primary)',
               }}>
                 {modalState.title}
               </h3>
               <p style={{
                 fontSize: '0.9rem',
-                color: '#374151',
+                color: 'var(--text-primary)',
                 margin: 0,
                 marginBottom: '1.25rem',
                 whiteSpace: 'pre-line',
@@ -2139,13 +2138,10 @@ export function Services() {
             position: 'fixed',
             inset: 0,
             backgroundColor: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
             zIndex: 2100
           }}>
             <div style={{
-              backgroundColor: 'white',
+              backgroundColor: 'var(--surface-elevated)',
               borderRadius: '0.75rem',
               padding: '1.5rem 2rem',
               maxWidth: '520px',
@@ -2154,15 +2150,15 @@ export function Services() {
               maxHeight: '80vh',
               overflowY: 'auto'
             }}>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0, marginBottom: '0.75rem', color: '#111827' }}>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0, marginBottom: '0.75rem', color: 'var(--text-primary)' }}>
                 Service Settings
               </h3>
-              <p style={{ fontSize: '0.9rem', color: '#4b5563', marginBottom: '1rem' }}>
+              <p style={{ fontSize: '0.9rem', color: 'var(--field-label-text)', marginBottom: '1rem' }}>
                 Manage the vehicle type options used in the Services module.
               </p>
 
               <div style={{ marginBottom: '1.25rem' }}>
-                <h4 style={{ fontSize: '0.95rem', fontWeight: 600, marginBottom: '0.5rem', color: '#111827' }}>
+                <h4 style={{ fontSize: '0.95rem', fontWeight: 600, marginBottom: '0.5rem', color: 'var(--text-primary)' }}>
                   Vehicle Types
                 </h4>
                 <div style={{
@@ -2214,7 +2210,7 @@ export function Services() {
                     <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                       {vehicleTypeOptions.filter(t => t !== 'All Types').map(type => (
                         <li key={type} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span style={{ fontSize: '0.9rem', color: '#111827' }}>{type}</span>
+                          <span style={{ fontSize: '0.9rem', color: 'var(--text-primary)' }}>{type}</span>
                           <button
                             type="button"
                             onClick={() => handleRemoveVehicleType(type)}

@@ -846,7 +846,7 @@ export const Returns: React.FC = () => {
                 style={{
                   fontSize: '1.75rem',
                   fontWeight: 700,
-                  color: '#1e40af',
+                  color: 'var(--text-primary)',
                   margin: 0,
                 }}
               >
@@ -1006,7 +1006,7 @@ export const Returns: React.FC = () => {
           >
             {/* Action Bar */}
             <section style={{ marginBottom: '1rem' }}>
-              <div style={{ backgroundColor: 'white', borderRadius: '0.5rem', padding: '1rem', border: '1px solid #e5e7eb' }}>
+              <div style={{ backgroundColor: 'var(--surface-elevated)', borderRadius: '0.5rem', padding: '1rem', border: '1px solid var(--border)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: showFilters ? '1rem' : 0 }}>
                   <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                     {canExportReturns && (

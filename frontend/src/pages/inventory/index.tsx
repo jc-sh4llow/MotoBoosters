@@ -1115,7 +1115,7 @@ export function Inventory() {
       >
         <div
           style={{
-            backgroundColor: 'white',
+            backgroundColor: 'var(--surface-elevated)',
             borderRadius: '0.75rem',
             padding: '1.5rem 1.75rem',
             maxWidth: '420px',
@@ -1130,7 +1130,7 @@ export function Inventory() {
               fontWeight: 600,
               margin: 0,
               marginBottom: '0.75rem',
-              color: modalState.variant === 'error' ? '#b91c1c' : '#111827',
+              color: modalState.variant === 'error' ? '#b91c1c' : 'var(--text-primary)',
             }}
           >
             {modalState.title}
@@ -1138,7 +1138,7 @@ export function Inventory() {
           <p
             style={{
               fontSize: '0.9rem',
-              color: '#4b5563',
+              color: 'var(--field-label-text)',
               marginBottom: '1.25rem',
             }}
           >
@@ -1453,7 +1453,7 @@ export function Inventory() {
         >
           <div
             style={{
-              backgroundColor: 'white',
+              backgroundColor: 'var(--surface-elevated)',
               borderRadius: '0.75rem',
               padding: '1.5rem 1.75rem',
               maxWidth: '560px',
@@ -1468,7 +1468,7 @@ export function Inventory() {
                 fontWeight: 600,
                 margin: 0,
                 marginBottom: '0.75rem',
-                color: '#111827',
+                color: 'var(--text-primary)',
               }}
             >
               Add Stock to Multiple Items
@@ -1476,7 +1476,7 @@ export function Inventory() {
             <p
               style={{
                 fontSize: '0.9rem',
-                color: '#4b5563',
+                color: 'var(--field-label-text)',
                 marginBottom: '1rem',
               }}
             >
@@ -3806,7 +3806,7 @@ export function Inventory() {
                   alignItems: 'center',
                   gap: '0.5rem',
                   fontSize: '0.875rem',
-                  color: '#111827',
+                  color: 'var(--table-row-text)',
                   opacity: 0.6,
                 }}
               >
@@ -3820,7 +3820,7 @@ export function Inventory() {
               </div>
 
               {/* Brand */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#111827' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: 'var(--table-row-text)' }}>
                 <Switch
                   checked={itemDetailsRequired.brand}
                   onChange={(checked) => setItemDetailsRequired(prev => ({ ...prev, brand: checked }))}
@@ -3830,7 +3830,7 @@ export function Inventory() {
               </div>
 
               {/* Item Name */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#111827' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: 'var(--table-row-text)' }}>
                 <Switch
                   checked={itemDetailsRequired.itemName}
                   onChange={(checked) => setItemDetailsRequired(prev => ({ ...prev, itemName: checked }))}
@@ -3840,7 +3840,7 @@ export function Inventory() {
               </div>
 
               {/* Item Type */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#111827' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: 'var(--table-row-text)' }}>
                 <Switch
                   checked={itemDetailsRequired.itemType}
                   onChange={(checked) => setItemDetailsRequired(prev => ({ ...prev, itemType: checked }))}
@@ -3850,7 +3850,7 @@ export function Inventory() {
               </div>
 
               {/* Purchase Price */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#111827' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: 'var(--table-row-text)' }}>
                 <Switch
                   checked={itemDetailsRequired.purchasePrice}
                   onChange={(checked) => setItemDetailsRequired(prev => ({ ...prev, purchasePrice: checked }))}
@@ -3860,7 +3860,7 @@ export function Inventory() {
               </div>
 
               {/* SRP */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#111827' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: 'var(--table-row-text)' }}>
                 <Switch
                   checked={itemDetailsRequired.sellingPrice}
                   onChange={(checked) => setItemDetailsRequired(prev => ({ ...prev, sellingPrice: checked }))}
@@ -3870,7 +3870,7 @@ export function Inventory() {
               </div>
 
               {/* Added Stock */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#111827' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: 'var(--table-row-text)' }}>
                 <Switch
                   checked={itemDetailsRequired.addedStock}
                   onChange={(checked) => setItemDetailsRequired(prev => ({ ...prev, addedStock: checked }))}
@@ -3880,7 +3880,7 @@ export function Inventory() {
               </div>
 
               {/* Restock Level */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#111827' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: 'var(--table-row-text)' }}>
                 <Switch
                   checked={itemDetailsRequired.restockLevel}
                   onChange={(checked) => setItemDetailsRequired(prev => ({ ...prev, restockLevel: checked }))}

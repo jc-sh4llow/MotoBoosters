@@ -848,7 +848,7 @@ export function NewTransaction() {
       }}>
         {/* Header */}
         <header style={{
-          backgroundColor: 'rgba(255, 255, 255, 0.92)',
+          backgroundColor: 'var(--surface)',
           backdropFilter: 'blur(12px)',
           borderRadius: '1rem',
           padding: '1rem 2rem',
@@ -892,13 +892,13 @@ export function NewTransaction() {
               <h1 style={{
                 fontSize: '1.875rem',
                 fontWeight: 'bold',
-                color: 'var(--text-primary)',
+                color: 'var(--page-title)',
                 margin: 0,
               }}>
                 New Transaction
               </h1>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <span style={{ color: '#374151', fontSize: '0.9rem' }}>
+                <span style={{ color: 'var(--primary-text)', fontSize: '0.9rem' }}>
                   Welcome, {user?.name || 'Guest'}
                 </span>
               </div>
@@ -912,8 +912,8 @@ export function NewTransaction() {
                   }}
                   style={{
                     backgroundColor: 'transparent',
-                    border: '1px solid #1e40af',
-                    color: '#1e40af',
+                    border: '1px solid var(--logout-button)',
+                    color: 'var(--logout-button)',
                     padding: '0.25rem 0.75rem',
                     borderRadius: '0.25rem',
                     cursor: 'pointer',
@@ -945,7 +945,7 @@ export function NewTransaction() {
                 style={{
                   background: 'transparent',
                   border: 'none',
-                  color: '#1e40af',
+                  color: 'var(--logout-button)',
                   fontSize: '1.5rem',
                   cursor: 'pointer',
                   padding: '0.5rem',
@@ -980,24 +980,25 @@ export function NewTransaction() {
         </header>
         <main>
           <div style={{
-            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+            backgroundColor: 'var(--surface)',
+            backdropFilter: 'blur(12px)',
             borderRadius: '1rem',
             padding: '2rem',
             boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.15)',
-            border: '1px solid rgba(255, 255, 255, 0.18)',
+            border: '1px solid var(--control-border)',
           }}>
 
             {/* Progress Steps */}
             <div className="flex justify-between mb-8">
               {[1, 2, 3].map((stepNum) => (
                 <div key={stepNum} className="flex-1">
-                  <div className={`flex flex-col items-center ${step === stepNum ? 'text-blue-600' : step > stepNum ? 'text-green-600' : 'text-gray-400'
+                  <div className={`flex flex-col items-center ${step === stepNum ? 'text-blue-600 dark:text-white' : step > stepNum ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-white-500'
                     }`}>
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 ${step === stepNum ? 'bg-blue-100' : step > stepNum ? 'bg-green-100' : 'bg-gray-100'
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 ${step === stepNum ? 'bg-blue-100 dark:bg-blue-900/30' : step > stepNum ? 'bg-green-100 dark:bg-green-900/30' : 'bg-gray-100 dark:bg-gray-800'
                       }`}>
                       {step > stepNum ? '✓' : stepNum}
                     </div>
-                    <span className="text-sm font-medium">
+                    <span className="text-sm font-medium text-current">
                       {stepNum === 1 ? 'Customer' : stepNum === 2 ? 'Items' : 'Payment'}
                     </span>
                   </div>
@@ -1006,14 +1007,17 @@ export function NewTransaction() {
             </div>
 
             {/* Form Content */}
-            <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-md p-6">
+            <form onSubmit={handleSubmit} className="rounded-lg shadow-md p-6"
+              style={{
+                backgroundColor: 'var(--surface-elevated)',
+              }}>
               {step === 1 && (
                 <div className="space-y-4">
                   <h2 className="text-lg font-semibold mb-4"
-                    style={{ color: '#1e40af' }}>Customer Information</h2>
+                    style={{ color: 'var(--header-title)' }}>Customer Information</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">
+                      <label className="block text-sm font-medium text[var(--text)]">
                         Name{requiredFields.name && <span style={{ color: '#dc2626' }}> *</span>}
                       </label>
 
@@ -1027,9 +1031,9 @@ export function NewTransaction() {
                             width: '100%',
                             padding: '0.5rem 0.75rem',
                             borderRadius: '0.375rem',
-                            border: '1px solid #d1d5db',
-                            backgroundColor: '#f9fafb',
-                            color: '#111827',
+                            border: '1px solid var(--control-border)',
+                            backgroundColor: 'var(-control-bg)',
+                            color: 'var(--text-muted)',
                           }}
                           className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                           required={requiredFields.name}
@@ -1041,9 +1045,9 @@ export function NewTransaction() {
                           style={{
                             padding: '0.5rem 0.75rem',
                             borderRadius: '0.375rem',
-                            border: '1px solid #d1d5db',
-                            backgroundColor: 'white',
-                            color: '#111827',
+                            border: '1px solid var(--control-border)',
+                            backgroundColor: 'var(--control-bg)',
+                            color: 'var(--control-text)',
                             cursor: 'pointer',
                             minWidth: '2.5rem',
                           }}
@@ -1054,7 +1058,7 @@ export function NewTransaction() {
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">
+                      <label className="block text-sm font-medium text[var(--text)]">
                         Contact Number{requiredFields.contact && <span style={{ color: '#dc2626' }}> *</span>}
                       </label>
 
@@ -1067,16 +1071,16 @@ export function NewTransaction() {
                           width: '100%',
                           padding: '0.5rem 0.75rem',
                           borderRadius: '0.375rem',
-                          border: '1px solid #d1d5db',
-                          backgroundColor: '#f9fafb',
-                          color: '#111827',
+                          border: '1px solid var(--control-border)',
+                          backgroundColor: 'var(-control-bg)',
+                          color: 'var(--text-muted)',
                         }}
                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                         required={requiredFields.contact}
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">
+                      <label className="block text-sm font-medium text[var(--text)]">
                         Email{requiredFields.email && <span style={{ color: '#dc2626' }}> *</span>}
                       </label>
 
@@ -1089,16 +1093,16 @@ export function NewTransaction() {
                           width: '100%',
                           padding: '0.5rem 0.75rem',
                           borderRadius: '0.375rem',
-                          border: '1px solid #d1d5db',
-                          backgroundColor: '#f9fafb',
-                          color: '#111827',
+                          border: '1px solid var(--control-border)',
+                          backgroundColor: 'var(-control-bg)',
+                          color: 'var(--text-muted)',
                         }}
                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                         required={requiredFields.email}
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">
+                      <label className="block text-sm font-medium text[var(--text)]">
                         Handled By{requiredFields.handledBy && <span style={{ color: '#dc2626' }}> *</span>}
                       </label>
 
@@ -1109,9 +1113,9 @@ export function NewTransaction() {
                           width: '100%',
                           padding: '0.5rem 0.75rem',
                           borderRadius: '0.375rem',
-                          border: '1px solid #d1d5db',
-                          backgroundColor: '#f9fafb',
-                          color: '#111827',
+                          border: '1px solid var(--control-border)',
+                          backgroundColor: 'var(-control-bg)',
+                          color: 'var(--text-muted)',
                         }}
                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                         required={requiredFields.handledBy}
@@ -1136,7 +1140,10 @@ export function NewTransaction() {
                         }}
                         size="sm"
                       />
-                      <span className="select-none">
+                      <span className="select-none"
+                        style={{
+                          color: 'var(--text)',
+                        }}>
                         New customer
                       </span>
                     </div>

@@ -901,70 +901,72 @@ export const Settings: React.FC = () => {
                 boxShadow: '0 8px 32px rgba(15, 23, 42, 0.1)',
               }}
             >
-              {/* Theme Settings Section */}
-              <div
-                style={{
-                  backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                  borderRadius: '1rem',
-                  boxShadow: '0 8px 32px rgba(15, 23, 42, 0.15)',
-                  padding: '1.25rem 1.75rem',
-                  marginBottom: '1.25rem',
-                }}
-              >
-                <h2 style={{ fontSize: '1.1rem', fontWeight: 600, margin: '0 0 0.5rem 0', color: SECTION_TITLE_COLOR }}>
-                  Theme
-                </h2>
-                <p style={{ fontSize: '0.85rem', color: '#6b7280', margin: '0 0 1rem 0' }}>
-                  Choose your preferred color scheme for the application.
-                </p>
-                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                  <button
-                    onClick={() => setTheme('light')}
-                    style={{
-                      padding: '0.5rem 1rem',
-                      borderRadius: '0.375rem',
-                      border: theme === 'light' ? '2px solid #2563eb' : '1px solid #d1d5db',
-                      backgroundColor: theme === 'light' ? '#eff6ff' : '#ffffff',
-                      color: theme === 'light' ? '#2563eb' : '#374151',
-                      fontSize: '0.875rem',
-                      fontWeight: theme === 'light' ? 600 : 400,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Light
-                  </button>
-                  <button
-                    onClick={() => setTheme('dark')}
-                    style={{
-                      padding: '0.5rem 1rem',
-                      borderRadius: '0.375rem',
-                      border: theme === 'dark' ? '2px solid #2563eb' : '1px solid #d1d5db',
-                      backgroundColor: theme === 'dark' ? '#eff6ff' : '#ffffff',
-                      color: theme === 'dark' ? '#2563eb' : '#374151',
-                      fontSize: '0.875rem',
-                      fontWeight: theme === 'dark' ? 600 : 400,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Dark
-                  </button>
-                  <button
-                    onClick={() => setTheme('system')}
-                    style={{
-                      padding: '0.5rem 1rem',
-                      borderRadius: '0.375rem',
-                      border: theme === 'system' ? '2px solid #2563eb' : '1px solid #d1d5db',
-                      backgroundColor: theme === 'system' ? '#eff6ff' : '#ffffff',
-                      color: theme === 'system' ? '#2563eb' : '#374151',
-                      fontSize: '0.875rem',
-                      fontWeight: theme === 'system' ? 600 : 400,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    System
-                  </button>
+              {/* Theme Settings Section - Developer Only */}
+              {can(effectiveRoleIds, 'users.view.developer') && (
+                <div
+                  style={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    borderRadius: '1rem',
+                    boxShadow: '0 8px 32px rgba(15, 23, 42, 0.15)',
+                    padding: '1.25rem 1.75rem',
+                    marginBottom: '1.25rem',
+                  }}
+                >
+                  <h2 style={{ fontSize: '1.1rem', fontWeight: 600, margin: '0 0 0.5rem 0', color: SECTION_TITLE_COLOR }}>
+                    Theme
+                  </h2>
+                  <p style={{ fontSize: '0.85rem', color: '#6b7280', margin: '0 0 1rem 0' }}>
+                    Choose your preferred color scheme for the application.
+                  </p>
+                  <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                    <button
+                      onClick={() => setTheme('light')}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        borderRadius: '0.375rem',
+                        border: theme === 'light' ? '2px solid #2563eb' : '1px solid #d1d5db',
+                        backgroundColor: theme === 'light' ? '#eff6ff' : '#ffffff',
+                        color: theme === 'light' ? '#2563eb' : '#374151',
+                        fontSize: '0.875rem',
+                        fontWeight: theme === 'light' ? 600 : 400,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Light
+                    </button>
+                    <button
+                      onClick={() => setTheme('dark')}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        borderRadius: '0.375rem',
+                        border: theme === 'dark' ? '2px solid #2563eb' : '1px solid #d1d5db',
+                        backgroundColor: theme === 'dark' ? '#eff6ff' : '#ffffff',
+                        color: theme === 'dark' ? '#2563eb' : '#374151',
+                        fontSize: '0.875rem',
+                        fontWeight: theme === 'dark' ? 600 : 400,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Dark
+                    </button>
+                    <button
+                      onClick={() => setTheme('system')}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        borderRadius: '0.375rem',
+                        border: theme === 'system' ? '2px solid #2563eb' : '1px solid #d1d5db',
+                        backgroundColor: theme === 'system' ? '#eff6ff' : '#ffffff',
+                        color: theme === 'system' ? '#2563eb' : '#374151',
+                        fontSize: '0.875rem',
+                        fontWeight: theme === 'system' ? 600 : 400,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      System
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Role Management Section - Accordion */}
               {canManageRoles && (

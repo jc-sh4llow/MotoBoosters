@@ -985,20 +985,20 @@ export function NewTransaction() {
             borderRadius: '1rem',
             padding: '2rem',
             boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.15)',
-            border: '1px solid var(--control-border)',
+            border: '1px solid rgba(255, 255, 255, 0.18)',
           }}>
 
             {/* Progress Steps */}
             <div className="flex justify-between mb-8">
               {[1, 2, 3].map((stepNum) => (
                 <div key={stepNum} className="flex-1">
-                  <div className={`flex flex-col items-center ${step === stepNum ? 'text-blue-600 dark:text-white' : step > stepNum ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-white-500'
+                  <div className={`flex flex-col items-center ${step === stepNum ? 'text-blue-600' : step > stepNum ? 'text-green-600' : 'text-gray-400'
                     }`}>
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 ${step === stepNum ? 'bg-blue-100 dark:bg-blue-900/30' : step > stepNum ? 'bg-green-100 dark:bg-green-900/30' : 'bg-gray-100 dark:bg-gray-800'
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 ${step === stepNum ? 'bg-blue-100' : step > stepNum ? 'bg-green-100' : 'bg-gray-100'
                       }`}>
                       {step > stepNum ? '✓' : stepNum}
                     </div>
-                    <span className="text-sm font-medium text-current">
+                    <span className="text-sm font-medium">
                       {stepNum === 1 ? 'Customer' : stepNum === 2 ? 'Items' : 'Payment'}
                     </span>
                   </div>
@@ -1008,9 +1008,9 @@ export function NewTransaction() {
 
             {/* Form Content */}
             <form onSubmit={handleSubmit} className="rounded-lg shadow-md p-6"
-              style={{
-                backgroundColor: 'var(--surface-elevated)',
-              }}>
+                  style={{
+                    backgroundColor: 'var(--surface-elevated)',
+                  }}>
               {step === 1 && (
                 <div className="space-y-4">
                   <h2 className="text-lg font-semibold mb-4"

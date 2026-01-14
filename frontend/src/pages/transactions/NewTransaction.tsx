@@ -2,24 +2,12 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import {
-  FaArrowLeft,
   FaPlus,
   FaMinus,
   FaSearch,
   FaSave,
-  FaFilter,
-  FaRedo,
-  FaFileExcel,
-  FaHome,
   FaBars,
-  FaTag,
-  FaWrench,
-  FaFileInvoice,
-  FaUser,
-  FaTimes,
-  FaWarehouse,
-  FaUndoAlt,
-  FaCog
+  FaTimes
 } from 'react-icons/fa';
 import { Footer } from '../../components/Footer';
 import { useAuth } from '../../contexts/AuthContext';

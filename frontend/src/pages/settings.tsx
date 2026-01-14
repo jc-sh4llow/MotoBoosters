@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaBars, FaWarehouse, FaTag, FaWrench, FaPlus, FaFileInvoice, FaUser, FaUndoAlt, FaSearch, FaTimes, FaPlus as FaPlusIcon, FaTrash, FaEdit, FaChevronDown, FaUpload } from 'react-icons/fa';
+import { FaBars, FaSearch, FaTimes, FaPlus as FaPlusIcon, FaTrash, FaEdit, FaChevronDown } from 'react-icons/fa';
 import { useAuth } from '../contexts/AuthContext';
 import logo from '../assets/logo.png';
 import { can, permissionGroups, DEVELOPER_ROLE_ID, STAFF_ROLE_ID, type PermissionKey, type Role } from '../config/permissions';

@@ -1,5 +1,6 @@
 // In home.tsx
 import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useRoles } from '../contexts/PermissionsContext';
 import { can } from '../config/permissions';
@@ -22,6 +23,8 @@ export function Home() {
   const { user, logout } = useAuth();  // Moved inside the component
   const { loading: rolesLoading } = useRoles();
   const { effectiveRoleIds } = useEffectiveRoleIds();
+
+  const [viewportWidth, setViewportWidth] = useState(window.innerWidth);
 
   const pathPermissionMap: Record<string, string> = {
     '/': 'page.home.view',
@@ -53,6 +56,15 @@ export function Home() {
     if (!key) return true;
     return can(effectiveRoleIds, key as any);
   };
+
+  useEffect(() => {
+    const handleResize = () => {
+      setViewportWidth(window.innerWidth);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Show all menu items while loading to prevent empty dashboard flash
   const menuItems = rolesLoading && effectiveRoleIds.length === 0
@@ -216,7 +228,7 @@ export function Home() {
 
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(3, 1fr)',
+                gridTemplateColumns: viewportWidth <= 479 ? '1fr' : viewportWidth <= 991 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)',
                 gap: '1.5rem',
                 width: '100%'
               }}>

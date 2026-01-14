@@ -52,7 +52,6 @@ export function Inventory() {
   let closeMenuTimeout: number | undefined;
 
   const [isInventorySettingsOpen, setIsInventorySettingsOpen] = useState(false);
-  const [isCompactTable, setIsCompactTable] = useState(window.innerWidth < 1200);
 
   // Select mode state (iOS gallery-style selection)
   const [isSelectMode, setIsSelectMode] = useState(false);
@@ -134,9 +133,7 @@ export function Inventory() {
   const [searchTerm, setSearchTerm] = useState('');
   const itemDetailsRef = useRef<HTMLDivElement | null>(null);
   const itemDetailsToggleRef = useRef<HTMLButtonElement | null>(null);
-  const [isCompactSearchOpen, setIsCompactSearchOpen] = useState(false);
 
-  const isSmallDesktop = !isMobile && isCompactTable;
 
   // Responsive column visibility for full table view
   const showType = viewportWidth >= 992; // Hide on tablet and below
@@ -202,7 +199,6 @@ export function Inventory() {
 
       setViewportWidth(width);
       setIsMobile(mobile);
-      setIsCompactTable(width < 1200);
     };
 
     // run once on mount to set initial state correctly
@@ -1722,155 +1718,51 @@ export function Inventory() {
                 marginRight: '1rem',
               }}
             >
-              {isSmallDesktop ? (
-                <>
-                  {/* Compact search icon button */}
-                  <button
-                    type="button"
-                    onClick={() => setIsCompactSearchOpen(prev => !prev)}
-                    style={{
-                      width: '2.25rem',
-                      height: '2.25rem',
-                      borderRadius: '9999px',
-                      border: '1px solid rgba(255, 255, 255, 0.6)',
-                      backgroundColor: 'var(--surface-elevated)',              // white circle
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
-                    }}
-                  >
-                    <FaSearch style={{ color: '#1f2937', fontSize: '0.95rem' }} />
-                  </button>
-
-                  {/* Compact search popup (right-aligned, below the button) */}
-                  {isCompactSearchOpen && (
-                    <div
-                      style={{
-                        position: 'absolute',
-                        top: '2.75rem',
-                        right: 0,
-                        backgroundColor: 'var(--surface-elevated)',
-                        borderRadius: '0.5rem',
-                        padding: isCompactSearchOpen ? '0.5rem 0.75rem' : '0 0.75rem',
-                        boxShadow: '0 8px 20px rgba(15, 23, 42, 0.25)',
-                        border: '1px solid #e5e7eb',
-                        zIndex: 120,
-                        minWidth: '260px',
-
-                        // animation bits:
-                        opacity: isCompactSearchOpen ? 1 : 0,
-                        transform: isCompactSearchOpen ? 'translateY(0)' : 'translateY(-8px)',
-                        maxHeight: isCompactSearchOpen ? '80px' : '0px',
-                        pointerEvents: isCompactSearchOpen ? 'auto' : 'none',
-                        overflow: 'hidden',
-                        transition: 'opacity 0.18s ease-out, transform 0.18s ease-out, max-height 0.18s ease-out, padding 0.18s ease-out',
-                      }}
-                    >
-                      <div style={{ position: 'relative' }}>
-                        <FaSearch
-                          style={{
-                            position: 'absolute',
-                            left: '10px',
-                            top: '50%',
-                            transform: 'translateY(-50%)',
-                            color: 'var(--text-muted)',
-                            fontSize: '0.9rem',
-                          }}
-                        />
-                        <input
-                          type="text"
-                          placeholder="Search by Brand or Item Name..."
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          autoFocus={isCompactSearchOpen}
-                          style={{
-                            width: '100%',
-                            padding: '0.45rem 2.1rem 0.45rem 2.1rem',
-                            borderRadius: '0.375rem',
-                            border: '1px solid #d1d5db',
-                            backgroundColor: '#f9fafb',
-                            color: '#1f2937',
-                            fontSize: '0.9rem',
-                            outline: 'none',
-                          }}
-                        />
-                        {searchTerm && (
-                          <button
-                            type="button"
-                            onClick={() => setSearchTerm('')}
-                            style={{
-                              position: 'absolute',
-                              right: '8px',
-                              top: '50%',
-                              transform: 'translateY(-50%)',
-                              background: 'transparent',
-                              border: 'none',
-                              color: 'var(--text-muted)',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              padding: '2px',
-                            }}
-                          >
-                            <FaTimes size={12} />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <>
-                  {/* Original full search bar for normal desktop & other sizes */}
-                  <FaSearch
-                    style={{
-                      position: 'absolute',
-                      left: '12px',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      color: 'var(--text-muted)',
-                    }}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Search by Brand or Item Name..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    style={{
-                      padding: '0.5rem 2.5rem 0.5rem 2.5rem',
-                      borderRadius: '0.5rem',
-                      border: '1px solid rgba(255, 255, 255, 0.2)',
-                      backgroundColor: 'rgba(255, 255, 255)',
-                      color: '#1f2937',
-                      width: '350px',
-                      outline: 'none',
-                    }}
-                  />
-                  {searchTerm && (
-                    <button
-                      onClick={() => setSearchTerm('')}
-                      style={{
-                        position: 'absolute',
-                        right: '8px',
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        background: 'transparent',
-                        border: 'none',
-                        color: 'var(--text-muted)',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        padding: '4px',
-                      }}
-                    >
-                      <FaTimes size={14} />
-                    </button>
-                  )}
-                </>
+              {/* Original full search bar for normal desktop & other sizes */}
+              <FaSearch
+                style={{
+                  position: 'absolute',
+                  left: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: 'var(--text-muted)',
+                }}
+              />
+              <input
+                type="text"
+                placeholder="Search by Brand or Item Name..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{
+                  padding: '0.5rem 2.5rem 0.5rem 2.5rem',
+                  borderRadius: '0.5rem',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  backgroundColor: 'rgba(255, 255, 255)',
+                  color: '#1f2937',
+                  width: '350px',
+                  outline: 'none',
+                }}
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  style={{
+                    position: 'absolute',
+                    right: '8px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'transparent',
+                    border: 'none',
+                    color: 'var(--text-muted)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '4px',
+                  }}
+                >
+                  <FaTimes size={14} />
+                </button>
               )}
             </div>
             {/* Right: Logout + Navbar Toggle Button */}
@@ -3386,110 +3278,83 @@ export function Inventory() {
                         color: 'var(--table-row-text)' // Dark text color
                       }}>
                         <thead>
-                          {isCompactTable ? (
-                            <tr style={{ backgroundColor: 'var(--table-header-bg)', borderBottom: '1px solid var(--table-border)', textAlign: 'left', fontSize: '0.875rem', fontWeight: 600, color: 'var(--table-header-text)' }}>
-
-                              {isSelectMode && (
-                                <th style={{ padding: '0.75rem 0.5rem', textAlign: 'center', width: '40px' }}>
-                                  <input
-                                    type="checkbox"
-                                    checked={selectedItems.size === filteredAndSortedItems.length && filteredAndSortedItems.length > 0}
-                                    onChange={(e) => {
-                                      if (e.target.checked) {
-                                        setSelectedItems(new Set(filteredAndSortedItems.map((item: any) => item.docId)));
-                                      } else {
-                                        setSelectedItems(new Set());
-                                      }
-                                    }}
-                                    style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-                                  />
-                                </th>
-                              )}
-                              <th style={{ padding: '0.75rem 1.5rem' }}>ITEM</th>
-                              <th style={{ padding: '0.75rem 1.5rem', textAlign: 'center' }}>SRP</th>
-                              <th style={{ padding: '0.75rem 1.5rem', textAlign: 'center' }}>STATUS</th>
-                              <th style={{ padding: '0.75rem 1.5rem', textAlign: 'center' }}>DISCOUNT / MARKUP</th>
-                              <th style={{ padding: '0.75rem 1.5rem' }}>REMARKS</th>
-                            </tr>
-                          ) : (
-                            <tr style={{ backgroundColor: 'var(--table-header-bg)', borderBottom: '1px solid var(--table-border)', textAlign: 'left', fontSize: '0.875rem', fontWeight: 600, color: 'var(--table-header-text)' }}>
-                              {isSelectMode && (
-                                <th style={{ padding: '0.75rem 0.5rem', textAlign: 'center', width: '40px' }}>
-                                  <input
-                                    type="checkbox"
-                                    checked={selectedItems.size === filteredAndSortedItems.length && filteredAndSortedItems.length > 0}
-                                    onChange={(e) => {
-                                      if (e.target.checked) {
-                                        setSelectedItems(new Set(filteredAndSortedItems.map((item: any) => item.docId)));
-                                      } else {
-                                        setSelectedItems(new Set());
-                                      }
-                                    }}
-                                    style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-                                  />
-                                </th>
-                              )}
-                              <th
-                                style={{ padding: '0.75rem 1.5rem', cursor: 'pointer' }}
-                                onClick={() => handleHeaderSort('brand')}
-                              >
-                                BRAND
+                          <tr style={{ backgroundColor: 'var(--table-header-bg)', borderBottom: '1px solid var(--table-border)', textAlign: 'left', fontSize: '0.875rem', fontWeight: 600, color: 'var(--table-header-text)' }}>
+                            {isSelectMode && (
+                              <th style={{ padding: '0.75rem 0.5rem', textAlign: 'center', width: '40px' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={selectedItems.size === filteredAndSortedItems.length && filteredAndSortedItems.length > 0}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSelectedItems(new Set(filteredAndSortedItems.map((item: any) => item.docId)));
+                                    } else {
+                                      setSelectedItems(new Set());
+                                    }
+                                  }}
+                                  style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                                />
                               </th>
-                              <th
-                                style={{ padding: '0.75rem 1.5rem', cursor: 'pointer' }}
-                                onClick={() => handleHeaderSort('itemName')}
-                              >
-                                ITEM NAME
-                              </th>
+                            )}
+                            <th
+                              style={{ padding: '0.75rem 1.5rem', cursor: 'pointer' }}
+                              onClick={() => handleHeaderSort('brand')}
+                            >
+                              BRAND
+                            </th>
+                            <th
+                              style={{ padding: '0.75rem 1.5rem', cursor: 'pointer' }}
+                              onClick={() => handleHeaderSort('itemName')}
+                            >
+                              ITEM NAME
+                            </th>
+                            <th
+                              style={{ padding: '0.75rem 1.5rem', textAlign: 'center', cursor: 'pointer' }}
+                              onClick={() => handleHeaderSort('type')}
+                            >
+                              TYPE
+                            </th>
+                            {canViewPurchasePrice && (
                               <th
                                 style={{ padding: '0.75rem 1.5rem', textAlign: 'center', cursor: 'pointer' }}
-                                onClick={() => handleHeaderSort('type')}
+                                onClick={() => handleHeaderSort('purchase')}
                               >
-                                TYPE
+                                PURCHASE PRICE
                               </th>
-                              {canViewPurchasePrice && (
-                                <th
-                                  style={{ padding: '0.75rem 1.5rem', textAlign: 'center', cursor: 'pointer' }}
-                                  onClick={() => handleHeaderSort('purchase')}
-                                >
-                                  PURCHASE PRICE
-                                </th>
-                              )}
-                              <th
-                                style={{ padding: '0.75rem 1.5rem', textAlign: 'center', cursor: 'pointer' }}
-                                onClick={() => handleHeaderSort('srp')}
-                              >
-                                SRP
-                              </th>
-                              <th
-                                style={{ padding: '0.75rem 1.5rem', textAlign: 'center', cursor: 'pointer' }}
-                                onClick={() => handleHeaderSort('available')}
-                              >
-                                AVAILABLE STOCK
-                              </th>
-                              <th
-                                style={{ padding: '0.75rem 1.5rem', textAlign: 'center', cursor: 'pointer' }}
-                                onClick={() => handleHeaderSort('sold')}
-                              >
-                                NO. SOLD
-                              </th>
-                              <th
-                                style={{ padding: '0.75rem 1.5rem', textAlign: 'center', cursor: 'pointer' }}
-                                onClick={() => handleHeaderSort('status')}
-                              >
-                                STATUS
-                              </th>
-                              <th
-                                style={{ padding: '0.75rem 1.5rem', textAlign: 'center', cursor: 'pointer' }}
-                                onClick={() => handleHeaderSort('discount')}
-                              >
-                                DISCOUNT / MARKUP
-                              </th>
-                              <th style={{ padding: '0.75rem 1.5rem' }}>
-                                REMARKS
-                              </th>
-                            </tr>
-                          )}
+                            )}
+                            <th
+                              style={{ padding: '0.75rem 1.5rem', textAlign: 'center', cursor: 'pointer' }}
+                              onClick={() => handleHeaderSort('srp')}
+                            >
+                              SRP
+                            </th>
+                            <th
+                              style={{ padding: '0.75rem 1.5rem', textAlign: 'center', cursor: 'pointer' }}
+                              onClick={() => handleHeaderSort('available')}
+                            >
+                              AVAILABLE STOCK
+                            </th>
+                            <th
+                              style={{ padding: '0.75rem 1.5rem', textAlign: 'center', cursor: 'pointer' }}
+                              onClick={() => handleHeaderSort('sold')}
+                            >
+                              NO. SOLD
+                            </th>
+                            <th
+                              style={{ padding: '0.75rem 1.5rem', textAlign: 'center', cursor: 'pointer' }}
+                              onClick={() => handleHeaderSort('status')}
+                            >
+                              STATUS
+                            </th>
+                            <th
+                              style={{ padding: '0.75rem 1.5rem', textAlign: 'center', cursor: 'pointer' }}
+                              onClick={() => handleHeaderSort('discount')}
+                            >
+                              DISCOUNT / MARKUP
+                            </th>
+                            <th style={{ padding: '0.75rem 1.5rem' }}>
+                              REMARKS
+                            </th>
+                          </tr>
                         </thead>
                         <tbody>
                           {filteredAndSortedItems.map((item: any, index: number) => {
@@ -3592,154 +3457,66 @@ export function Inventory() {
                                     />
                                   </td>
                                 )}
-                                {isCompactTable ? (
-                                  <>
-                                    {/* ITEM */}
-                                    <td style={{ padding: '1rem 1.5rem' }}>
-                                      <div style={{ fontWeight: 500 }}>{item.itemName}</div>
-
-                                      {(item.type || item.itemType || item.brand) && (
-                                        <div
-                                          style={{
-                                            fontSize: '0.8rem',
-                                            color: '#6b7280',
-                                            marginTop: '0.15rem',
-                                          }}
-                                        >
-                                          {item.type || item.itemType
-                                            ? `[${item.type || item.itemType}]`
-                                            : null}
-                                          {(item.type || item.itemType) && item.brand ? ' - ' : ''}
-                                          {item.brand || ''}
-                                        </div>
-                                      )}
-                                    </td>
-
-                                    {/* SRP + purchase subtext (RCAB) */}
+                                <>
+                                  {/* Full table view */}
+                                  <td style={{ padding: '1rem 1.5rem' }}>{item.brand}</td>
+                                  <td style={{ padding: '1rem 1.5rem' }}>{item.itemName}</td>
+                                  <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>{item.type || item.itemType}</td>
+                                  {canViewPurchasePrice && (
                                     <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>
-                                      <div>₱{Number(item.sellingPrice ?? 0).toFixed(2)}</div>
-                                      {canViewPurchasePrice && (
-                                        <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.15rem' }}>
-                                          Purchase: ₱{Number(item.purchasePrice ?? 0).toFixed(2)}
-                                        </div>
-                                      )}
+                                      ₱{Number(item.purchasePrice ?? 0).toFixed(2)}
                                     </td>
-
-                                    {/* STATUS + stock subtext */}
-                                    <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>
-                                      <span style={{
-                                        display: 'inline-block',
-                                        padding: '0.25rem 0.75rem',
-                                        borderRadius: '9999px',
-                                        fontSize: '0.75rem',
-                                        fontWeight: 600,
-                                        backgroundColor: statusStyles.bg,
-                                        color: statusStyles.color,
-                                      }}>
-                                        {status}
-                                      </span>
-                                      <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.15rem' }}>
-                                        Stock: {available}
-                                      </div>
-                                    </td>
-
-                                    {/* DISCOUNT */}
-                                    <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>
-                                      {renderDiscountPill(item.defaultDiscount, item.defaultMarkup)}
-                                    </td>
-
-                                    {/* REMARKS */}
-                                    <td style={{ padding: '1rem 1.5rem' }} onClick={e => e.stopPropagation()}>
-                                      <input
-                                        type="text"
-                                        value={tableRemarks[item.itemId] ?? item.remarks ?? ''}
-                                        onChange={(e) => {
-                                          const value = e.target.value;
-                                          setTableRemarks(prev => ({ ...prev, [item.itemId]: value }));
-                                        }}
-                                        onBlur={() => handlePersistRemarks(item)}
-                                        onKeyDown={(e) => {
-                                          if (e.key === 'Enter') {
-                                            e.preventDefault();
-                                            (e.currentTarget as HTMLInputElement).blur();
-                                          }
-                                        }}
-                                        style={{
-                                          width: '100%',
-                                          padding: '0.25rem 0.5rem',
-                                          borderRadius: '0.375rem',
-                                          border: '1px solid var(--table-border)',
-                                          fontSize: '0.8rem',
-                                          backgroundColor: 'var(--table-row-alt-bg)',
-                                          color: 'var(--table-row-text)',
-                                        }}
-                                        placeholder="Add remarks"
-                                        disabled={!canEditInventory}
-                                      />
-                                    </td>
-                                  </>
-                                ) : (
-                                  <>
-                                    {/* Full table view */}
-                                    <td style={{ padding: '1rem 1.5rem' }}>{item.brand}</td>
-                                    <td style={{ padding: '1rem 1.5rem' }}>{item.itemName}</td>
-                                    <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>{item.type || item.itemType}</td>
-                                    {canViewPurchasePrice && (
-                                      <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>
-                                        ₱{Number(item.purchasePrice ?? 0).toFixed(2)}
-                                      </td>
-                                    )}
-                                    <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>
-                                      ₱{Number(item.sellingPrice ?? 0).toFixed(2)}
-                                    </td>
-                                    <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>{available}</td>
-                                    <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>{item.soldCount ?? 0}</td>
-                                    <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>
-                                      <span style={{
-                                        display: 'inline-block',
-                                        padding: '0.25rem 0.75rem',
-                                        borderRadius: '9999px',
-                                        fontSize: '0.75rem',
-                                        fontWeight: 600,
-                                        backgroundColor: statusStyles.bg,
-                                        color: statusStyles.color,
-                                      }}>
-                                        {status}
-                                      </span>
-                                    </td>
-                                    <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>
-                                      {renderDiscountPill(item.defaultDiscount, item.defaultMarkup)}
-                                    </td>
-                                    <td style={{ padding: '1rem 1.5rem' }} onClick={e => e.stopPropagation()}>
-                                      <input
-                                        type="text"
-                                        value={tableRemarks[item.itemId] ?? item.remarks ?? ''}
-                                        onChange={(e) => {
-                                          const value = e.target.value;
-                                          setTableRemarks(prev => ({ ...prev, [item.itemId]: value }));
-                                        }}
-                                        onBlur={() => handlePersistRemarks(item)}
-                                        onKeyDown={(e) => {
-                                          if (e.key === 'Enter') {
-                                            e.preventDefault();
-                                            (e.currentTarget as HTMLInputElement).blur();
-                                          }
-                                        }}
-                                        style={{
-                                          width: '100%',
-                                          padding: '0.25rem 0.5rem',
-                                          borderRadius: '0.375rem',
-                                          border: '1px solid var(--table-border)',
-                                          fontSize: '0.8rem',
-                                          backgroundColor: 'var(--table-row-alt-bg)',
-                                          color: 'var(--table-row-text)',
-                                        }}
-                                        placeholder="Add remarks"
-                                        disabled={!canEditInventory}
-                                      />
-                                    </td>
-                                  </>
-                                )}
+                                  )}
+                                  <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>
+                                    ₱{Number(item.sellingPrice ?? 0).toFixed(2)}
+                                  </td>
+                                  <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>{available}</td>
+                                  <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>{item.soldCount ?? 0}</td>
+                                  <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>
+                                    <span style={{
+                                      display: 'inline-block',
+                                      padding: '0.25rem 0.75rem',
+                                      borderRadius: '9999px',
+                                      fontSize: '0.75rem',
+                                      fontWeight: 600,
+                                      backgroundColor: statusStyles.bg,
+                                      color: statusStyles.color,
+                                    }}>
+                                      {status}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>
+                                    {renderDiscountPill(item.defaultDiscount, item.defaultMarkup)}
+                                  </td>
+                                  <td style={{ padding: '1rem 1.5rem' }} onClick={e => e.stopPropagation()}>
+                                    <input
+                                      type="text"
+                                      value={tableRemarks[item.itemId] ?? item.remarks ?? ''}
+                                      onChange={(e) => {
+                                        const value = e.target.value;
+                                        setTableRemarks(prev => ({ ...prev, [item.itemId]: value }));
+                                      }}
+                                      onBlur={() => handlePersistRemarks(item)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          e.preventDefault();
+                                          (e.currentTarget as HTMLInputElement).blur();
+                                        }
+                                      }}
+                                      style={{
+                                        width: '100%',
+                                        padding: '0.25rem 0.5rem',
+                                        borderRadius: '0.375rem',
+                                        border: '1px solid var(--table-border)',
+                                        fontSize: '0.8rem',
+                                        backgroundColor: 'var(--table-row-alt-bg)',
+                                        color: 'var(--table-row-text)',
+                                      }}
+                                      placeholder="Add remarks"
+                                      disabled={!canEditInventory}
+                                    />
+                                  </td>
+                                </>
                               </tr>
                             );
                           })}

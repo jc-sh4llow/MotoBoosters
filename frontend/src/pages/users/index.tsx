@@ -420,23 +420,16 @@ export function Users() {
       setIsMobile(width < 768);
     };
 
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+window.addEventListener('resize', handleResize);
+return () => window.removeEventListener('resize', handleResize);
+}, []);
 
-  // Responsive breakpoint helpers
-  const isExtraSmall = viewportWidth <= 479;
-  const isSmall = viewportWidth >= 480 && viewportWidth <= 767;
-  const isTablet = viewportWidth >= 768 && viewportWidth <= 991;
-  const isSmallDesktop = viewportWidth >= 992 && viewportWidth <= 1199;
-  const isDesktop = viewportWidth >= 1200;
-
-  // Column visibility based on viewport
-  const showUsername = viewportWidth >= 768; // Hide on mobile
-  const showEmail = viewportWidth >= 992; // Hide on mobile and tablet
-  const showRole = viewportWidth >= 768; // Hide on mobile
-  const showStatus = viewportWidth >= 768; // Hide on mobile
-  const showLastLogin = viewportWidth >= 1200; // Hide on all except desktop
+// Column visibility based on viewport
+const showUsername = viewportWidth >= 768; // Hide on mobile
+const showEmail = viewportWidth >= 992; // Hide on mobile and tablet
+const showRole = viewportWidth >= 768; // Hide on mobile
+const showStatus = viewportWidth >= 768; // Hide on mobile
+const showLastLogin = viewportWidth >= 1200; // Hide on all except desktop
 
   const handleSaveUser = async () => {
     const { docId, userId, username, password, confirmPassword, fullName, email, contactNumber, status, role } = formData;

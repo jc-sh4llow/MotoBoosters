@@ -85,6 +85,8 @@ export function Transactions() {
   const [showMonthPicker, setShowMonthPicker] = useState(false);
   const [showYearPicker, setShowYearPicker] = useState(false);
 
+  const [sortBy, setSortBy] = useState('date-desc');
+
   const { effectiveRoleIds } = useEffectiveRoleIds();
   const canDeleteTransactions = can(effectiveRoleIds, 'transactions.delete');
   const canArchiveTransactions = can(effectiveRoleIds, 'transactions.archive');
@@ -324,8 +326,25 @@ export function Transactions() {
     }
   };
 
+  const handleHeaderSort = (field: string) => {
+    setSortBy(prev => {
+      const current = prev;
+      const ascKey = `${field}-asc`;
+      const descKey = `${field}-desc`;
+
+      let next: string;
+      if (current === ascKey) {
+        next = descKey;
+      } else {
+        next = ascKey;
+      }
+
+      return next;
+    });
+  };
+
   const getFilteredTransactionsForTable = () => {
-    return transactions.filter(tx => {
+    const filtered = transactions.filter(tx => {
       const matchesSearch = searchTerm === '' ||
         tx.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
         tx.id.toLowerCase().includes(searchTerm.toLowerCase());
@@ -344,6 +363,47 @@ export function Transactions() {
 
       return matchesSearch && matchesDate && matchesType && matchesPrice && matchesStatus && matchesArchived && matchesTab;
     });
+
+    // Apply sorting
+    const [field, dir] = sortBy.split('-');
+    const desc = dir === 'desc';
+
+    filtered.sort((a, b) => {
+      switch (field) {
+        case 'id': {
+          const idA = a.transactionCode || a.id;
+          const idB = b.transactionCode || b.id;
+          return desc ? idB.localeCompare(idA) : idA.localeCompare(idB);
+        }
+        case 'date': {
+          const dateA = new Date(a.date || 0).getTime();
+          const dateB = new Date(b.date || 0).getTime();
+          return desc ? dateB - dateA : dateA - dateB;
+        }
+        case 'customer': {
+          return desc ? b.customer.localeCompare(a.customer) : a.customer.localeCompare(b.customer);
+        }
+        case 'type': {
+          return desc ? b.type.localeCompare(a.type) : a.type.localeCompare(b.type);
+        }
+        case 'items': {
+          return desc ? b.itemCount - a.itemCount : a.itemCount - b.itemCount;
+        }
+        case 'total': {
+          return desc ? b.grandTotal - a.grandTotal : a.grandTotal - b.grandTotal;
+        }
+        case 'payment': {
+          return desc ? b.paymentType.localeCompare(a.paymentType) : a.paymentType.localeCompare(b.paymentType);
+        }
+        case 'status': {
+          return desc ? b.status.localeCompare(a.status) : a.status.localeCompare(b.status);
+        }
+        default:
+          return 0;
+      }
+    });
+
+    return filtered;
   };
 
   const handleExportCsv = () => {
@@ -1322,27 +1382,33 @@ export function Transactions() {
                           />
                         </th>
                       )}
-                      {['Transaction ID', 'Date', 'Customer', 'Type', 'Items', 'Grand Total', 'Payment Type', 'Status', 'Actions'].map(header => {
-                        // Set text alignment based on column
-                        const textAlign =
-                          header === 'Grand Total' ? 'right' :
-                            header === 'Customer' || header === 'Payment Type' ? 'left' :
-                              'center';
-
-                        return (
-                          <th key={header} style={{
-                            padding: '0.75rem 1.5rem',
-                            textAlign,
-                            fontSize: '0.75rem',
-                            fontWeight: '600',
-                            color: 'var(--table-header-text)',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em'
-                          }}>
-                            {header}
-                          </th>
-                        );
-                      })}
+                      <th onClick={() => handleHeaderSort('id')} style={{ padding: '0.75rem 1.5rem', textAlign: 'center', fontSize: '0.75rem', fontWeight: '600', color: 'var(--table-header-text)', textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer', userSelect: 'none' }}>
+                        Transaction ID {sortBy.startsWith('id-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                      </th>
+                      <th onClick={() => handleHeaderSort('date')} style={{ padding: '0.75rem 1.5rem', textAlign: 'center', fontSize: '0.75rem', fontWeight: '600', color: 'var(--table-header-text)', textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer', userSelect: 'none' }}>
+                        Date {sortBy.startsWith('date-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                      </th>
+                      <th onClick={() => handleHeaderSort('customer')} style={{ padding: '0.75rem 1.5rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: '600', color: 'var(--table-header-text)', textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer', userSelect: 'none' }}>
+                        Customer {sortBy.startsWith('customer-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                      </th>
+                      <th onClick={() => handleHeaderSort('type')} style={{ padding: '0.75rem 1.5rem', textAlign: 'center', fontSize: '0.75rem', fontWeight: '600', color: 'var(--table-header-text)', textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer', userSelect: 'none' }}>
+                        Type {sortBy.startsWith('type-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                      </th>
+                      <th onClick={() => handleHeaderSort('items')} style={{ padding: '0.75rem 1.5rem', textAlign: 'center', fontSize: '0.75rem', fontWeight: '600', color: 'var(--table-header-text)', textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer', userSelect: 'none' }}>
+                        Items {sortBy.startsWith('items-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                      </th>
+                      <th onClick={() => handleHeaderSort('total')} style={{ padding: '0.75rem 1.5rem', textAlign: 'right', fontSize: '0.75rem', fontWeight: '600', color: 'var(--table-header-text)', textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer', userSelect: 'none' }}>
+                        Grand Total {sortBy.startsWith('total-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                      </th>
+                      <th onClick={() => handleHeaderSort('payment')} style={{ padding: '0.75rem 1.5rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: '600', color: 'var(--table-header-text)', textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer', userSelect: 'none' }}>
+                        Payment Type {sortBy.startsWith('payment-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                      </th>
+                      <th onClick={() => handleHeaderSort('status')} style={{ padding: '0.75rem 1.5rem', textAlign: 'center', fontSize: '0.75rem', fontWeight: '600', color: 'var(--table-header-text)', textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer', userSelect: 'none' }}>
+                        Status {sortBy.startsWith('status-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                      </th>
+                      <th style={{ padding: '0.75rem 1.5rem', textAlign: 'center', fontSize: '0.75rem', fontWeight: '600', color: 'var(--table-header-text)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        Actions
+                      </th>
                     </tr>
                   </thead>
                   <tbody>

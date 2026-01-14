@@ -621,21 +621,13 @@ export function Users() {
     mechanic: 3,
   };
 
-
-  const visibleUsers = users.filter(u => {
-    // Hide developer accounts from non-developers unless they have permission
-    if (!can(effectiveRoleIds, 'users.view.developer') && (u.role || '').toLowerCase() === 'developer') {
-      return false;
-    }
-    return true;
-  });
-
-  const sortedUsers = (() => {
-    const sorted = [...visibleUsers];
+  // Get filtered and sorted users for display
+  const getFilteredAndSortedUsers = () => {
+    const filtered = getFilteredUsers();
     const [field, dir] = sortBy.split('-');
     const desc = dir === 'desc';
 
-    sorted.sort((a, b) => {
+    filtered.sort((a, b) => {
       switch (field) {
         case 'id': {
           return desc ? b.displayId.localeCompare(a.displayId) : a.displayId.localeCompare(b.displayId);
@@ -669,8 +661,8 @@ export function Users() {
       }
     });
 
-    return sorted;
-  })();
+    return filtered;
+  };
 
   return (
     <div style={{
@@ -1698,7 +1690,7 @@ export function Users() {
                   System Users
                 </h2>
                 {isSelectMode && selectedItems.size > 0 && (() => {
-                  const selectedUsers = getFilteredUsers().filter(u => selectedItems.has(u.id));
+                  const selectedUsers = getFilteredAndSortedUsers().filter(u => selectedItems.has(u.id));
                   const hasUnarchived = selectedUsers.some(u => !u.archived);
                   const hasArchived = selectedUsers.some(u => u.archived);
 
@@ -1807,10 +1799,10 @@ export function Users() {
                         <th style={{ padding: '0.75rem 0.5rem', width: '40px' }}>
                           <input
                             type="checkbox"
-                            checked={selectedItems.size === getFilteredUsers().length && getFilteredUsers().length > 0}
+                            checked={selectedItems.size === getFilteredAndSortedUsers().length && getFilteredAndSortedUsers().length > 0}
                             onChange={(e) => {
                               if (e.target.checked) {
-                                setSelectedItems(new Set(getFilteredUsers().map(u => u.id)));
+                                setSelectedItems(new Set(getFilteredAndSortedUsers().map(u => u.id)));
                               } else {
                                 setSelectedItems(new Set());
                               }
@@ -1949,12 +1941,12 @@ export function Users() {
                     </tr>
                   </thead>
                   <tbody>
-                    {getFilteredUsers().map((user, index) => (
+                    {getFilteredAndSortedUsers().map((user, index) => (
                       <tr
                         key={user.id}
                         onClick={() => isSelectMode ? null : handleSelectUser(user)}
                         style={{
-                          borderBottom: index === getFilteredUsers().length - 1 ? 'none' : '1px solid #e5e7eb',
+                          borderBottom: index === getFilteredAndSortedUsers().length - 1 ? 'none' : '1px solid #e5e7eb',
                           backgroundColor: selectedItems.has(user.id) ? '#dbeafe' : (index % 2 === 0 ? 'white' : '#f9fafb'),
                           cursor: isSelectMode ? 'default' : 'pointer'
                         }}
@@ -2166,7 +2158,7 @@ export function Users() {
                         )}
                       </tr>
                     ))}
-                    {getFilteredUsers().length === 0 && (
+                    {getFilteredAndSortedUsers().length === 0 && (
                       <tr>
                         <td colSpan={8} style={{
                           padding: '2rem',

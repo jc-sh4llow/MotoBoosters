@@ -1343,54 +1343,60 @@ export function Sales() {
                       backgroundColor: 'var(--table-header-bg)',
                       borderBottom: '1px solid var(--table-border)'
                     }}>
-                      <th
-                        onClick={() => handleHeaderSort('transactionId')}
-                        style={{
-                          padding: '0.75rem 1rem',
-                          textAlign: 'left',
-                          fontSize: '0.75rem',
-                          fontWeight: '600',
-                          color: 'var(--table-header-text)',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.05em',
-                          cursor: 'pointer',
-                          userSelect: 'none'
-                        }}
-                      >
-                        TRANSACTION ID {sortBy.startsWith('transactionId-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
-                      </th>
-                      <th
-                        onClick={() => handleHeaderSort('date')}
-                        style={{
-                          padding: '0.75rem 1rem',
-                          textAlign: 'left',
-                          fontSize: '0.75rem',
-                          fontWeight: '600',
-                          color: 'var(--table-header-text)',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.05em',
-                          cursor: 'pointer',
-                          userSelect: 'none'
-                        }}
-                      >
-                        DATE {sortBy.startsWith('date-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
-                      </th>
-                      <th
-                        onClick={() => handleHeaderSort('itemCode')}
-                        style={{
-                          padding: '0.75rem 1rem',
-                          textAlign: 'left',
-                          fontSize: '0.75rem',
-                          fontWeight: '600',
-                          color: 'var(--table-header-text)',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.05em',
-                          cursor: 'pointer',
-                          userSelect: 'none'
-                        }}
-                      >
-                        ITEM CODE {sortBy.startsWith('itemCode-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
-                      </th>
+                      {showTransactionId && (
+                        <th
+                          onClick={() => handleHeaderSort('transactionId')}
+                          style={{
+                            padding: '0.75rem 1rem',
+                            textAlign: 'left',
+                            fontSize: '0.75rem',
+                            fontWeight: '600',
+                            color: 'var(--table-header-text)',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em',
+                            cursor: 'pointer',
+                            userSelect: 'none'
+                          }}
+                        >
+                          TRANSACTION ID {sortBy.startsWith('transactionId-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                        </th>
+                      )}
+                      {showDate && (
+                        <th
+                          onClick={() => handleHeaderSort('date')}
+                          style={{
+                            padding: '0.75rem 1rem',
+                            textAlign: 'left',
+                            fontSize: '0.75rem',
+                            fontWeight: '600',
+                            color: 'var(--table-header-text)',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em',
+                            cursor: 'pointer',
+                            userSelect: 'none'
+                          }}
+                        >
+                          DATE {sortBy.startsWith('date-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                        </th>
+                      )}
+                      {showItemCode && (
+                        <th
+                          onClick={() => handleHeaderSort('itemCode')}
+                          style={{
+                            padding: '0.75rem 1rem',
+                            textAlign: 'left',
+                            fontSize: '0.75rem',
+                            fontWeight: '600',
+                            color: 'var(--table-header-text)',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em',
+                            cursor: 'pointer',
+                            userSelect: 'none'
+                          }}
+                        >
+                          ITEM CODE {sortBy.startsWith('itemCode-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                        </th>
+                      )}
                       <th
                         onClick={() => handleHeaderSort('itemName')}
                         style={{
@@ -1407,70 +1413,78 @@ export function Sales() {
                       >
                         ITEM NAME {sortBy.startsWith('itemName-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
                       </th>
-                      <th
-                        onClick={() => handleHeaderSort('quantity')}
-                        style={{
-                          padding: '0.75rem 1rem',
-                          textAlign: 'left',
-                          fontSize: '0.75rem',
-                          fontWeight: '600',
-                          color: 'var(--table-header-text)',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.05em',
-                          cursor: 'pointer',
-                          userSelect: 'none'
-                        }}
-                      >
-                        QUANTITY {sortBy.startsWith('quantity-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
-                      </th>
-                      <th
-                        onClick={() => handleHeaderSort('unitPrice')}
-                        style={{
-                          padding: '0.75rem 1rem',
-                          textAlign: 'left',
-                          fontSize: '0.75rem',
-                          fontWeight: '600',
-                          color: 'var(--table-header-text)',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.05em',
-                          cursor: 'pointer',
-                          userSelect: 'none'
-                        }}
-                      >
-                        UNIT PRICE {sortBy.startsWith('unitPrice-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
-                      </th>
-                      <th
-                        onClick={() => handleHeaderSort('totalAmount')}
-                        style={{
-                          padding: '0.75rem 1rem',
-                          textAlign: 'left',
-                          fontSize: '0.75rem',
-                          fontWeight: '600',
-                          color: 'var(--table-header-text)',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.05em',
-                          cursor: 'pointer',
-                          userSelect: 'none'
-                        }}
-                      >
-                        TOTAL AMOUNT {sortBy.startsWith('totalAmount-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
-                      </th>
-                      <th
-                        onClick={() => handleHeaderSort('customer')}
-                        style={{
-                          padding: '0.75rem 1rem',
-                          textAlign: 'left',
-                          fontSize: '0.75rem',
-                          fontWeight: '600',
-                          color: 'var(--table-header-text)',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.05em',
-                          cursor: 'pointer',
-                          userSelect: 'none'
-                        }}
-                      >
-                        CUSTOMER {sortBy.startsWith('customer-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
-                      </th>
+                      {showQuantity && (
+                        <th
+                          onClick={() => handleHeaderSort('quantity')}
+                          style={{
+                            padding: '0.75rem 1rem',
+                            textAlign: 'left',
+                            fontSize: '0.75rem',
+                            fontWeight: '600',
+                            color: 'var(--table-header-text)',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em',
+                            cursor: 'pointer',
+                            userSelect: 'none'
+                          }}
+                        >
+                          QUANTITY {sortBy.startsWith('quantity-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                        </th>
+                      )}
+                      {showUnitPrice && (
+                        <th
+                          onClick={() => handleHeaderSort('unitPrice')}
+                          style={{
+                            padding: '0.75rem 1rem',
+                            textAlign: 'left',
+                            fontSize: '0.75rem',
+                            fontWeight: '600',
+                            color: 'var(--table-header-text)',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em',
+                            cursor: 'pointer',
+                            userSelect: 'none'
+                          }}
+                        >
+                          UNIT PRICE {sortBy.startsWith('unitPrice-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                        </th>
+                      )}
+                      {showTotalAmount && (
+                        <th
+                          onClick={() => handleHeaderSort('totalAmount')}
+                          style={{
+                            padding: '0.75rem 1rem',
+                            textAlign: 'left',
+                            fontSize: '0.75rem',
+                            fontWeight: '600',
+                            color: 'var(--table-header-text)',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em',
+                            cursor: 'pointer',
+                            userSelect: 'none'
+                          }}
+                        >
+                          TOTAL AMOUNT {sortBy.startsWith('totalAmount-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                        </th>
+                      )}
+                      {showCustomer && (
+                        <th
+                          onClick={() => handleHeaderSort('customer')}
+                          style={{
+                            padding: '0.75rem 1rem',
+                            textAlign: 'left',
+                            fontSize: '0.75rem',
+                            fontWeight: '600',
+                            color: 'var(--table-header-text)',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em',
+                            cursor: 'pointer',
+                            userSelect: 'none'
+                          }}
+                        >
+                          CUSTOMER {sortBy.startsWith('customer-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                        </th>
+                      )}
                     </tr>
                   </thead>
                   <tbody>
@@ -1489,36 +1503,42 @@ export function Sales() {
                             backgroundColor: rowBg,
                           }}
                         >
-                          <td
-                            style={{
-                              padding: '1rem',
-                              fontSize: '0.875rem',
-                              color: 'var(--table-row-text)',
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            {sale.transactionCode || sale.id}
-                          </td>
-                          <td
-                            style={{
-                              padding: '1rem',
-                              fontSize: '0.875rem',
-                              color: 'var(--table-row-text)',
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            {new Date(sale.date).toLocaleDateString()}
-                          </td>
-                          <td
-                            style={{
-                              padding: '1rem',
-                              fontSize: '0.875rem',
-                              color: 'var(--table-row-text)',
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            {sale.itemCode}
-                          </td>
+                          {showTransactionId && (
+                            <td
+                              style={{
+                                padding: '1rem',
+                                fontSize: '0.875rem',
+                                color: 'var(--table-row-text)',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {sale.transactionCode || sale.id}
+                            </td>
+                          )}
+                          {showDate && (
+                            <td
+                              style={{
+                                padding: '1rem',
+                                fontSize: '0.875rem',
+                                color: 'var(--table-row-text)',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {new Date(sale.date).toLocaleDateString()}
+                            </td>
+                          )}
+                          {showItemCode && (
+                            <td
+                              style={{
+                                padding: '1rem',
+                                fontSize: '0.875rem',
+                                color: 'var(--table-row-text)',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {sale.itemCode}
+                            </td>
+                          )}
                           <td
                             style={{
                               padding: '1rem',
@@ -1529,50 +1549,58 @@ export function Sales() {
                           >
                             {sale.itemName}
                           </td>
-                          <td
-                            style={{
-                              padding: '1rem',
-                              fontSize: '0.875rem',
-                              color: 'var(--table-row-text)',
-                              textAlign: 'right',
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            {(sale.quantity ?? 0)}
-                          </td>
-                          <td
-                            style={{
-                              padding: '1rem',
-                              fontSize: '0.875rem',
-                              color: 'var(--table-row-text)',
-                              textAlign: 'right',
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            ₱{(sale.unitPrice ?? 0).toFixed(2)}
-                          </td>
-                          <td
-                            style={{
-                              padding: '1rem',
-                              fontSize: '0.875rem',
-                              color: 'var(--table-row-text)',
-                              textAlign: 'right',
-                              fontWeight: 600,
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            ₱{(sale.totalAmount ?? 0).toFixed(2)}
-                          </td>
-                          <td
-                            style={{
-                              padding: '1rem',
-                              fontSize: '0.875rem',
-                              color: 'var(--table-row-text)',
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            {sale.customer}
-                          </td>
+                          {showQuantity && (
+                            <td
+                              style={{
+                                padding: '1rem',
+                                fontSize: '0.875rem',
+                                color: 'var(--table-row-text)',
+                                textAlign: 'right',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {(sale.quantity ?? 0)}
+                            </td>
+                          )}
+                          {showUnitPrice && (
+                            <td
+                              style={{
+                                padding: '1rem',
+                                fontSize: '0.875rem',
+                                color: 'var(--table-row-text)',
+                                textAlign: 'right',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              ₱{(sale.unitPrice ?? 0).toFixed(2)}
+                            </td>
+                          )}
+                          {showTotalAmount && (
+                            <td
+                              style={{
+                                padding: '1rem',
+                                fontSize: '0.875rem',
+                                color: 'var(--table-row-text)',
+                                textAlign: 'right',
+                                fontWeight: 600,
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              ₱{(sale.totalAmount ?? 0).toFixed(2)}
+                            </td>
+                          )}
+                          {showCustomer && (
+                            <td
+                              style={{
+                                padding: '1rem',
+                                fontSize: '0.875rem',
+                                color: 'var(--table-row-text)',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {sale.customer}
+                            </td>
+                          )}
                         </tr>
                       );
                     })}

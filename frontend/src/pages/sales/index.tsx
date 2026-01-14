@@ -144,18 +144,60 @@ export function Sales() {
     return true;
   });
 
-  const filteredSales = [...filteredByAll].sort((a: any, b: any) => {
-    const da = new Date(a.date || 0).getTime();
-    const db = new Date(b.date || 0).getTime();
-    if (db !== da) return db - da; // latest first
+  const filteredSales = (() => {
+    const sorted = [...filteredByAll];
+    const [field, dir] = sortBy.split('-');
+    const desc = dir === 'desc';
 
-    // tie-breaker: transaction code / id
-    const aCode = (a as any).transactionCode || (typeof a.id === 'string' ? a.id : '');
-    const bCode = (b as any).transactionCode || (typeof b.id === 'string' ? b.id : '');
-    if (aCode < bCode) return -1;
-    if (aCode > bCode) return 1;
-    return 0;
-  });
+    sorted.sort((a: any, b: any) => {
+      switch (field) {
+        case 'transactionId': {
+          const aCode = (a as any).transactionCode || (typeof a.id === 'string' ? a.id : '');
+          const bCode = (b as any).transactionCode || (typeof b.id === 'string' ? b.id : '');
+          return desc ? bCode.localeCompare(aCode) : aCode.localeCompare(bCode);
+        }
+        case 'date': {
+          const da = new Date(a.date || 0).getTime();
+          const db = new Date(b.date || 0).getTime();
+          return desc ? db - da : da - db;
+        }
+        case 'itemCode': {
+          const aCode = (a.itemCode || '').toString().toLowerCase();
+          const bCode = (b.itemCode || '').toString().toLowerCase();
+          return desc ? bCode.localeCompare(aCode) : aCode.localeCompare(bCode);
+        }
+        case 'itemName': {
+          const aName = (a.itemName || '').toString().toLowerCase();
+          const bName = (b.itemName || '').toString().toLowerCase();
+          return desc ? bName.localeCompare(aName) : aName.localeCompare(bName);
+        }
+        case 'quantity': {
+          const aQty = Number(a.quantity ?? 0);
+          const bQty = Number(b.quantity ?? 0);
+          return desc ? bQty - aQty : aQty - bQty;
+        }
+        case 'unitPrice': {
+          const aPrice = Number(a.unitPrice ?? 0);
+          const bPrice = Number(b.unitPrice ?? 0);
+          return desc ? bPrice - aPrice : aPrice - bPrice;
+        }
+        case 'totalAmount': {
+          const aTotal = Number(a.totalAmount ?? 0);
+          const bTotal = Number(b.totalAmount ?? 0);
+          return desc ? bTotal - aTotal : aTotal - bTotal;
+        }
+        case 'customer': {
+          const aCust = (a.customer || '').toString().toLowerCase();
+          const bCust = (b.customer || '').toString().toLowerCase();
+          return desc ? bCust.localeCompare(aCust) : aCust.localeCompare(bCust);
+        }
+        default:
+          return 0;
+      }
+    });
+
+    return sorted;
+  })();
 
   const getSummaryData = () => {
     const totalTransactions = filteredSales.length;
@@ -1272,22 +1314,134 @@ export function Sales() {
                       backgroundColor: 'var(--table-header-bg)',
                       borderBottom: '1px solid var(--table-border)'
                     }}>
-                      {['Transaction ID', 'Date', 'Item Code', 'Item Name', 'Quantity', 'Unit Price', 'Total Amount', 'Customer'].map((header) => (
-                        <th
-                          key={header}
-                          style={{
-                            padding: '0.75rem 1rem',
-                            textAlign: 'left',
-                            fontSize: '0.75rem',
-                            fontWeight: '600',
-                            color: 'var(--table-header-text)',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em',
-                          }}
-                        >
-                          {header}
-                        </th>
-                      ))}
+                      <th
+                        onClick={() => handleHeaderSort('transactionId')}
+                        style={{
+                          padding: '0.75rem 1rem',
+                          textAlign: 'left',
+                          fontSize: '0.75rem',
+                          fontWeight: '600',
+                          color: 'var(--table-header-text)',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                          cursor: 'pointer',
+                          userSelect: 'none'
+                        }}
+                      >
+                        TRANSACTION ID {sortBy.startsWith('transactionId-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                      </th>
+                      <th
+                        onClick={() => handleHeaderSort('date')}
+                        style={{
+                          padding: '0.75rem 1rem',
+                          textAlign: 'left',
+                          fontSize: '0.75rem',
+                          fontWeight: '600',
+                          color: 'var(--table-header-text)',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                          cursor: 'pointer',
+                          userSelect: 'none'
+                        }}
+                      >
+                        DATE {sortBy.startsWith('date-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                      </th>
+                      <th
+                        onClick={() => handleHeaderSort('itemCode')}
+                        style={{
+                          padding: '0.75rem 1rem',
+                          textAlign: 'left',
+                          fontSize: '0.75rem',
+                          fontWeight: '600',
+                          color: 'var(--table-header-text)',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                          cursor: 'pointer',
+                          userSelect: 'none'
+                        }}
+                      >
+                        ITEM CODE {sortBy.startsWith('itemCode-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                      </th>
+                      <th
+                        onClick={() => handleHeaderSort('itemName')}
+                        style={{
+                          padding: '0.75rem 1rem',
+                          textAlign: 'left',
+                          fontSize: '0.75rem',
+                          fontWeight: '600',
+                          color: 'var(--table-header-text)',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                          cursor: 'pointer',
+                          userSelect: 'none'
+                        }}
+                      >
+                        ITEM NAME {sortBy.startsWith('itemName-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                      </th>
+                      <th
+                        onClick={() => handleHeaderSort('quantity')}
+                        style={{
+                          padding: '0.75rem 1rem',
+                          textAlign: 'left',
+                          fontSize: '0.75rem',
+                          fontWeight: '600',
+                          color: 'var(--table-header-text)',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                          cursor: 'pointer',
+                          userSelect: 'none'
+                        }}
+                      >
+                        QUANTITY {sortBy.startsWith('quantity-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                      </th>
+                      <th
+                        onClick={() => handleHeaderSort('unitPrice')}
+                        style={{
+                          padding: '0.75rem 1rem',
+                          textAlign: 'left',
+                          fontSize: '0.75rem',
+                          fontWeight: '600',
+                          color: 'var(--table-header-text)',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                          cursor: 'pointer',
+                          userSelect: 'none'
+                        }}
+                      >
+                        UNIT PRICE {sortBy.startsWith('unitPrice-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                      </th>
+                      <th
+                        onClick={() => handleHeaderSort('totalAmount')}
+                        style={{
+                          padding: '0.75rem 1rem',
+                          textAlign: 'left',
+                          fontSize: '0.75rem',
+                          fontWeight: '600',
+                          color: 'var(--table-header-text)',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                          cursor: 'pointer',
+                          userSelect: 'none'
+                        }}
+                      >
+                        TOTAL AMOUNT {sortBy.startsWith('totalAmount-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                      </th>
+                      <th
+                        onClick={() => handleHeaderSort('customer')}
+                        style={{
+                          padding: '0.75rem 1rem',
+                          textAlign: 'left',
+                          fontSize: '0.75rem',
+                          fontWeight: '600',
+                          color: 'var(--table-header-text)',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                          cursor: 'pointer',
+                          userSelect: 'none'
+                        }}
+                      >
+                        CUSTOMER {sortBy.startsWith('customer-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                      </th>
                     </tr>
                   </thead>
                   <tbody>

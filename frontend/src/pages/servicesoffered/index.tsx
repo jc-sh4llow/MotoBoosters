@@ -22,6 +22,16 @@ type ServiceRow = {
   archived?: boolean;
 };
 
+type FirestoreServiceData = {
+  serviceId?: string;
+  name?: string;
+  price?: number;
+  status?: string;
+  description?: string;
+  vehicleTypes?: string[];
+  archived?: boolean;
+};
+
 export function Services() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
@@ -30,7 +40,6 @@ export function Services() {
 
   // Permission checks
   const canViewArchived = can(effectiveRoleIds, 'services.view.archived');
-  const canAddServices = can(effectiveRoleIds, 'services.add');
   const canEditServices = can(effectiveRoleIds, 'services.edit');
   const canArchiveServices = can(effectiveRoleIds, 'services.archive');
   const canDeleteServices = can(effectiveRoleIds, 'services.delete');
@@ -44,9 +53,7 @@ export function Services() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [viewportWidth, setViewportWidth] = useState(window.innerWidth);
 
-  const [selectedItem, setSelectedItem] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [isHovered, setIsHovered] = useState(false);
   let closeMenuTimeout: number | undefined;
   const [selectedTypes, setSelectedTypes] = useState<Set<string>>(new Set());
   const [vehicleTypeOptions, setVehicleTypeOptions] = useState<string[]>([
@@ -104,10 +111,6 @@ export function Services() {
 
   // Responsive breakpoint helpers
   const isDesktop = viewportWidth >= 1200;
-  const isSmallDesktop = viewportWidth >= 992 && viewportWidth < 1200;
-  const isLargePhoneOrTablet = viewportWidth >= 768 && viewportWidth < 992;
-  const isPortraitPhone = viewportWidth >= 480 && viewportWidth < 768;
-  const isSmallPhone = viewportWidth < 480;
   const serviceDetailsRef = useRef<HTMLDivElement | null>(null);
   const servicesTableRef = useRef<HTMLDivElement | null>(null);
 
@@ -159,7 +162,7 @@ export function Services() {
       const q = query(collection(db, 'services'), orderBy('serviceId', 'asc'));
       const snapshot = await getDocs(q);
       const loaded = snapshot.docs.map(docSnap => {
-        const data = docSnap.data() as any;
+        const data = docSnap.data() as FirestoreServiceData;
         return {
           id: docSnap.id,
           serviceId: data.serviceId ?? '',
@@ -1768,6 +1771,7 @@ export function Services() {
                                     type="button"
                                     onClick={() => {
                                       const svc = selectedService;
+                                      if (!svc) return;
                                       setModalState({
                                         open: true,
                                         title: 'Archive Service',

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { FaBars, FaSearch, FaTimes, FaFilter, FaChevronDown, FaEye, FaEyeSlash, FaFileExcel } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { collection, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
@@ -22,7 +22,7 @@ async function hashPassword(raw: string): Promise<string> {
   try {
     const saltRounds = 10;
     return await bcrypt.hash(normalized, saltRounds);
-  } catch (err) {
+  } catch {
     // Fallback: avoid breaking save flows if hashing fails for any reason.
     return normalized;
   }
@@ -44,6 +44,38 @@ type UserRow = {
   archived?: boolean;
   createdAt?: string; // ISO timestamp when user was created
   updatedAt?: string; // ISO timestamp when user was last updated
+};
+
+type FirestoreUserData = {
+  userId?: string;
+  username?: string;
+  fullName?: string;
+  email?: string;
+  contactNumber?: string;
+  role?: string;
+  roles?: string[];
+  status?: string;
+  lastLogin?: string;
+  password?: string;
+  passwordHash?: string;
+  archived?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+type UserUpdateData = {
+  userId: string;
+  username: string;
+  fullName: string;
+  email: string;
+  contactNumber: string;
+  status: string;
+  role: string;
+  roles?: string[];
+  updatedAt: string;
+  createdAt?: string;
+  password?: string;
+  passwordHash?: string;
 };
 
 export function Users() {
@@ -106,10 +138,10 @@ export function Users() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { roles: firestoreRoles, loading: rolesLoading } = useRoles();
+  const { effectiveRoleIds } = useEffectiveRoleIds();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [isNavExpanded, setIsNavExpanded] = useState(false);
   const [isUserSettingsOpen, setIsUserSettingsOpen] = useState(false);
-  const { effectiveRoleIds } = useEffectiveRoleIds();
   let closeMenuTimeout: number | undefined;
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
@@ -311,12 +343,6 @@ export function Users() {
     setStatusChangeConfirmed(false);
   };
 
-  const handleRoleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const nextRole = e.target.value;
-
-    setRolesAndSyncIds([nextRole]);
-  };
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => {
@@ -345,11 +371,11 @@ export function Users() {
     }
   };
 
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     try {
       const snapshot = await getDocs(collection(db, 'users'));
       const loadedUsers = snapshot.docs.map(docSnap => {
-        const data = docSnap.data() as any;
+        const data = docSnap.data() as FirestoreUserData;
         const docRoleIds: string[] = Array.isArray(data.roles) ? data.roles : (data.role ? [data.role] : []);
         const primaryRoleId = getHighestAuthorityRoleId(docRoleIds, firestoreRoles) || (data.role ?? '');
         return {
@@ -378,15 +404,11 @@ export function Users() {
     } catch (error) {
       console.error('Error loading users from Firestore', error);
     }
-  };
+  }, [firestoreRoles]);
 
   useEffect(() => {
     loadUsers();
-  }, [rolesLoading]);
-
-  const handleDeleteUser = (id: string) => {
-    setConfirmState({ type: 'delete', targetUserId: id });
-  };
+  }, [rolesLoading, loadUsers]);
 
   const handleSaveUser = async () => {
     const { docId, userId, username, password, confirmPassword, fullName, email, contactNumber, status, role } = formData;
@@ -431,7 +453,7 @@ export function Users() {
         const primaryRoleId = getHighestAuthorityRoleId(normalizedRoles, firestoreRoles) || role;
         const computedUserId = generateUserId(fullName, primaryRoleId);
 
-        const updateData: any = {
+        const updateData: Partial<UserUpdateData> = {
           userId: computedUserId || userId,
           username,
           fullName,
@@ -464,7 +486,7 @@ export function Users() {
         await updateDoc(userRef, updateData);
       } else if (isSelfBasicEdit && existing) {
         // Employees/mechanics editing their own basic details only
-        const updateData: any = {
+        const updateData: Partial<UserUpdateData> = {
           userId,
           username,
           fullName,
@@ -601,24 +623,6 @@ export function Users() {
     link.download = `users_export_${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
     URL.revokeObjectURL(url);
-  };
-
-  const getFirstName = (name: string) => {
-    const parts = name.trim().split(/\s+/);
-    return parts[0] ?? '';
-  };
-
-  const getLastName = (name: string) => {
-    const parts = name.trim().split(/\s+/);
-    if (parts.length === 0) return '';
-    return parts[parts.length - 1];
-  };
-
-  const rolePriority: Record<string, number> = {
-    developer: 0,
-    admin: 1,
-    employee: 2,
-    mechanic: 3,
   };
 
   // Get filtered and sorted users for display

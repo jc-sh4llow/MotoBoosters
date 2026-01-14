@@ -41,6 +41,7 @@ export function Transactions() {
 
   const [isNavExpanded, setIsNavExpanded] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [viewportWidth, setViewportWidth] = useState(window.innerWidth);
 
   let closeMenuTimeout: number | undefined;
   const [searchTerm, setSearchTerm] = useState('');
@@ -202,12 +203,15 @@ export function Transactions() {
 
   useEffect(() => {
     const handleResize = () => {
-      const isMobileView = window.innerWidth < 768;
+      const width = window.innerWidth;
+      const isMobileView = width < 768;
+      setViewportWidth(width);
       setIsMobile(isMobileView);
       if (!isMobileView) {
         setIsNavExpanded(false);
       }
     };
+    handleResize(); // Set initial values
     window.addEventListener('resize', handleResize);
 
     // Real-time listener for transactions - auto-reloads when data changes

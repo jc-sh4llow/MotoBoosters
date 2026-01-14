@@ -13,8 +13,6 @@ import bcrypt from 'bcryptjs';
 import { HeaderDropdown } from '../../components/HeaderDropdown';
 import { RoleBadge } from '../../components/RoleBadge';
 import Switch from '../../components/ui/Switch';
-import { migrateUserDates } from '../../utils/migrateUserDates';
-import { ViewDetailsModal } from '../../components/ViewDetailsModal';
 
 async function hashPassword(raw: string): Promise<string> {
   const normalized = raw.trim();
@@ -179,10 +177,6 @@ export function Users() {
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
 
   const [sortBy, setSortBy] = useState('role-asc');
-
-  // View Details modal state
-  const [viewDetailsUser, setViewDetailsUser] = useState<UserRow | null>(null);
-  const [isViewDetailsOpen, setIsViewDetailsOpen] = useState(false);
 
   const currentUsername = user?.name ?? '';
   const [isEditing, setIsEditing] = useState(false);
@@ -563,25 +557,6 @@ export function Users() {
 
       return next;
     });
-  };
-
-  const handleMigrateDates = async () => {
-    if (!window.confirm('This will add createdAt and updatedAt fields to all existing user records. Continue?')) {
-      return;
-    }
-
-    try {
-      const result = await migrateUserDates();
-      if (result.success) {
-        alert(`Migration successful!\nUpdated: ${result.updated} records\nSkipped: ${result.skipped} records\nTotal: ${result.total} records`);
-        await loadUsers();
-      } else {
-        alert(`Migration failed: ${result.error}`);
-      }
-    } catch (error) {
-      console.error('Migration error:', error);
-      alert('Migration failed. Check console for details.');
-    }
   };
 
   // Permission checks for Users page
@@ -1538,28 +1513,6 @@ export function Users() {
                         }}
                       >
                         Export to CSV <FaFileExcel />
-                      </button>
-                    )}
-                    {isAdminLike && (
-                      <button
-                        onClick={handleMigrateDates}
-                        style={{
-                          backgroundColor: '#7c3aed',
-                          color: 'white',
-                          padding: '0.5rem 1rem',
-                          borderRadius: '0.375rem',
-                          border: 'none',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.5rem',
-                          fontWeight: 500,
-                          fontSize: '0.875rem',
-                          height: '40px',
-                        }}
-                        title="One-time migration to add createdAt and updatedAt fields to all existing user records"
-                      >
-                        Migrate Dates
                       </button>
                     )}
                     <button

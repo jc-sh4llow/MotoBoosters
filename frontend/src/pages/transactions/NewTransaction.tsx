@@ -20,6 +20,42 @@ import { collection, getDocs, doc, updateDoc, getDoc, setDoc, writeBatch, query,
 import { db } from '../../lib/firebase';
 
 // Types
+type FirestoreUserData = {
+  status?: string;
+  fullName?: string;
+};
+
+type FirestoreInventoryData = {
+  status?: string;
+  brand?: string;
+  model?: string;
+  itemName?: string;
+  itemType?: string;
+  type?: string;
+  itemId?: string;
+  sellingPrice?: number;
+  defaultDiscount?: number;
+  defaultMarkup?: number;
+  availableStock?: number;
+  sold?: number;
+};
+
+type FirestoreServiceData = {
+  status?: string;
+  serviceId?: string;
+  name?: string;
+  price?: number;
+  description?: string;
+};
+
+type FirestoreCustomerData = {
+  name?: string;
+  contact?: string;
+  email?: string;
+  address?: string;
+  customerId?: string;
+};
+
 type CartItem = {
   id: string;
   name: string;
@@ -89,6 +125,7 @@ export function NewTransaction() {
     inventoryDocId: string;
     basePrice: number;
     discountAmount: number;
+    netDiscountAmount: number;
   }[]>([]);
   const [services, setServices] = useState<{ id: string; name: string; price: number; description: string; type: 'service' }[]>([]);
   const [selectedProductForDetails, setSelectedProductForDetails] = useState<{
@@ -141,7 +178,7 @@ export function NewTransaction() {
         const names: string[] = [];
 
         snapshot.forEach(docSnap => {
-          const data = docSnap.data() as any;
+          const data = docSnap.data() as FirestoreUserData;
           const status = (data.status ?? '').toString().toLowerCase();
           if (status === 'active') {
             const fullName = (data.fullName ?? '').toString();
@@ -219,7 +256,7 @@ export function NewTransaction() {
         }[] = [];
 
         inventorySnap.forEach(docSnap => {
-          const data = docSnap.data() as any;
+          const data = docSnap.data() as FirestoreInventoryData;
           const status = (data.status ?? '').toString().toLowerCase();
           if (status === 'in stock' || status === 'restock') {
             const brand = (data.brand ?? '').toString();
@@ -262,7 +299,7 @@ export function NewTransaction() {
         const servicesSnap = await getDocs(collection(db, 'services'));
         const rows: { id: string; name: string; price: number; description: string; type: 'service' }[] = [];
         servicesSnap.forEach(docSnap => {
-          const data = docSnap.data() as any;
+          const data = docSnap.data() as FirestoreServiceData;
           const status = (data.status ?? '').toString().toLowerCase();
           if (status === 'active') {
             const id = (data.serviceId ?? docSnap.id).toString();
@@ -307,7 +344,7 @@ export function NewTransaction() {
       }[] = [];
 
       snap.forEach(docSnap => {
-        const data = docSnap.data() as any;
+        const data = docSnap.data() as FirestoreCustomerData;
         rows.push({
           id: docSnap.id,
           name: (data.name ?? '').toString(),
@@ -401,7 +438,7 @@ export function NewTransaction() {
     try {
       const snap = await getDocs(collection(db, 'customers'));
       snap.forEach(docSnap => {
-        const data = docSnap.data() as any;
+        const data = docSnap.data() as FirestoreCustomerData;
         const existingId = (data.customerId ?? '').toString();
         if (existingId.startsWith(`${initials}-`)) {
           const parts = existingId.split('-');
@@ -721,7 +758,7 @@ export function NewTransaction() {
                 const invRef = doc(db, 'inventory', inventoryDocId);
                 const snap = await getDoc(invRef);
                 if (!snap.exists()) return;
-                const data = snap.data() as any;
+                const data = snap.data() as FirestoreInventoryData;
                 const currentStock = Number(data.availableStock ?? 0);
                 const currentSold = Number(data.sold ?? 0);
                 const newStock = Math.max(currentStock - soldQty, 0);

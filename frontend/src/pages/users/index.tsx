@@ -1490,10 +1490,10 @@ export function Users() {
                 marginBottom: '1rem',
                 border: '1px solid #e5e7eb'
               }}>
-                {/* Action Bar - Left: Export, Select | Right: Filters, Clear Filters */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: showFilters ? '1rem' : 0 }}>
-                  {/* Left side buttons */}
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                {/* Action Bar - Centered with two rows */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', marginBottom: showFilters ? '1rem' : 0 }}>
+                  {/* Row 1: Export and Select buttons */}
+                  <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
                     {canExportUsers && (
                       <button
                         onClick={handleExportCsv}
@@ -1539,8 +1539,8 @@ export function Users() {
                     </button>
                   </div>
 
-                  {/* Right side buttons */}
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  {/* Row 2: Filters and Clear Filters buttons */}
+                  <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
                     <button
                       onClick={() => setShowFilters(!showFilters)}
                       style={{

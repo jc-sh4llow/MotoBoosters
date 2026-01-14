@@ -31,7 +31,7 @@ export async function migrateUserDates() {
       }
       
       // Prepare update data
-      const updateData: any = {};
+      const updateData: { createdAt?: string; updatedAt?: string } = {};
       
       if (!data.createdAt) {
         updateData.createdAt = currentTimestamp;

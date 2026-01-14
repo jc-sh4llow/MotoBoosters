@@ -3337,7 +3337,7 @@ export const Settings: React.FC = () => {
                 className="permissions-scroll"
                 style={{
                   maxHeight: '300px',
-                  overflow: 'overlay' as any,
+                  overflow: 'auto',
                   border: '1px solid #e5e7eb',
                   borderRadius: '0.5rem',
                   scrollbarWidth: 'thin',

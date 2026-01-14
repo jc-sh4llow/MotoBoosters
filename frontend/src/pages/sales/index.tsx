@@ -14,6 +14,19 @@ import logo from '../../assets/logo.png';
 import { db } from '../../lib/firebase';
 import { HeaderDropdown } from '../../components/HeaderDropdown';
 
+type SaleItem = {
+  id: string;
+  date: string;
+  itemCode?: string;
+  itemName?: string;
+  quantity?: number;
+  unitPrice?: number;
+  totalAmount?: number;
+  customer?: string;
+  transactionType?: 'Parts Only' | 'Service Only' | 'Parts + Service' | 'N/A';
+  transactionCode?: string;
+};
+
 export function Sales() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
@@ -49,10 +62,10 @@ export function Sales() {
   const [itemSearchTerm, setItemSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('date-desc');
 
-  const [firestoreSales, setFirestoreSales] = useState<any[]>([]);
+  const [firestoreSales, setFirestoreSales] = useState<SaleItem[]>([]);
 
   // Sample data - used as fallback if Firestore has no data
-  const salesData = [
+  const salesData: SaleItem[] = [
     // Parts Only
     {
       id: 'SALE-001',
@@ -63,13 +76,13 @@ export function Sales() {
       unitPrice: 350,
       totalAmount: 700,
       customer: 'John Dela Cruz',
-      transactionType: 'Parts Only' as const
+      transactionType: 'Parts Only'
     },
     // ... rest of the sample data ...
   ];
 
   // Options for customer and item dropdowns (LOVs)
-  const sourceForLov = (firestoreSales.length ? firestoreSales : salesData) as any[];
+  const sourceForLov = (firestoreSales.length ? firestoreSales : salesData);
   const customerOptions = Array.from(
     new Set(
       sourceForLov
@@ -87,7 +100,7 @@ export function Sales() {
   ).sort();
 
   const getFilteredByTab = () => {
-    const source = (firestoreSales.length ? firestoreSales : salesData) as any[];
+    const source = (firestoreSales.length ? firestoreSales : salesData);
 
     if (activeTab === 'all') return source;
     if (activeTab === 'parts') return source.filter(s => s.transactionType === 'Parts Only');
@@ -149,11 +162,11 @@ export function Sales() {
     const [field, dir] = sortBy.split('-');
     const desc = dir === 'desc';
 
-    sorted.sort((a: any, b: any) => {
+    sorted.sort((a: SaleItem, b: SaleItem) => {
       switch (field) {
         case 'transactionId': {
-          const aCode = (a as any).transactionCode || (typeof a.id === 'string' ? a.id : '');
-          const bCode = (b as any).transactionCode || (typeof b.id === 'string' ? b.id : '');
+          const aCode = a.transactionCode || (typeof a.id === 'string' ? a.id : '');
+          const bCode = b.transactionCode || (typeof b.id === 'string' ? b.id : '');
           return desc ? bCode.localeCompare(aCode) : aCode.localeCompare(bCode);
         }
         case 'date': {
@@ -162,13 +175,13 @@ export function Sales() {
           return desc ? db - da : da - db;
         }
         case 'itemCode': {
-          const aCode = (a.itemCode || '').toString().toLowerCase();
-          const bCode = (b.itemCode || '').toString().toLowerCase();
+          const aCode = (a.itemCode ?? '').toString().toLowerCase();
+          const bCode = (b.itemCode ?? '').toString().toLowerCase();
           return desc ? bCode.localeCompare(aCode) : aCode.localeCompare(bCode);
         }
         case 'itemName': {
-          const aName = (a.itemName || '').toString().toLowerCase();
-          const bName = (b.itemName || '').toString().toLowerCase();
+          const aName = (a.itemName ?? '').toString().toLowerCase();
+          const bName = (b.itemName ?? '').toString().toLowerCase();
           return desc ? bName.localeCompare(aName) : aName.localeCompare(bName);
         }
         case 'quantity': {
@@ -187,8 +200,8 @@ export function Sales() {
           return desc ? bTotal - aTotal : aTotal - bTotal;
         }
         case 'customer': {
-          const aCust = (a.customer || '').toString().toLowerCase();
-          const bCust = (b.customer || '').toString().toLowerCase();
+          const aCust = (a.customer ?? '').toString().toLowerCase();
+          const bCust = (b.customer ?? '').toString().toLowerCase();
           return desc ? bCust.localeCompare(aCust) : aCust.localeCompare(bCust);
         }
         default:
@@ -201,8 +214,8 @@ export function Sales() {
 
   const getSummaryData = () => {
     const totalTransactions = filteredSales.length;
-    const itemsSold = filteredSales.reduce((sum, s) => sum + s.quantity, 0);
-    const totalRevenue = filteredSales.reduce((sum, s) => sum + s.totalAmount, 0);
+    const itemsSold = filteredSales.reduce((sum, s) => sum + (s.quantity ?? 0), 0);
+    const totalRevenue = filteredSales.reduce((sum, s) => sum + (s.totalAmount ?? 0), 0);
     const averageSale = totalTransactions ? totalRevenue / totalTransactions : 0;
 
     return {
@@ -237,14 +250,14 @@ export function Sales() {
   // show a simple bracket indicator.
   const filteredSalesWithGroup = (() => {
     const rows: {
-      sale: any;
+      sale: SaleItem;
       groupIndex: number;
       isFirstInGroup: boolean;
       isLastInGroup: boolean;
     }[] = [];
 
-    const getKey = (s: any) => {
-      const txCode = (s as any).transactionCode as string | undefined;
+    const getKey = (s: SaleItem) => {
+      const txCode = s.transactionCode;
       const derivedFromId = typeof s.id === 'string' ? s.id.split('-')[0] : String(s.id ?? '');
       return txCode || derivedFromId;
     };
@@ -286,7 +299,7 @@ export function Sales() {
 
     // Real-time listener for transactions - auto-reloads when data changes
     const unsubscribe = onSnapshot(collection(db, 'transactions'), (snap) => {
-      const rows: any[] = [];
+      const rows: SaleItem[] = [];
 
       snap.forEach((docSnap) => {
         const data = docSnap.data() as any;
@@ -645,7 +658,7 @@ export function Sales() {
                     ].map(tab => (
                       <button
                         key={tab.key}
-                        onClick={() => setActiveTab(tab.key as any)}
+                        onClick={() => setActiveTab(tab.key as 'all' | 'parts' | 'service' | 'partsAndService')}
                         style={{
                           padding: '0.5rem 1rem',
                           borderRadius: '9999px',
@@ -1469,7 +1482,7 @@ export function Sales() {
                               whiteSpace: 'nowrap',
                             }}
                           >
-                            {(sale as any).transactionCode || sale.id}
+                            {sale.transactionCode || sale.id}
                           </td>
                           <td
                             style={{
@@ -1510,7 +1523,7 @@ export function Sales() {
                               whiteSpace: 'nowrap',
                             }}
                           >
-                            {sale.quantity}
+                            {(sale.quantity ?? 0)}
                           </td>
                           <td
                             style={{
@@ -1521,7 +1534,7 @@ export function Sales() {
                               whiteSpace: 'nowrap',
                             }}
                           >
-                            ₱{sale.unitPrice.toFixed(2)}
+                            ₱{(sale.unitPrice ?? 0).toFixed(2)}
                           </td>
                           <td
                             style={{
@@ -1533,7 +1546,7 @@ export function Sales() {
                               whiteSpace: 'nowrap',
                             }}
                           >
-                            ₱{sale.totalAmount.toFixed(2)}
+                            ₱{(sale.totalAmount ?? 0).toFixed(2)}
                           </td>
                           <td
                             style={{

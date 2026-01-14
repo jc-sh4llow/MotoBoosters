@@ -85,6 +85,7 @@ export function Services() {
   const [maxPrice, setMaxPrice] = useState<string>('');
   const [vehicleTypeFilter, setVehicleTypeFilter] = useState<string>('');
   const [showArchivedFilter, setShowArchivedFilter] = useState(false);
+  const [sortBy, setSortBy] = useState('serviceId-asc');
 
   // Track viewport width and basic mobile flag
   useEffect(() => {
@@ -489,6 +490,23 @@ export function Services() {
     });
   };
 
+  const handleHeaderSort = (field: string) => {
+    setSortBy(prev => {
+      const current = prev;
+      const ascKey = `${field}-asc`;
+      const descKey = `${field}-desc`;
+
+      let next: string;
+      if (current === ascKey) {
+        next = descKey;
+      } else {
+        next = ascKey;
+      }
+
+      return next;
+    });
+  };
+
   const getFilteredServices = () => {
     let filtered = canViewArchived
       ? (showArchivedFilter ? services : services.filter(s => !s.archived))
@@ -519,6 +537,29 @@ export function Services() {
     if (vehicleTypeFilter) {
       filtered = filtered.filter(s => s.vehicleTypes.includes(vehicleTypeFilter));
     }
+
+    // Apply sorting
+    const [field, dir] = sortBy.split('-');
+    const desc = dir === 'desc';
+
+    filtered.sort((a, b) => {
+      switch (field) {
+        case 'serviceId': {
+          return desc ? b.serviceId.localeCompare(a.serviceId) : a.serviceId.localeCompare(b.serviceId);
+        }
+        case 'name': {
+          return desc ? b.name.localeCompare(a.name) : a.name.localeCompare(b.name);
+        }
+        case 'price': {
+          return desc ? b.price - a.price : a.price - b.price;
+        }
+        case 'status': {
+          return desc ? b.status.localeCompare(a.status) : a.status.localeCompare(b.status);
+        }
+        default:
+          return 0;
+      }
+    });
 
     return filtered;
   };
@@ -996,7 +1037,7 @@ export function Services() {
                     <button type="button" onClick={() => setShowFilters(!showFilters)} style={{ backgroundColor: '#1e40af', color: 'white', padding: '0.5rem 1rem', borderRadius: '0.375rem', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 500, fontSize: '0.875rem', height: '40px' }}>
                       Filters <FaFilter />
                     </button>
-                    <button type="button" onClick={() => { setStatusFilter(''); setMinPrice(''); setMaxPrice(''); setVehicleTypeFilter(''); setShowArchivedFilter(false); }} style={{ backgroundColor: '#6b7280', color: 'white', padding: '0.5rem 1rem', borderRadius: '0.375rem', border: 'none', cursor: 'pointer', fontWeight: 500, fontSize: '0.875rem', height: '40px' }}>
+                    <button type="button" onClick={() => { setStatusFilter(''); setMinPrice(''); setMaxPrice(''); setVehicleTypeFilter(''); setShowArchivedFilter(false); setSortBy('serviceId-asc'); }} style={{ backgroundColor: '#6b7280', color: 'white', padding: '0.5rem 1rem', borderRadius: '0.375rem', border: 'none', cursor: 'pointer', fontWeight: 500, fontSize: '0.875rem', height: '40px' }}>
                       Clear Filters
                     </button>
                   </div>
@@ -1875,11 +1916,11 @@ export function Services() {
                             <input type="checkbox" checked={selectedItems.size === filteredServices.length && filteredServices.length > 0} onChange={(e) => { if (e.target.checked) { setSelectedItems(new Set(filteredServices.map(s => s.id))); } else { setSelectedItems(new Set()); } }} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
                           </th>
                         )}
-                        <th style={{ padding: '0.75rem 1rem', fontWeight: '500', color: 'var(--table-header-text)' }}>Service ID</th>
-                        <th style={{ padding: '0.75rem 1rem', fontWeight: '500', color: 'var(--table-header-text)' }}>Service Name</th>
+                        <th onClick={() => handleHeaderSort('serviceId')} style={{ padding: '0.75rem 1rem', fontWeight: '500', color: 'var(--table-header-text)', cursor: 'pointer', userSelect: 'none' }}>Service ID {sortBy === 'serviceId-asc' ? '↑' : sortBy === 'serviceId-desc' ? '↓' : ''}</th>
+                        <th onClick={() => handleHeaderSort('name')} style={{ padding: '0.75rem 1rem', fontWeight: '500', color: 'var(--table-header-text)', cursor: 'pointer', userSelect: 'none' }}>Service Name {sortBy === 'name-asc' ? '↑' : sortBy === 'name-desc' ? '↓' : ''}</th>
                         <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: '500', color: 'var(--table-header-text)' }}>Description</th>
-                        <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: '500', color: 'var(--table-header-text)' }}>Price</th>
-                        <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: '500', color: 'var(--table-header-text)' }}>Status</th>
+                        <th onClick={() => handleHeaderSort('price')} style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: '500', color: 'var(--table-header-text)', cursor: 'pointer', userSelect: 'none' }}>Price {sortBy === 'price-asc' ? '↑' : sortBy === 'price-desc' ? '↓' : ''}</th>
+                        <th onClick={() => handleHeaderSort('status')} style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: '500', color: 'var(--table-header-text)', cursor: 'pointer', userSelect: 'none' }}>Status {sortBy === 'status-asc' ? '↑' : sortBy === 'status-desc' ? '↓' : ''}</th>
                         <th style={{ padding: '0.75rem 1rem', fontWeight: '500', color: 'var(--table-header-text)' }}>Vehicle Types</th>
                       </tr>
                     </thead>

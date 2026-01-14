@@ -704,6 +704,7 @@ export function Sales() {
                         setMaxPrice('');
                         setCustomerFilter('');
                         setItemFilter('');
+                        setSortBy('date-desc');
                       }}
                       style={{
                         backgroundColor: '#6b7280',

@@ -814,6 +814,7 @@ export function Transactions() {
                         setMinPrice('');
                         setMaxPrice('');
                         setStatusFilter('');
+                        setSortBy('date-desc');
                       }}
                       style={{
                         backgroundColor: '#6b7280',

@@ -1009,7 +1009,7 @@ export function Customers() {
                   <button type="button" onClick={() => setShowFilters(!showFilters)} style={{ backgroundColor: '#1e40af', color: 'white', padding: '0.5rem 1rem', borderRadius: '0.375rem', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 500, fontSize: '0.875rem', height: '40px' }}>
                     Filters <FaFilter />
                   </button>
-                  <button type="button" onClick={() => { setVehicleTypeFilter(''); setShowArchivedFilter(false); }} style={{ backgroundColor: '#6b7280', color: 'white', padding: '0.5rem 1rem', borderRadius: '0.375rem', border: 'none', cursor: 'pointer', fontWeight: 500, fontSize: '0.875rem', height: '40px' }}>
+                  <button type="button" onClick={() => { setVehicleTypeFilter(''); setShowArchivedFilter(false); setSortBy('id-asc'); }} style={{ backgroundColor: '#6b7280', color: 'white', padding: '0.5rem 1rem', borderRadius: '0.375rem', border: 'none', cursor: 'pointer', fontWeight: 500, fontSize: '0.875rem', height: '40px' }}>
                     Clear Filters
                   </button>
                 </div>

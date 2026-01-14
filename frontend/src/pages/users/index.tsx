@@ -144,7 +144,7 @@ export function Users() {
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
 
-  const [sortBy, setSortBy] = useState('id-asc');
+  const [sortBy, setSortBy] = useState('role-asc');
 
   const currentUsername = user?.name ?? '';
   const [isEditing, setIsEditing] = useState(false);
@@ -1576,6 +1576,7 @@ export function Users() {
                         setRoleFilter('');
                         setStatusFilter('');
                         setShowArchivedFilter(false);
+                        setSortBy('role-asc');
                       }}
                       style={{
                         backgroundColor: '#6b7280',

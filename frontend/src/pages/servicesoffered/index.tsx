@@ -1990,7 +1990,7 @@ export function Services() {
                           <td style={{ padding: '0.75rem 1rem', color: 'var(--table-row-text)' }}>{service.name}</td>
 
                           {showDescription && (
-                            <td className="md:hidden" style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>
+                            <td style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>
                               <button
                                 type="button"
                                 onClick={(e) => {
@@ -2012,9 +2012,9 @@ export function Services() {
                               </button>
                             </td>
                           )}
-                          {showPrice && <td className="md:hidden" style={{ padding: '0.75rem 1rem', textAlign: 'right', color: 'var(--table-row-text)' }}>₱{service.price.toLocaleString()}</td>}
+                          {showPrice && <td style={{ padding: '0.75rem 1rem', textAlign: 'right', color: 'var(--table-row-text)' }}>₱{service.price.toLocaleString()}</td>}
                           {showStatus && (
-                            <td className="md:hidden" style={{ padding: '0.75rem 1rem', color: 'var(--table-row-text)', }}>
+                            <td style={{ padding: '0.75rem 1rem', color: 'var(--table-row-text)', }}>
                               <button
                                 type="button"
                                 disabled={!canToggleStatus}
@@ -2039,7 +2039,7 @@ export function Services() {
                             </td>
                           )}
                           {showVehicleTypes && (
-                            <td className="md:hidden" style={{ padding: '0.75rem 1rem' }}>
+                            <td style={{ padding: '0.75rem 1rem' }}>
                               <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                                 {service.vehicleTypes.map((type, i) => (
                                   <span

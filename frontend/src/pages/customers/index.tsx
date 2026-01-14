@@ -57,6 +57,7 @@ export function Customers() {
   const [showFilters, setShowFilters] = useState(false);
   const [vehicleTypeFilter, setVehicleTypeFilter] = useState('');
   const [showArchivedFilter, setShowArchivedFilter] = useState(false);
+  const [sortBy, setSortBy] = useState('customerId-asc');
 
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerRow | null>(null);
   const [customerForm, setCustomerForm] = useState({
@@ -461,36 +462,83 @@ export function Customers() {
     }
   };
 
-  const filteredCustomers = customers.filter(customer => {
-    // Search filter
-    const q = searchTerm.trim().toLowerCase();
-    if (q) {
-      const idMatch = customer.customerId.toLowerCase().includes(q);
-      const nameMatch = customer.name.toLowerCase().includes(q);
-      const contactMatch = customer.contact.toLowerCase().includes(q);
-      const emailMatch = customer.email.toLowerCase().includes(q);
-      const addressMatch = customer.address.toLowerCase().includes(q);
-      const vehicleTypesMatch = customer.vehicleTypes.join(' ').toLowerCase().includes(q);
+  const handleHeaderSort = (field: string) => {
+    setSortBy(prev => {
+      const current = prev;
+      const ascKey = `${field}-asc`;
+      const descKey = `${field}-desc`;
 
-      if (!idMatch && !nameMatch && !contactMatch && !emailMatch && !addressMatch && !vehicleTypesMatch) {
+      let next: string;
+      if (current === ascKey) {
+        next = descKey;
+      } else {
+        next = ascKey;
+      }
+
+      return next;
+    });
+  };
+
+  const filteredCustomers = (() => {
+    const filtered = customers.filter(customer => {
+      // Search filter
+      const q = searchTerm.trim().toLowerCase();
+      if (q) {
+        const idMatch = customer.customerId.toLowerCase().includes(q);
+        const nameMatch = customer.name.toLowerCase().includes(q);
+        const contactMatch = customer.contact.toLowerCase().includes(q);
+        const emailMatch = customer.email.toLowerCase().includes(q);
+        const addressMatch = customer.address.toLowerCase().includes(q);
+        const vehicleTypesMatch = customer.vehicleTypes.join(' ').toLowerCase().includes(q);
+
+        if (!idMatch && !nameMatch && !contactMatch && !emailMatch && !addressMatch && !vehicleTypesMatch) {
+          return false;
+        }
+      }
+
+      // Vehicle type filter
+      if (vehicleTypeFilter && vehicleTypeFilter !== 'All Types') {
+        if (!customer.vehicleTypes.includes(vehicleTypeFilter)) {
+          return false;
+        }
+      }
+
+      // Archived filter
+      if (!showArchivedFilter && customer.isArchived) {
         return false;
       }
-    }
 
-    // Vehicle type filter
-    if (vehicleTypeFilter && vehicleTypeFilter !== 'All Types') {
-      if (!customer.vehicleTypes.includes(vehicleTypeFilter)) {
-        return false;
+      return true;
+    });
+
+    // Apply sorting
+    const [field, dir] = sortBy.split('-');
+    const desc = dir === 'desc';
+
+    filtered.sort((a, b) => {
+      switch (field) {
+        case 'customerId': {
+          return desc ? b.customerId.localeCompare(a.customerId) : a.customerId.localeCompare(b.customerId);
+        }
+        case 'name': {
+          return desc ? b.name.localeCompare(a.name) : a.name.localeCompare(b.name);
+        }
+        case 'contact': {
+          return desc ? b.contact.localeCompare(a.contact) : a.contact.localeCompare(b.contact);
+        }
+        case 'email': {
+          return desc ? b.email.localeCompare(a.email) : a.email.localeCompare(b.email);
+        }
+        case 'address': {
+          return desc ? b.address.localeCompare(a.address) : a.address.localeCompare(b.address);
+        }
+        default:
+          return 0;
       }
-    }
+    });
 
-    // Archived filter
-    if (!showArchivedFilter && customer.isArchived) {
-      return false;
-    }
-
-    return true;
-  });
+    return filtered;
+  })();
 
   return (
     <div style={{
@@ -1456,6 +1504,7 @@ export function Customers() {
                             </th>
                           )}
                           <th
+                            onClick={() => handleHeaderSort('customerId')}
                             style={{
                               padding: '0.75rem 1rem',
                               fontSize: '0.75rem',
@@ -1464,11 +1513,14 @@ export function Customers() {
                               textAlign: 'left',
                               color: '#6b7280',
                               borderBottom: '1px solid #e5e7eb',
+                              cursor: 'pointer',
+                              userSelect: 'none',
                             }}
                           >
-                            Customer ID
+                            Customer ID {sortBy.startsWith('customerId-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
                           </th>
                           <th
+                            onClick={() => handleHeaderSort('name')}
                             style={{
                               padding: '0.75rem 1rem',
                               fontSize: '0.75rem',
@@ -1477,11 +1529,14 @@ export function Customers() {
                               textAlign: 'left',
                               color: '#6b7280',
                               borderBottom: '1px solid #e5e7eb',
+                              cursor: 'pointer',
+                              userSelect: 'none',
                             }}
                           >
-                            Customer Name
+                            Customer Name {sortBy.startsWith('name-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
                           </th>
                           <th
+                            onClick={() => handleHeaderSort('contact')}
                             style={{
                               padding: '0.75rem 1rem',
                               fontSize: '0.75rem',
@@ -1490,11 +1545,14 @@ export function Customers() {
                               textAlign: 'left',
                               color: '#6b7280',
                               borderBottom: '1px solid #e5e7eb',
+                              cursor: 'pointer',
+                              userSelect: 'none',
                             }}
                           >
-                            Contact Number
+                            Contact Number {sortBy.startsWith('contact-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
                           </th>
                           <th
+                            onClick={() => handleHeaderSort('email')}
                             style={{
                               padding: '0.75rem 1rem',
                               fontSize: '0.75rem',
@@ -1503,11 +1561,14 @@ export function Customers() {
                               textAlign: 'left',
                               color: '#6b7280',
                               borderBottom: '1px solid #e5e7eb',
+                              cursor: 'pointer',
+                              userSelect: 'none',
                             }}
                           >
-                            Email
+                            Email {sortBy.startsWith('email-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
                           </th>
                           <th
+                            onClick={() => handleHeaderSort('address')}
                             style={{
                               padding: '0.75rem 1rem',
                               fontSize: '0.75rem',
@@ -1516,9 +1577,11 @@ export function Customers() {
                               textAlign: 'left',
                               color: '#6b7280',
                               borderBottom: '1px solid #e5e7eb',
+                              cursor: 'pointer',
+                              userSelect: 'none',
                             }}
                           >
-                            Address
+                            Address {sortBy.startsWith('address-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
                           </th>
                           <th
                             style={{

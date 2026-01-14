@@ -93,6 +93,7 @@ export const Returns: React.FC = () => {
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [showFilters, setShowFilters] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
+  const [sortBy, setSortBy] = useState('date-desc');
   const [returnDate] = useState<string>(() => {
     const now = new Date();
     const yyyy = now.getFullYear();
@@ -176,8 +177,25 @@ export const Returns: React.FC = () => {
     return totalAlready > 0;
   }, [returnLines]);
 
+  const handleHeaderSort = (field: string) => {
+    setSortBy(prev => {
+      const current = prev;
+      const ascKey = `${field}-asc`;
+      const descKey = `${field}-desc`;
+
+      let next: string;
+      if (current === ascKey) {
+        next = descKey;
+      } else {
+        next = ascKey;
+      }
+
+      return next;
+    });
+  };
+
   const getFilteredReturns = useMemo(() => {
-    return previousReturns.filter((ret) => {
+    const filtered = previousReturns.filter((ret) => {
       if (!showArchived && ret.status === 'archived') return false;
 
       if (dateFilter !== 'all') {
@@ -199,7 +217,40 @@ export const Returns: React.FC = () => {
 
       return true;
     });
-  }, [previousReturns, showArchived, dateFilter]);
+
+    // Apply sorting
+    const [field, dir] = sortBy.split('-');
+    const desc = dir === 'desc';
+
+    filtered.sort((a, b) => {
+      switch (field) {
+        case 'returnCode': {
+          return desc ? b.id.localeCompare(a.id) : a.id.localeCompare(b.id);
+        }
+        case 'date': {
+          const da = new Date(a.date || 0).getTime();
+          const db = new Date(b.date || 0).getTime();
+          return desc ? db - da : da - db;
+        }
+        case 'transactionCode': {
+          return desc ? b.transactionCode.localeCompare(a.transactionCode) : a.transactionCode.localeCompare(b.transactionCode);
+        }
+        case 'customer': {
+          return desc ? b.customerName.localeCompare(a.customerName) : a.customerName.localeCompare(b.customerName);
+        }
+        case 'totalRefund': {
+          return desc ? b.returnedTotal - a.returnedTotal : a.returnedTotal - b.returnedTotal;
+        }
+        case 'itemsReturned': {
+          return desc ? b.itemsReturned - a.itemsReturned : a.itemsReturned - b.itemsReturned;
+        }
+        default:
+          return 0;
+      }
+    });
+
+    return filtered;
+  }, [previousReturns, showArchived, dateFilter, sortBy]);
 
   const handleProcessReturn = async () => {
     if (!canProcessReturns) {
@@ -2346,13 +2397,13 @@ export const Returns: React.FC = () => {
                               <input type="checkbox" checked={selectedItems.size === previousReturns.length && previousReturns.length > 0} onChange={(e) => { if (e.target.checked) { setSelectedItems(new Set(previousReturns.map(r => r.returnDocId))); } else { setSelectedItems(new Set()); } }} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
                             </th>
                           )}
-                          <th style={{ padding: '0.6rem 1rem' }}>Return ID</th>
-                          <th style={{ padding: '0.6rem 1rem' }}>Date</th>
-                          <th style={{ padding: '0.6rem 1rem' }}>Customer</th>
-                          <th style={{ padding: '0.6rem 1rem' }}>Transaction ID</th>
-                          <th style={{ padding: '0.6rem 1rem' }}>Items Returned</th>
-                          <th style={{ padding: '0.6rem 1rem', textAlign: 'right' }}>
-                            Returned Total
+                          <th onClick={() => handleHeaderSort('returnCode')} style={{ padding: '0.6rem 1rem', cursor: 'pointer', userSelect: 'none' }}>Return ID {sortBy.startsWith('returnCode-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}</th>
+                          <th onClick={() => handleHeaderSort('date')} style={{ padding: '0.6rem 1rem', cursor: 'pointer', userSelect: 'none' }}>Date {sortBy.startsWith('date-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}</th>
+                          <th onClick={() => handleHeaderSort('customer')} style={{ padding: '0.6rem 1rem', cursor: 'pointer', userSelect: 'none' }}>Customer {sortBy.startsWith('customer-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}</th>
+                          <th onClick={() => handleHeaderSort('transactionCode')} style={{ padding: '0.6rem 1rem', cursor: 'pointer', userSelect: 'none' }}>Transaction ID {sortBy.startsWith('transactionCode-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}</th>
+                          <th onClick={() => handleHeaderSort('itemsReturned')} style={{ padding: '0.6rem 1rem', cursor: 'pointer', userSelect: 'none' }}>Items Returned {sortBy.startsWith('itemsReturned-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}</th>
+                          <th onClick={() => handleHeaderSort('totalRefund')} style={{ padding: '0.6rem 1rem', textAlign: 'right', cursor: 'pointer', userSelect: 'none' }}>
+                            Returned Total {sortBy.startsWith('totalRefund-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
                           </th>
                           <th style={{ padding: '0.6rem 1rem', textAlign: 'right' }}>Actions</th>
                         </tr>

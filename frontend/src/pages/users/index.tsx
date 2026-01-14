@@ -144,15 +144,7 @@ export function Users() {
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
 
-  const [sortState, setSortState] = useState<{
-    column: 'id' | 'username' | 'fullName' | 'email' | 'role' | 'status' | 'lastLogin' | null;
-    direction: 'asc' | 'desc';
-    fullNameMode: 'first' | 'last';
-  }>({
-    column: null,
-    direction: 'asc',
-    fullNameMode: 'first',
-  });
+  const [sortBy, setSortBy] = useState('id-asc');
 
   const currentUsername = user?.name ?? '';
   const [isEditing, setIsEditing] = useState(false);
@@ -1855,9 +1847,10 @@ export function Users() {
                           textTransform: 'uppercase',
                           letterSpacing: '0.05em',
                           cursor: 'pointer',
+                          userSelect: 'none',
                         }}
                       >
-                        ID
+                        ID {sortState.column === 'id' ? (sortState.direction === 'asc' ? '↑' : '↓') : ''}
                       </th>
                       <th
                         onClick={() => handleSort('username')}
@@ -1870,9 +1863,10 @@ export function Users() {
                           textTransform: 'uppercase',
                           letterSpacing: '0.05em',
                           cursor: 'pointer',
+                          userSelect: 'none',
                         }}
                       >
-                        Username
+                        Username {sortState.column === 'username' ? (sortState.direction === 'asc' ? '↑' : '↓') : ''}
                       </th>
                       <th
                         onClick={() => handleSort('fullName')}
@@ -1885,9 +1879,10 @@ export function Users() {
                           textTransform: 'uppercase',
                           letterSpacing: '0.05em',
                           cursor: 'pointer',
+                          userSelect: 'none',
                         }}
                       >
-                        Full Name
+                        Full Name {sortState.column === 'fullName' ? (sortState.direction === 'asc' ? '↑' : '↓') : ''}
                       </th>
                       <th
                         onClick={() => handleSort('email')}
@@ -1900,9 +1895,10 @@ export function Users() {
                           textTransform: 'uppercase',
                           letterSpacing: '0.05em',
                           cursor: 'pointer',
+                          userSelect: 'none',
                         }}
                       >
-                        Email
+                        Email {sortState.column === 'email' ? (sortState.direction === 'asc' ? '↑' : '↓') : ''}
                       </th>
                       <th
                         onClick={() => handleSort('role')}
@@ -1915,9 +1911,10 @@ export function Users() {
                           textTransform: 'uppercase',
                           letterSpacing: '0.05em',
                           cursor: 'pointer',
+                          userSelect: 'none',
                         }}
                       >
-                        Role
+                        Role {sortState.column === 'role' ? (sortState.direction === 'asc' ? '↑' : '↓') : ''}
                       </th>
                       <th
                         onClick={() => handleSort('status')}
@@ -1930,9 +1927,10 @@ export function Users() {
                           textTransform: 'uppercase',
                           letterSpacing: '0.05em',
                           cursor: 'pointer',
+                          userSelect: 'none',
                         }}
                       >
-                        Status
+                        Status {sortState.column === 'status' ? (sortState.direction === 'asc' ? '↑' : '↓') : ''}
                       </th>
                       <th
                         onClick={() => handleSort('lastLogin')}
@@ -1945,9 +1943,10 @@ export function Users() {
                           textTransform: 'uppercase',
                           letterSpacing: '0.05em',
                           cursor: 'pointer',
+                          userSelect: 'none',
                         }}
                       >
-                        Last Login
+                        Last Login {sortState.column === 'lastLogin' ? (sortState.direction === 'asc' ? '↑' : '↓') : ''}
                       </th>
                       {showRowActions && (
                         <th

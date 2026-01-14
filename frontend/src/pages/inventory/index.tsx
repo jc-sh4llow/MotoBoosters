@@ -46,6 +46,7 @@ export function Inventory() {
   const canDeleteInventory = can(effectiveRoleIds, 'inventory.delete');
 
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [viewportWidth, setViewportWidth] = useState(window.innerWidth);
   const [isNavExpanded, setIsNavExpanded] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   let closeMenuTimeout: number | undefined;
@@ -192,6 +193,7 @@ export function Inventory() {
       const width = window.innerWidth;
       const mobile = width < 768;
 
+      setViewportWidth(width);
       setIsMobile(mobile);
       setIsCompactTable(width < 1200);
     };

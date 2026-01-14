@@ -954,7 +954,7 @@ export function Users() {
                 }}
                 ref={userDetailsRef}
                 >
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.5rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: viewportWidth <= 767 ? '1fr' : 'repeat(2, 1fr)', gap: '1.5rem' }}>
                     {/* Row: User ID */}
                     <div>
                       <label style={{
@@ -982,7 +982,7 @@ export function Users() {
                     </div>
 
                     {/* Row: Date Created and Date Updated side-by-side */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: viewportWidth <= 767 ? '1fr' : 'repeat(2, 1fr)', gap: '0.75rem' }}>
                       <div>
                         <label style={{
                           display: 'block',

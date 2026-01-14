@@ -37,6 +37,7 @@ export function Customers() {
 
   const [isNavExpanded, setIsNavExpanded] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [viewportWidth, setViewportWidth] = useState(window.innerWidth);
   let closeMenuTimeout: number | undefined;
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -110,11 +111,21 @@ export function Customers() {
     onConfirm: undefined,
   });
 
+  // Determine which columns to show based on viewport
+  const showContact = viewportWidth >= 768; // Hide on mobile
+  const showEmail = viewportWidth >= 992; // Hide on tablet and below
+  const showAddress = viewportWidth >= 1200; // Hide on small desktop and below
+  const showVehicleTypes = viewportWidth >= 992; // Hide on tablet and below
+
   useEffect(() => {
     const handleResize = () => {
-      const mobile = window.innerWidth < 768;
-      setIsMobile(mobile);
+      const width = window.innerWidth;
+      setViewportWidth(width);
+      setIsMobile(width < 768);
     };
+
+    // Run once on mount
+    handleResize();
 
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
@@ -1535,67 +1546,75 @@ export function Customers() {
                           >
                             Customer Name {sortBy.startsWith('name-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
                           </th>
-                          <th
-                            onClick={() => handleHeaderSort('contact')}
-                            style={{
-                              padding: '0.75rem 1rem',
-                              fontSize: '0.75rem',
-                              textTransform: 'uppercase',
-                              letterSpacing: '0.05em',
-                              textAlign: 'left',
-                              color: '#6b7280',
-                              borderBottom: '1px solid #e5e7eb',
-                              cursor: 'pointer',
-                              userSelect: 'none',
-                            }}
-                          >
-                            Contact Number {sortBy.startsWith('contact-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
-                          </th>
-                          <th
-                            onClick={() => handleHeaderSort('email')}
-                            style={{
-                              padding: '0.75rem 1rem',
-                              fontSize: '0.75rem',
-                              textTransform: 'uppercase',
-                              letterSpacing: '0.05em',
-                              textAlign: 'left',
-                              color: '#6b7280',
-                              borderBottom: '1px solid #e5e7eb',
-                              cursor: 'pointer',
-                              userSelect: 'none',
-                            }}
-                          >
-                            Email {sortBy.startsWith('email-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
-                          </th>
-                          <th
-                            onClick={() => handleHeaderSort('address')}
-                            style={{
-                              padding: '0.75rem 1rem',
-                              fontSize: '0.75rem',
-                              textTransform: 'uppercase',
-                              letterSpacing: '0.05em',
-                              textAlign: 'left',
-                              color: '#6b7280',
-                              borderBottom: '1px solid #e5e7eb',
-                              cursor: 'pointer',
-                              userSelect: 'none',
-                            }}
-                          >
-                            Address {sortBy.startsWith('address-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
-                          </th>
-                          <th
-                            style={{
-                              padding: '0.75rem 1rem',
-                              fontSize: '0.75rem',
-                              textTransform: 'uppercase',
-                              letterSpacing: '0.05em',
-                              textAlign: 'left',
-                              color: '#6b7280',
-                              borderBottom: '1px solid #e5e7eb',
-                            }}
-                          >
-                            Vehicle Type(s)
-                          </th>
+                          {showContact && (
+                            <th
+                              onClick={() => handleHeaderSort('contact')}
+                              style={{
+                                padding: '0.75rem 1rem',
+                                fontSize: '0.75rem',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.05em',
+                                textAlign: 'left',
+                                color: '#6b7280',
+                                borderBottom: '1px solid #e5e7eb',
+                                cursor: 'pointer',
+                                userSelect: 'none',
+                              }}
+                            >
+                              Contact Number {sortBy.startsWith('contact-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                            </th>
+                          )}
+                          {showEmail && (
+                            <th
+                              onClick={() => handleHeaderSort('email')}
+                              style={{
+                                padding: '0.75rem 1rem',
+                                fontSize: '0.75rem',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.05em',
+                                textAlign: 'left',
+                                color: '#6b7280',
+                                borderBottom: '1px solid #e5e7eb',
+                                cursor: 'pointer',
+                                userSelect: 'none',
+                              }}
+                            >
+                              Email {sortBy.startsWith('email-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                            </th>
+                          )}
+                          {showAddress && (
+                            <th
+                              onClick={() => handleHeaderSort('address')}
+                              style={{
+                                padding: '0.75rem 1rem',
+                                fontSize: '0.75rem',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.05em',
+                                textAlign: 'left',
+                                color: '#6b7280',
+                                borderBottom: '1px solid #e5e7eb',
+                                cursor: 'pointer',
+                                userSelect: 'none',
+                              }}
+                            >
+                              Address {sortBy.startsWith('address-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                            </th>
+                          )}
+                          {showVehicleTypes && (
+                            <th
+                              style={{
+                                padding: '0.75rem 1rem',
+                                fontSize: '0.75rem',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.05em',
+                                textAlign: 'left',
+                                color: '#6b7280',
+                                borderBottom: '1px solid #e5e7eb',
+                              }}
+                            >
+                              Vehicle Type(s)
+                            </th>
+                          )}
                           {canViewArchived && (
                             <th
                               style={{
@@ -1715,44 +1734,51 @@ export function Customers() {
                               >
                                 {customer.name || '-'}
                               </td>
-                              <td
-                                style={{
-                                  padding: '0.75rem 1rem',
-                                  fontSize: '0.875rem',
-                                  color: '#111827',
-                                  borderBottom: '1px solid #e5e7eb',
-                                }}
-                              >
-                                {customer.contact || '-'}
-                              </td>
-                              <td
-                                style={{
-                                  padding: '0.75rem 1rem',
-                                  fontSize: '0.875rem',
-                                  color: '#111827',
-                                  borderBottom: '1px solid #e5e7eb',
-                                }}
-                              >
-                                {customer.email || '-'}
-                              </td>
-                              <td
-                                style={{
-                                  padding: '0.75rem 1rem',
-                                  fontSize: '0.875rem',
-                                  color: '#111827',
-                                  borderBottom: '1px solid #e5e7eb',
-                                }}
-                              >
-                                {customer.address || '-'}
-                              </td>
-                              <td
-                                style={{
-                                  padding: '0.75rem 1rem',
-                                  fontSize: '0.875rem',
-                                  color: '#111827',
-                                  borderBottom: '1px solid #e5e7eb',
-                                }}
-                              >
+                              {showContact && (
+                                <td
+                                  style={{
+                                    padding: '0.75rem 1rem',
+                                    fontSize: '0.875rem',
+                                    color: '#111827',
+                                    borderBottom: '1px solid #e5e7eb',
+                                  }}
+                                >
+                                  {customer.contact || '-'}
+                                </td>
+                              )}
+                              {showEmail && (
+                                <td
+                                  style={{
+                                    padding: '0.75rem 1rem',
+                                    fontSize: '0.875rem',
+                                    color: '#111827',
+                                    borderBottom: '1px solid #e5e7eb',
+                                  }}
+                                >
+                                  {customer.email || '-'}
+                                </td>
+                              )}
+                              {showAddress && (
+                                <td
+                                  style={{
+                                    padding: '0.75rem 1rem',
+                                    fontSize: '0.875rem',
+                                    color: '#111827',
+                                    borderBottom: '1px solid #e5e7eb',
+                                  }}
+                                >
+                                  {customer.address || '-'}
+                                </td>
+                              )}
+                              {showVehicleTypes && (
+                                <td
+                                  style={{
+                                    padding: '0.75rem 1rem',
+                                    fontSize: '0.875rem',
+                                    color: '#111827',
+                                    borderBottom: '1px solid #e5e7eb',
+                                  }}
+                                >
                                 {customer.vehicleTypes && customer.vehicleTypes.length > 0
                                   ? customer.vehicleTypes.join(', ')
                                   : '-'}

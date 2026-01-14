@@ -1689,24 +1689,29 @@ export function Inventory() {
                   }}
                 />
               </div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem' }}>
+              {/* Container for title + welcome message (mobile: stacked, desktop: inline) */}
+              <div style={{ 
+                display: 'flex', 
+                flexDirection: isMobile ? 'column' : 'row',
+                alignItems: isMobile ? 'flex-start' : 'baseline', 
+                gap: isMobile ? '0.25rem' : '0.75rem'
+              }}>
                 <h1 style={{
                   fontSize: isMobile ? '1.5rem' : '1.875rem',
                   fontWeight: 'bold',
                   color: 'var(--header-title)',
                   margin: 0,
+                  lineHeight: isMobile ? '1.75rem' : 'normal',
                 }}>
                   Inventory
                 </h1>
-                {!isMobile && (
-                  <span style={{
-                    color: 'var(--text)',
-                    fontSize: '0.9rem',
-                    marginLeft: '1rem',
-                  }}>
-                    Welcome, {user?.name || 'Guest'}
-                  </span>
-                )}
+                <span style={{
+                  color: 'var(--text)',
+                  fontSize: isMobile ? '0.75rem' : '0.9rem',
+                  marginLeft: isMobile ? '0' : '1rem',
+                }}>
+                  Welcome, {user?.name || 'Guest'}
+                </span>
               </div>
             </div>
 

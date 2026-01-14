@@ -494,13 +494,20 @@ export function Users() {
     }
   };
 
-  const handleSort = (column: 'id' | 'username' | 'fullName' | 'email' | 'role' | 'status' | 'lastLogin') => {
-    setSortState(prev => {
-      if (prev.column === column) {
-        const nextDirection = prev.direction === 'asc' ? 'desc' : 'asc';
-        return { ...prev, column, direction: nextDirection };
+  const handleHeaderSort = (field: string) => {
+    setSortBy(prev => {
+      const current = prev;
+      const ascKey = `${field}-asc`;
+      const descKey = `${field}-desc`;
+
+      let next: string;
+      if (current === ascKey) {
+        next = descKey;
+      } else {
+        next = ascKey;
       }
-      return { ...prev, column, direction: 'asc' };
+
+      return next;
     });
   };
 
@@ -623,71 +630,47 @@ export function Users() {
     return true;
   });
 
-  const sortedUsers = [...visibleUsers].sort((a, b) => {
-    if (!sortState.column) return 0;
+  const sortedUsers = (() => {
+    const sorted = [...visibleUsers];
+    const [field, dir] = sortBy.split('-');
+    const desc = dir === 'desc';
 
-    const directionFactor = sortState.direction === 'asc' ? 1 : -1;
-
-    if (sortState.column === 'id') {
-      const roleA = a.role?.toLowerCase() ?? '';
-      const roleB = b.role?.toLowerCase() ?? '';
-      const rankA = rolePriority[roleA] ?? 999;
-      const rankB = rolePriority[roleB] ?? 999;
-      if (rankA !== rankB) return (rankA - rankB) * directionFactor;
-      return a.displayId.localeCompare(b.displayId) * directionFactor;
-    }
-
-    if (sortState.column === 'username') {
-      return a.username.localeCompare(b.username) * directionFactor;
-    }
-
-    if (sortState.column === 'fullName') {
-      if (sortState.fullNameMode === 'first') {
-        const firstA = getFirstName(a.fullName);
-        const firstB = getFirstName(b.fullName);
-        const cmp = firstA.localeCompare(firstB);
-        if (cmp !== 0) return cmp * directionFactor;
-        return a.fullName.localeCompare(b.fullName) * directionFactor;
-      } else {
-        const lastA = getLastName(a.fullName);
-        const lastB = getLastName(b.fullName);
-        const cmp = lastA.localeCompare(lastB);
-        if (cmp !== 0) return cmp * directionFactor;
-        return a.fullName.localeCompare(b.fullName) * directionFactor;
+    sorted.sort((a, b) => {
+      switch (field) {
+        case 'id': {
+          return desc ? b.displayId.localeCompare(a.displayId) : a.displayId.localeCompare(b.displayId);
+        }
+        case 'username': {
+          return desc ? b.username.localeCompare(a.username) : a.username.localeCompare(b.username);
+        }
+        case 'fullName': {
+          return desc ? b.fullName.localeCompare(a.fullName) : a.fullName.localeCompare(b.fullName);
+        }
+        case 'email': {
+          return desc ? b.email.localeCompare(a.email) : a.email.localeCompare(b.email);
+        }
+        case 'role': {
+          const roleA = a.role?.toLowerCase() ?? '';
+          const roleB = b.role?.toLowerCase() ?? '';
+          return desc ? roleB.localeCompare(roleA) : roleA.localeCompare(roleB);
+        }
+        case 'status': {
+          const statusA = a.status?.toLowerCase() ?? '';
+          const statusB = b.status?.toLowerCase() ?? '';
+          return desc ? statusB.localeCompare(statusA) : statusA.localeCompare(statusB);
+        }
+        case 'lastLogin': {
+          const timeA = a.lastLogin ? Date.parse(a.lastLogin) : 0;
+          const timeB = b.lastLogin ? Date.parse(b.lastLogin) : 0;
+          return desc ? timeB - timeA : timeA - timeB;
+        }
+        default:
+          return 0;
       }
-    }
+    });
 
-    if (sortState.column === 'email') {
-      return a.email.localeCompare(b.email) * directionFactor;
-    }
-
-    if (sortState.column === 'role') {
-      const roleA = a.role?.toLowerCase() ?? '';
-      const roleB = b.role?.toLowerCase() ?? '';
-      const rankA = rolePriority[roleA] ?? 999;
-      const rankB = rolePriority[roleB] ?? 999;
-      if (rankA !== rankB) return (rankA - rankB) * directionFactor;
-      return a.username.localeCompare(b.username) * directionFactor;
-    }
-
-    if (sortState.column === 'status') {
-      const statusA = a.status?.toLowerCase() ?? '';
-      const statusB = b.status?.toLowerCase() ?? '';
-      const normA = statusA === 'active' ? 0 : 1;
-      const normB = statusB === 'active' ? 0 : 1;
-      if (normA !== normB) return (normA - normB) * directionFactor;
-      return a.status.localeCompare(b.status) * directionFactor;
-    }
-
-    if (sortState.column === 'lastLogin') {
-      const timeA = a.lastLogin ? Date.parse(a.lastLogin) : 0;
-      const timeB = b.lastLogin ? Date.parse(b.lastLogin) : 0;
-      if (timeA === timeB) return 0;
-      return (timeA - timeB) * directionFactor;
-    }
-
-    return 0;
-  });
+    return sorted;
+  })();
 
   return (
     <div style={{
@@ -1837,7 +1820,7 @@ export function Users() {
                         </th>
                       )}
                       <th
-                        onClick={() => handleSort('id')}
+                        onClick={() => handleHeaderSort('id')}
                         style={{
                           padding: '0.75rem 1rem',
                           textAlign: 'left',
@@ -1850,10 +1833,10 @@ export function Users() {
                           userSelect: 'none',
                         }}
                       >
-                        ID {sortState.column === 'id' ? (sortState.direction === 'asc' ? '↑' : '↓') : ''}
+                        ID {sortBy.startsWith('id-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
                       </th>
                       <th
-                        onClick={() => handleSort('username')}
+                        onClick={() => handleHeaderSort('username')}
                         style={{
                           padding: '0.75rem 1rem',
                           textAlign: 'left',
@@ -1866,10 +1849,10 @@ export function Users() {
                           userSelect: 'none',
                         }}
                       >
-                        Username {sortState.column === 'username' ? (sortState.direction === 'asc' ? '↑' : '↓') : ''}
+                        Username {sortBy.startsWith('username-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
                       </th>
                       <th
-                        onClick={() => handleSort('fullName')}
+                        onClick={() => handleHeaderSort('fullName')}
                         style={{
                           padding: '0.75rem 1rem',
                           textAlign: 'left',
@@ -1882,10 +1865,10 @@ export function Users() {
                           userSelect: 'none',
                         }}
                       >
-                        Full Name {sortState.column === 'fullName' ? (sortState.direction === 'asc' ? '↑' : '↓') : ''}
+                        Full Name {sortBy.startsWith('fullName-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
                       </th>
                       <th
-                        onClick={() => handleSort('email')}
+                        onClick={() => handleHeaderSort('email')}
                         style={{
                           padding: '0.75rem 1rem',
                           textAlign: 'left',
@@ -1898,10 +1881,10 @@ export function Users() {
                           userSelect: 'none',
                         }}
                       >
-                        Email {sortState.column === 'email' ? (sortState.direction === 'asc' ? '↑' : '↓') : ''}
+                        Email {sortBy.startsWith('email-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
                       </th>
                       <th
-                        onClick={() => handleSort('role')}
+                        onClick={() => handleHeaderSort('role')}
                         style={{
                           padding: '0.75rem 1rem',
                           textAlign: 'left',
@@ -1914,10 +1897,10 @@ export function Users() {
                           userSelect: 'none',
                         }}
                       >
-                        Role {sortState.column === 'role' ? (sortState.direction === 'asc' ? '↑' : '↓') : ''}
+                        Role {sortBy.startsWith('role-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
                       </th>
                       <th
-                        onClick={() => handleSort('status')}
+                        onClick={() => handleHeaderSort('status')}
                         style={{
                           padding: '0.75rem 1rem',
                           textAlign: 'left',
@@ -1930,10 +1913,10 @@ export function Users() {
                           userSelect: 'none',
                         }}
                       >
-                        Status {sortState.column === 'status' ? (sortState.direction === 'asc' ? '↑' : '↓') : ''}
+                        Status {sortBy.startsWith('status-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
                       </th>
                       <th
-                        onClick={() => handleSort('lastLogin')}
+                        onClick={() => handleHeaderSort('lastLogin')}
                         style={{
                           padding: '0.75rem 1rem',
                           textAlign: 'left',
@@ -1946,7 +1929,7 @@ export function Users() {
                           userSelect: 'none',
                         }}
                       >
-                        Last Login {sortState.column === 'lastLogin' ? (sortState.direction === 'asc' ? '↑' : '↓') : ''}
+                        Last Login {sortBy.startsWith('lastLogin-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
                       </th>
                       {showRowActions && (
                         <th

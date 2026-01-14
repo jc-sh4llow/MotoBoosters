@@ -1690,10 +1690,10 @@ export function Inventory() {
                 />
               </div>
               {/* Container for title + welcome message (mobile: stacked, desktop: inline) */}
-              <div style={{ 
-                display: 'flex', 
+              <div style={{
+                display: 'flex',
                 flexDirection: isMobile ? 'column' : 'row',
-                alignItems: isMobile ? 'flex-start' : 'baseline', 
+                alignItems: isMobile ? 'flex-start' : 'baseline',
                 gap: isMobile ? '0.25rem' : '0.75rem'
               }}>
                 <h1 style={{
@@ -1715,66 +1715,68 @@ export function Inventory() {
               </div>
             </div>
 
-            {/* Center/right: Search bar (desktop) or icon (small desktop) */}
-            <div
-              style={{
-                position: 'relative',
-                display: 'flex',
-                alignItems: 'center',
-                marginLeft: 'auto',
-                marginRight: '1rem',
-              }}
-            >
-              {/* Original full search bar for normal desktop & other sizes */}
-              <FaSearch
+            {/* Center/right: Search bar (desktop only, hidden on mobile) */}
+            {!isMobile && (
+              <div
                 style={{
-                  position: 'absolute',
-                  left: '12px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  color: 'var(--text-muted)',
+                  position: 'relative',
+                  display: 'flex',
+                  alignItems: 'center',
+                  marginLeft: 'auto',
+                  marginRight: '1rem',
                 }}
-              />
-              <input
-                type="text"
-                placeholder={isMobile ? "Search..." : "Search by Brand or Item Name..."}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                style={{
-                  padding: '0.5rem 2.5rem 0.5rem 2.5rem',
-                  borderRadius: '0.5rem',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
-                  backgroundColor: 'rgba(255, 255, 255)',
-                  color: '#1f2937',
-                  width: isMobile ? '200px' : '350px',
-                  outline: 'none',
-                }}
-              />
-              {searchTerm && (
-                <button
-                  onClick={() => setSearchTerm('')}
+              >
+                {/* Original full search bar for normal desktop & other sizes */}
+                <FaSearch
                   style={{
                     position: 'absolute',
-                    right: '8px',
+                    left: '12px',
                     top: '50%',
                     transform: 'translateY(-50%)',
-                    background: 'transparent',
-                    border: 'none',
                     color: 'var(--text-muted)',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '4px',
                   }}
-                >
-                  <FaTimes size={14} />
-                </button>
-              )}
-            </div>
+                />
+                <input
+                  type="text"
+                  placeholder={isMobile ? "Search..." : "Search by Brand or Item Name..."}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  style={{
+                    padding: '0.5rem 2.5rem 0.5rem 2.5rem',
+                    borderRadius: '0.5rem',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    backgroundColor: 'rgba(255, 255, 255)',
+                    color: '#1f2937',
+                    width: isMobile ? '200px' : '350px',
+                    outline: 'none',
+                  }}
+                />
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm('')}
+                    style={{
+                      position: 'absolute',
+                      right: '8px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'transparent',
+                      border: 'none',
+                      color: 'var(--text-muted)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '4px',
+                    }}
+                  >
+                    <FaTimes size={14} />
+                  </button>
+                )}
+              </div>
+            )}
             {/* Right: Logout + Navbar Toggle Button */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              {user && (
+              {user && !isMobile && (
                 <button
                   onClick={() => {
                     logout();
@@ -1830,11 +1832,18 @@ export function Inventory() {
             </div>
 
             {/* Dropdown Menu */}
-            {/* Dropdown Menu */}
             <HeaderDropdown
               isNavExpanded={isNavExpanded}
               setIsNavExpanded={setIsNavExpanded}
               isMobile={isMobile}
+              currentPage="inventory"
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+              onLogout={() => {
+                logout();
+                navigate('/login');
+              }}
+              userName={user?.name}
               onMouseEnter={() => {
                 if (!isMobile && closeMenuTimeout) {
                   clearTimeout(closeMenuTimeout);

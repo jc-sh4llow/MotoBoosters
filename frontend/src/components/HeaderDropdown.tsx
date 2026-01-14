@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FaHome, FaWarehouse, FaTag, FaWrench, FaFileInvoice, FaPlus, FaUser, FaUndoAlt, FaCog, FaTimes } from 'react-icons/fa';
+import { FaHome, FaWarehouse, FaTag, FaWrench, FaFileInvoice, FaPlus, FaUser, FaUndoAlt, FaCog, FaTimes, FaSearch } from 'react-icons/fa';
 import { can, DEVELOPER_ROLE_ID } from '../config/permissions';
 import { useRolePreview } from '../contexts/RolePreviewContext';
 import { useRoles } from '../contexts/PermissionsContext';
@@ -12,6 +12,12 @@ interface HeaderDropdownProps {
   isMobile: boolean;
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
+  // Page-specific props
+  currentPage?: string;
+  searchTerm?: string;
+  onSearchChange?: (value: string) => void;
+  onLogout?: () => void;
+  userName?: string;
 }
 
 // All menu items in the correct order
@@ -47,6 +53,11 @@ export function HeaderDropdown({
   isMobile,
   onMouseEnter,
   onMouseLeave,
+  currentPage,
+  searchTerm,
+  onSearchChange,
+  onLogout,
+  userName,
 }: HeaderDropdownProps) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -56,6 +67,7 @@ export function HeaderDropdown({
   const { roles } = useRoles();
   const { actualRoleIds, effectiveRoleIds } = useEffectiveRoleIds();
   const [selectedRoleId, setSelectedRoleId] = useState<string>('');
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 
   // Check if user can see a path based on permissions (using effective roles for preview)
   const canSeePath = (path: string) => {
@@ -78,7 +90,7 @@ export function HeaderDropdown({
 
   // Find current page info
   const currentPageItem = allMenuItems.find(item => item.path === currentPath);
-  
+
   // Filter menu items: exclude current page, only show items user has permission for
   const otherMenuItems = allMenuItems.filter(
     item => item.path !== currentPath && canSeePath(item.path)
@@ -110,6 +122,128 @@ export function HeaderDropdown({
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
+      {/* Mobile-only: Search Icon + Logout Button Row */}
+      {isMobile && (
+        <>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            padding: '0.75rem 1.25rem',
+            backgroundColor: '#f9fafb',
+            borderBottom: '1px solid #e5e7eb',
+          }}>
+            {/* Search Icon Button - Only show for Inventory page */}
+            {currentPage === 'inventory' && onSearchChange && (
+              <button
+                onClick={() => setIsSearchExpanded(!isSearchExpanded)}
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem',
+                  padding: '0.5rem 0.75rem',
+                  backgroundColor: 'white',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '0.375rem',
+                  color: '#1f2937',
+                  fontSize: '0.875rem',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                }}
+              >
+                <FaSearch style={{ fontSize: '0.9rem' }} />
+                Search
+              </button>
+            )}
+
+            {/* Logout Button */}
+            {onLogout && (
+              <button
+                onClick={onLogout}
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem',
+                  padding: '0.5rem 0.75rem',
+                  backgroundColor: 'white',
+                  border: '1px solid #dc2626',
+                  borderRadius: '0.375rem',
+                  color: '#dc2626',
+                  fontSize: '0.875rem',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                }}
+              >
+                Logout
+              </button>
+            )}
+          </div>
+
+          {/* Expandable Search Bar - Only for Inventory page */}
+          {currentPage === 'inventory' && onSearchChange && isSearchExpanded && (
+            <div style={{
+              padding: '0.75rem 1.25rem',
+              backgroundColor: '#f9fafb',
+              borderBottom: '1px solid #e5e7eb',
+              animation: 'slideDown 0.2s ease-out',
+            }}>
+              <div style={{ position: 'relative' }}>
+                <FaSearch
+                  style={{
+                    position: 'absolute',
+                    left: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    color: '#9ca3af',
+                    fontSize: '0.875rem',
+                  }}
+                />
+                <input
+                  type="text"
+                  placeholder="Search by Brand or Item Name..."
+                  value={searchTerm || ''}
+                  onChange={(e) => onSearchChange(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.5rem 2.5rem 0.5rem 2.5rem',
+                    borderRadius: '0.375rem',
+                    border: '1px solid #d1d5db',
+                    backgroundColor: 'white',
+                    color: '#1f2937',
+                    fontSize: '0.875rem',
+                    outline: 'none',
+                  }}
+                />
+                {searchTerm && (
+                  <button
+                    onClick={() => onSearchChange('')}
+                    style={{
+                      position: 'absolute',
+                      right: '8px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'transparent',
+                      border: 'none',
+                      color: '#9ca3af',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '4px',
+                    }}
+                  >
+                    <FaTimes size={12} />
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+        </>
+      )}
       {/* Current page (highlighted at top) */}
       {currentPageItem && (
         <button

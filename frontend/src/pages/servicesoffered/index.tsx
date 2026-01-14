@@ -1,4 +1,4 @@
-import { FaBars, FaSearch, FaTimes, FaFilter, FaFileExcel, FaTrash, FaUndoAlt } from 'react-icons/fa';
+import { FaBars, FaSearch, FaTimes, FaFilter, FaFileExcel, FaTrash, FaUndoAlt, FaChevronDown } from 'react-icons/fa';
 
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
@@ -93,6 +93,7 @@ export function Services() {
   const [vehicleTypeFilter, setVehicleTypeFilter] = useState<string>('');
   const [showArchivedFilter, setShowArchivedFilter] = useState(false);
   const [sortBy, setSortBy] = useState('serviceId-asc');
+  const [isActionBarExpanded, setIsActionBarExpanded] = useState(false);
 
   // Track viewport width and basic mobile flag
   useEffect(() => {

@@ -33,6 +33,7 @@ export function Sales() {
 
   const [isNavExpanded, setIsNavExpanded] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [viewportWidth, setViewportWidth] = useState(window.innerWidth);
 
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -63,6 +64,17 @@ export function Sales() {
   const [sortBy, setSortBy] = useState('date-desc');
 
   const [firestoreSales, setFirestoreSales] = useState<SaleItem[]>([]);
+
+  // Responsive column visibility helpers
+  // Priority: Item Name > Quantity > Total Amount > Date > Transaction ID > Item Code > Customer > Unit Price
+  const showUnitPrice = viewportWidth >= 1400; // Hide on smaller desktops and below
+  const showCustomer = viewportWidth >= 1200; // Hide on small desktops and below
+  const showItemCode = viewportWidth >= 992; // Hide on tablets and below
+  const showTransactionId = viewportWidth >= 768; // Hide on mobile
+  const showDate = viewportWidth >= 640; // Hide on small mobile
+  const showQuantity = viewportWidth >= 576; // Hide on extra small mobile
+  const showTotalAmount = viewportWidth >= 520; // Hide on extra extra small mobile
+  const showItemName = viewportWidth >= 480; // Hide on tiny mobile
 
   // Sample data - used as fallback if Firestore has no data
   const salesData: SaleItem[] = [
@@ -288,12 +300,15 @@ export function Sales() {
 
   useEffect(() => {
     const handleResize = () => {
-      const isMobileView = window.innerWidth < 768;
+      const width = window.innerWidth;
+      const isMobileView = width < 768;
+      setViewportWidth(width);
       setIsMobile(isMobileView);
       if (!isMobileView) {
         setIsNavExpanded(false);
       }
     };
+    handleResize(); // Set initial values
 
     window.addEventListener('resize', handleResize);
 

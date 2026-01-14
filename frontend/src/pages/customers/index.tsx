@@ -1779,10 +1779,11 @@ export function Customers() {
                                     borderBottom: '1px solid #e5e7eb',
                                   }}
                                 >
-                                {customer.vehicleTypes && customer.vehicleTypes.length > 0
-                                  ? customer.vehicleTypes.join(', ')
-                                  : '-'}
-                              </td>
+                                  {customer.vehicleTypes && customer.vehicleTypes.length > 0
+                                    ? customer.vehicleTypes.join(', ')
+                                    : '-'}
+                                </td>
+                              )}
                               {canViewArchived && (
                                 <td
                                   style={{

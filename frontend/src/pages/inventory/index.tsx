@@ -135,9 +135,9 @@ export function Inventory() {
   const itemDetailsToggleRef = useRef<HTMLButtonElement | null>(null);
 
 
-  // Responsive column visibility for full table view
-  const showType = viewportWidth >= 992; // Hide on tablet and below
-  const showSold = viewportWidth >= 768; // Hide on mobile
+  const showType = viewportWidth >= 992; // Hide on tablet and below (768-991px)
+  const showPurchasePrice = canViewPurchasePrice && viewportWidth >= 992; // Hide on tablet and below
+  const showSold = viewportWidth >= 1200; // Hide on small desktop and below (992-1199px)
   const showDiscountMarkup = viewportWidth >= 1200; // Hide on small desktop and below
   const showRemarks = viewportWidth >= 1200; // Hide on small desktop and below
 
@@ -1691,20 +1691,22 @@ export function Inventory() {
               </div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem' }}>
                 <h1 style={{
-                  fontSize: '1.875rem',
+                  fontSize: isMobile ? '1.5rem' : '1.875rem',
                   fontWeight: 'bold',
                   color: 'var(--header-title)',
                   margin: 0,
                 }}>
                   Inventory
                 </h1>
-                <span style={{
-                  color: 'var(--text)',
-                  fontSize: '0.9rem',
-                  marginLeft: '1rem',
-                }}>
-                  Welcome, {user?.name || 'Guest'}
-                </span>
+                {!isMobile && (
+                  <span style={{
+                    color: 'var(--text)',
+                    fontSize: '0.9rem',
+                    marginLeft: '1rem',
+                  }}>
+                    Welcome, {user?.name || 'Guest'}
+                  </span>
+                )}
               </div>
             </div>
 
@@ -1730,7 +1732,7 @@ export function Inventory() {
               />
               <input
                 type="text"
-                placeholder="Search by Brand or Item Name..."
+                placeholder={isMobile ? "Search..." : "Search by Brand or Item Name..."}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 style={{
@@ -1739,7 +1741,7 @@ export function Inventory() {
                   border: '1px solid rgba(255, 255, 255, 0.2)',
                   backgroundColor: 'rgba(255, 255, 255)',
                   color: '#1f2937',
-                  width: '350px',
+                  width: isMobile ? '200px' : '350px',
                   outline: 'none',
                 }}
               />
@@ -3307,13 +3309,15 @@ export function Inventory() {
                             >
                               ITEM NAME
                             </th>
-                            <th
-                              style={{ padding: '0.75rem 1.5rem', textAlign: 'center', cursor: 'pointer' }}
-                              onClick={() => handleHeaderSort('type')}
-                            >
-                              TYPE
-                            </th>
-                            {canViewPurchasePrice && (
+                            {showType && (
+                              <th
+                                style={{ padding: '0.75rem 1.5rem', textAlign: 'center', cursor: 'pointer' }}
+                                onClick={() => handleHeaderSort('type')}
+                              >
+                                TYPE
+                              </th>
+                            )}
+                            {showPurchasePrice && (
                               <th
                                 style={{ padding: '0.75rem 1.5rem', textAlign: 'center', cursor: 'pointer' }}
                                 onClick={() => handleHeaderSort('purchase')}
@@ -3333,27 +3337,33 @@ export function Inventory() {
                             >
                               AVAILABLE STOCK
                             </th>
-                            <th
-                              style={{ padding: '0.75rem 1.5rem', textAlign: 'center', cursor: 'pointer' }}
-                              onClick={() => handleHeaderSort('sold')}
-                            >
-                              NO. SOLD
-                            </th>
+                            {showSold && (
+                              <th
+                                style={{ padding: '0.75rem 1.5rem', textAlign: 'center', cursor: 'pointer' }}
+                                onClick={() => handleHeaderSort('sold')}
+                              >
+                                NO. SOLD
+                              </th>
+                            )}
                             <th
                               style={{ padding: '0.75rem 1.5rem', textAlign: 'center', cursor: 'pointer' }}
                               onClick={() => handleHeaderSort('status')}
                             >
                               STATUS
                             </th>
-                            <th
-                              style={{ padding: '0.75rem 1.5rem', textAlign: 'center', cursor: 'pointer' }}
-                              onClick={() => handleHeaderSort('discount')}
-                            >
-                              DISCOUNT / MARKUP
-                            </th>
-                            <th style={{ padding: '0.75rem 1.5rem' }}>
-                              REMARKS
-                            </th>
+                            {showDiscountMarkup && (
+                              <th
+                                style={{ padding: '0.75rem 1.5rem', textAlign: 'center', cursor: 'pointer' }}
+                                onClick={() => handleHeaderSort('discount')}
+                              >
+                                DISCOUNT / MARKUP
+                              </th>
+                            )}
+                            {showRemarks && (
+                              <th style={{ padding: '0.75rem 1.5rem' }}>
+                                REMARKS
+                              </th>
+                            )}
                           </tr>
                         </thead>
                         <tbody>
@@ -3461,8 +3471,10 @@ export function Inventory() {
                                   {/* Full table view */}
                                   <td style={{ padding: '1rem 1.5rem' }}>{item.brand}</td>
                                   <td style={{ padding: '1rem 1.5rem' }}>{item.itemName}</td>
-                                  <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>{item.type || item.itemType}</td>
-                                  {canViewPurchasePrice && (
+                                  {showType && (
+                                    <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>{item.type || item.itemType}</td>
+                                  )}
+                                  {showPurchasePrice && (
                                     <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>
                                       ₱{Number(item.purchasePrice ?? 0).toFixed(2)}
                                     </td>
@@ -3471,7 +3483,9 @@ export function Inventory() {
                                     ₱{Number(item.sellingPrice ?? 0).toFixed(2)}
                                   </td>
                                   <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>{available}</td>
-                                  <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>{item.soldCount ?? 0}</td>
+                                  {showSold && (
+                                    <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>{item.soldCount ?? 0}</td>
+                                  )}
                                   <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>
                                     <span style={{
                                       display: 'inline-block',
@@ -3485,37 +3499,41 @@ export function Inventory() {
                                       {status}
                                     </span>
                                   </td>
-                                  <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>
-                                    {renderDiscountPill(item.defaultDiscount, item.defaultMarkup)}
-                                  </td>
-                                  <td style={{ padding: '1rem 1.5rem' }} onClick={e => e.stopPropagation()}>
-                                    <input
-                                      type="text"
-                                      value={tableRemarks[item.itemId] ?? item.remarks ?? ''}
-                                      onChange={(e) => {
-                                        const value = e.target.value;
-                                        setTableRemarks(prev => ({ ...prev, [item.itemId]: value }));
-                                      }}
-                                      onBlur={() => handlePersistRemarks(item)}
-                                      onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                          e.preventDefault();
-                                          (e.currentTarget as HTMLInputElement).blur();
-                                        }
-                                      }}
-                                      style={{
-                                        width: '100%',
-                                        padding: '0.25rem 0.5rem',
-                                        borderRadius: '0.375rem',
-                                        border: '1px solid var(--table-border)',
-                                        fontSize: '0.8rem',
-                                        backgroundColor: 'var(--table-row-alt-bg)',
-                                        color: 'var(--table-row-text)',
-                                      }}
-                                      placeholder="Add remarks"
-                                      disabled={!canEditInventory}
-                                    />
-                                  </td>
+                                  {showDiscountMarkup && (
+                                    <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>
+                                      {renderDiscountPill(item.defaultDiscount, item.defaultMarkup)}
+                                    </td>
+                                  )}
+                                  {showRemarks && (
+                                    <td style={{ padding: '1rem 1.5rem' }} onClick={e => e.stopPropagation()}>
+                                      <input
+                                        type="text"
+                                        value={tableRemarks[item.itemId] ?? item.remarks ?? ''}
+                                        onChange={(e) => {
+                                          const value = e.target.value;
+                                          setTableRemarks(prev => ({ ...prev, [item.itemId]: value }));
+                                        }}
+                                        onBlur={() => handlePersistRemarks(item)}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            (e.currentTarget as HTMLInputElement).blur();
+                                          }
+                                        }}
+                                        style={{
+                                          width: '100%',
+                                          padding: '0.25rem 0.5rem',
+                                          borderRadius: '0.375rem',
+                                          border: '1px solid var(--table-border)',
+                                          fontSize: '0.8rem',
+                                          backgroundColor: 'var(--table-row-alt-bg)',
+                                          color: 'var(--table-row-text)',
+                                        }}
+                                        placeholder="Add remarks"
+                                        disabled={!canEditInventory}
+                                      />
+                                    </td>
+                                  )}
                                 </>
                               </tr>
                             );

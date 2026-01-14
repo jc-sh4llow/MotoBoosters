@@ -47,6 +47,7 @@ export function Sales() {
   const [itemFilterMode, setItemFilterMode] = useState<'all' | 'search'>('all');
   const [showItemModal, setShowItemModal] = useState(false);
   const [itemSearchTerm, setItemSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState('date-desc');
 
   const [firestoreSales, setFirestoreSales] = useState<any[]>([]);
 
@@ -171,6 +172,23 @@ export function Sales() {
   };
 
   const summaryData = getSummaryData();
+
+  const handleHeaderSort = (field: string) => {
+    setSortBy(prev => {
+      const current = prev;
+      const ascKey = `${field}-asc`;
+      const descKey = `${field}-desc`;
+
+      let next: string;
+      if (current === ascKey) {
+        next = descKey;
+      } else {
+        next = ascKey;
+      }
+
+      return next;
+    });
+  };
 
   // For the detail table, tag each row with a group index and first/last flags
   // so that all items from the same transaction share the same band and can

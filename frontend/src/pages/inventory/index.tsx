@@ -2384,6 +2384,41 @@ export function Inventory() {
                           </div>
                         </div>
                       </div>
+
+                      {/* Remarks - Show in details section when column is hidden */}
+                      {!showRemarks && (
+                        <div style={{ marginBottom: '1rem' }}>
+                          <label style={{
+                            display: 'block',
+                            marginBottom: '0.5rem',
+                            fontSize: '0.875rem',
+                            fontWeight: '500',
+                            color: '#4b5563'
+                          }}>
+                            Remarks
+                          </label>
+                          <textarea
+                            placeholder="Add remarks..."
+                            value={formItem.remarks}
+                            onChange={(e) => {
+                              setFormItem(prev => ({ ...prev, remarks: e.target.value }));
+                              setHasUnsavedChanges(true);
+                            }}
+                            rows={3}
+                            style={{
+                              width: '100%',
+                              padding: '0.5rem 0.75rem',
+                              borderRadius: '0.375rem',
+                              border: '1px solid #d1d5db',
+                              backgroundColor: '#f9fafb',
+                              color: '#111827',
+                              resize: 'vertical',
+                              fontFamily: 'inherit'
+                            }}
+                            disabled={!isEditMode || !canEditInventory}
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
 

@@ -88,6 +88,18 @@ export function Transactions() {
 
   const [sortBy, setSortBy] = useState('date-desc');
 
+  // Responsive column visibility helpers
+  // Priority: Customer > Type > Status > Grand Total > Date > Transaction ID > Payment Type > Item
+  const showItem = viewportWidth >= 1400; // Hide on smaller desktops and below
+  const showPaymentType = viewportWidth >= 1200; // Hide on small desktops and below
+  const showTransactionId = viewportWidth >= 992; // Hide on tablets and below
+  const showDate = viewportWidth >= 768; // Hide on mobile
+  const showGrandTotal = viewportWidth >= 640; // Hide on small mobile
+  const showStatus = viewportWidth >= 576; // Hide on extra small mobile
+  const showType = viewportWidth >= 520; // Hide on extra extra small mobile
+  // Customer is always shown (highest priority)
+  // Actions column will be hidden on mobile (< 768px)
+
   const { effectiveRoleIds } = useEffectiveRoleIds();
   const canDeleteTransactions = can(effectiveRoleIds, 'transactions.delete');
   const canArchiveTransactions = can(effectiveRoleIds, 'transactions.archive');

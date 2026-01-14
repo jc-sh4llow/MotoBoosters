@@ -145,6 +145,7 @@ export function Users() {
   let closeMenuTimeout: number | undefined;
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+  const [isActionBarExpanded, setIsActionBarExpanded] = useState(false);
   const [roleFilter, setRoleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [showArchivedFilter, setShowArchivedFilter] = useState(false);
@@ -1490,15 +1491,39 @@ export function Users() {
                 marginBottom: '1rem',
                 border: '1px solid #e5e7eb'
               }}>
-                {/* Action Bar - Centered with two rows */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', marginBottom: showFilters ? '1rem' : 0 }}>
-                  {/* Row 1: Export and Select buttons */}
-                  <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
-                    {canExportUsers && (
+                {/* Desktop: Horizontal layout */}
+                {viewportWidth >= 768 ? (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: showFilters ? '1rem' : 0 }}>
+                    {/* Left side buttons */}
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      {canExportUsers && (
+                        <button
+                          onClick={handleExportCsv}
+                          style={{
+                            backgroundColor: '#059669',
+                            color: 'white',
+                            padding: '0.5rem 1rem',
+                            borderRadius: '0.375rem',
+                            border: 'none',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            fontWeight: 500,
+                            fontSize: '0.875rem',
+                            height: '40px',
+                          }}
+                        >
+                          Export to CSV <FaFileExcel />
+                        </button>
+                      )}
                       <button
-                        onClick={handleExportCsv}
+                        onClick={() => {
+                          setIsSelectMode(!isSelectMode);
+                          if (isSelectMode) setSelectedItems(new Set());
+                        }}
                         style={{
-                          backgroundColor: '#059669',
+                          backgroundColor: isSelectMode ? '#dc2626' : '#3b82f6',
                           color: 'white',
                           padding: '0.5rem 1rem',
                           borderRadius: '0.375rem',
@@ -1512,80 +1537,196 @@ export function Users() {
                           height: '40px',
                         }}
                       >
-                        Export to CSV <FaFileExcel />
+                        {isSelectMode ? 'Cancel' : 'Select'}
                       </button>
-                    )}
-                    <button
-                      onClick={() => {
-                        setIsSelectMode(!isSelectMode);
-                        if (isSelectMode) setSelectedItems(new Set());
-                      }}
-                      style={{
-                        backgroundColor: isSelectMode ? '#dc2626' : '#3b82f6',
-                        color: 'white',
-                        padding: '0.5rem 1rem',
-                        borderRadius: '0.375rem',
-                        border: 'none',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.5rem',
-                        fontWeight: 500,
-                        fontSize: '0.875rem',
-                        height: '40px',
-                      }}
-                    >
-                      {isSelectMode ? 'Cancel' : 'Select'}
-                    </button>
-                  </div>
+                    </div>
 
-                  {/* Row 2: Filters and Clear Filters buttons */}
-                  <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
-                    <button
-                      onClick={() => setShowFilters(!showFilters)}
-                      style={{
-                        backgroundColor: '#1e40af',
-                        color: 'white',
-                        padding: '0.5rem 1rem',
-                        borderRadius: '0.375rem',
-                        border: 'none',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.5rem',
-                        fontWeight: 500,
-                        fontSize: '0.875rem',
-                        height: '40px',
-                      }}
-                    >
-                      Filters <FaFilter />
-                    </button>
-                    <button
-                      onClick={() => {
-                        setRoleFilter('');
-                        setStatusFilter('');
-                        setShowArchivedFilter(false);
-                        setSortBy('role-asc');
-                      }}
-                      style={{
-                        backgroundColor: '#6b7280',
-                        color: 'white',
-                        padding: '0.5rem 1rem',
-                        borderRadius: '0.375rem',
-                        border: 'none',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.5rem',
-                        fontWeight: 500,
-                        fontSize: '0.875rem',
-                        height: '40px',
-                      }}
-                    >
-                      Clear Filters
-                    </button>
+                    {/* Right side buttons */}
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button
+                        onClick={() => setShowFilters(!showFilters)}
+                        style={{
+                          backgroundColor: '#1e40af',
+                          color: 'white',
+                          padding: '0.5rem 1rem',
+                          borderRadius: '0.375rem',
+                          border: 'none',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          fontWeight: 500,
+                          fontSize: '0.875rem',
+                          height: '40px',
+                        }}
+                      >
+                        Filters <FaFilter />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setRoleFilter('');
+                          setStatusFilter('');
+                          setShowArchivedFilter(false);
+                          setSortBy('role-asc');
+                        }}
+                        style={{
+                          backgroundColor: '#6b7280',
+                          color: 'white',
+                          padding: '0.5rem 1rem',
+                          borderRadius: '0.375rem',
+                          border: 'none',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          fontWeight: 500,
+                          fontSize: '0.875rem',
+                          height: '40px',
+                        }}
+                      >
+                        Clear Filters
+                      </button>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  /* Mobile: Accordion layout */
+                  <div>
+                    <button
+                      onClick={() => setIsActionBarExpanded(!isActionBarExpanded)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        width: '100%',
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        padding: 0,
+                        marginBottom: isActionBarExpanded ? '1rem' : 0,
+                        fontSize: '1.125rem',
+                        fontWeight: 600,
+                        color: '#1e40af',
+                        textAlign: 'left'
+                      }}
+                    >
+                      <span>Action Bar</span>
+                      <span
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          transition: 'transform 0.2s ease',
+                          transform: isActionBarExpanded ? 'rotate(180deg)' : 'rotate(0)'
+                        }}
+                      >
+                        <FaChevronDown style={{ fontSize: '0.9em' }} />
+                      </span>
+                    </button>
+
+                    {isActionBarExpanded && (
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', marginBottom: showFilters ? '1rem' : 0 }}>
+                        {canExportUsers && (
+                          <button
+                            onClick={handleExportCsv}
+                            style={{
+                              backgroundColor: '#059669',
+                              color: 'white',
+                              padding: '0.5rem 1rem',
+                              borderRadius: '0.375rem',
+                              border: 'none',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.5rem',
+                              fontWeight: 500,
+                              fontSize: '0.875rem',
+                              height: '40px',
+                              width: '100%',
+                              maxWidth: '300px',
+                              justifyContent: 'center'
+                            }}
+                          >
+                            Export to CSV <FaFileExcel />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => {
+                            setIsSelectMode(!isSelectMode);
+                            if (isSelectMode) setSelectedItems(new Set());
+                          }}
+                          style={{
+                            backgroundColor: isSelectMode ? '#dc2626' : '#3b82f6',
+                            color: 'white',
+                            padding: '0.5rem 1rem',
+                            borderRadius: '0.375rem',
+                            border: 'none',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            fontWeight: 500,
+                            fontSize: '0.875rem',
+                            height: '40px',
+                            width: '100%',
+                            maxWidth: '300px',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          {isSelectMode ? 'Cancel' : 'Select'}
+                        </button>
+                        <button
+                          onClick={() => setShowFilters(!showFilters)}
+                          style={{
+                            backgroundColor: '#1e40af',
+                            color: 'white',
+                            padding: '0.5rem 1rem',
+                            borderRadius: '0.375rem',
+                            border: 'none',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            fontWeight: 500,
+                            fontSize: '0.875rem',
+                            height: '40px',
+                            width: '100%',
+                            maxWidth: '300px',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          Filters <FaFilter />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setRoleFilter('');
+                            setStatusFilter('');
+                            setShowArchivedFilter(false);
+                            setSortBy('role-asc');
+                          }}
+                          style={{
+                            backgroundColor: '#6b7280',
+                            color: 'white',
+                            padding: '0.5rem 1rem',
+                            borderRadius: '0.375rem',
+                            border: 'none',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            fontWeight: 500,
+                            fontSize: '0.875rem',
+                            height: '40px',
+                            width: '100%',
+                            maxWidth: '300px',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          Clear Filters
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Filters Panel */}
                 {showFilters && (

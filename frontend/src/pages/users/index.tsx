@@ -146,6 +146,7 @@ export function Users() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [isActionBarExpanded, setIsActionBarExpanded] = useState(false);
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [roleFilter, setRoleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [showArchivedFilter, setShowArchivedFilter] = useState(false);
@@ -746,66 +747,131 @@ export function Users() {
               }}>
                 Users
               </h1>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginLeft: '1rem' }}>
-                <span style={{ color: '#374151', fontSize: '0.9rem' }}>
-                  Welcome, {user?.name || 'Guest'}
-                </span>
-              </div>
+              {/* Hide welcome message on mobile */}
+              {viewportWidth >= 768 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginLeft: '1rem' }}>
+                  <span style={{ color: '#374151', fontSize: '0.9rem' }}>
+                    Welcome, {user?.name || 'Guest'}
+                  </span>
+                </div>
+              )}
             </div>
 
+            {/* Desktop: Full search bar, Mobile: Search icon */}
             <div style={{
               position: 'relative',
               display: 'flex',
               alignItems: 'center',
-              marginLeft: 'auto', // This will push it to the right
-              marginRight: '1rem' // Add some space before the hamburger button
+              marginLeft: 'auto',
+              marginRight: '1rem'
             }}>
-              <FaSearch style={{
-                position: 'absolute',
-                left: '12px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                color: '#9ca3af'
-              }} />
-              <input
-                type="text"
-                placeholder="Search by Brand or Item Name..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                style={{
-                  padding: '0.5rem 2.5rem 0.5rem 2.5rem', // Added right padding for the clear button
-                  borderRadius: '0.5rem',
-                  border: '1px solid #d1d5db',
-                  backgroundColor: 'rgba(255, 255, 255)',
-                  color: '#1f2937',
-                  width: '320px',
-                  outline: 'none'
-                }}
-              />
-              {searchTerm && (
-                <button
-                  onClick={() => setSearchTerm('')}
-                  style={{
+              {viewportWidth >= 768 ? (
+                /* Desktop: Full search bar */
+                <>
+                  <FaSearch style={{
                     position: 'absolute',
-                    right: '8px',
+                    left: '12px',
                     top: '50%',
                     transform: 'translateY(-50%)',
-                    background: 'transparent',
-                    border: 'none',
-                    color: '#9ca3af',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '4px'
-                  }}
-                >
-                  <FaTimes size={14} />
-                </button>
+                    color: '#9ca3af'
+                  }} />
+                  <input
+                    type="text"
+                    placeholder="Search by Brand or Item Name..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    style={{
+                      padding: '0.5rem 2.5rem 0.5rem 2.5rem',
+                      borderRadius: '0.5rem',
+                      border: '1px solid #d1d5db',
+                      backgroundColor: 'rgba(255, 255, 255)',
+                      color: '#1f2937',
+                      width: '320px',
+                      outline: 'none'
+                    }}
+                  />
+                  {searchTerm && (
+                    <button
+                      onClick={() => setSearchTerm('')}
+                      style={{
+                        position: 'absolute',
+                        right: '8px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#9ca3af',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '4px'
+                      }}
+                    >
+                      <FaTimes size={14} />
+                    </button>
+                  )}
+                </>
+              ) : (
+                /* Mobile: Search icon that expands */
+                <>
+                  {!isSearchExpanded ? (
+                    <button
+                      onClick={() => setIsSearchExpanded(true)}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#1e40af',
+                        fontSize: '1.25rem',
+                        cursor: 'pointer',
+                        padding: '0.5rem',
+                        display: 'flex',
+                        alignItems: 'center'
+                      }}
+                    >
+                      <FaSearch />
+                    </button>
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <input
+                        type="text"
+                        placeholder="Search..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        autoFocus
+                        style={{
+                          padding: '0.5rem',
+                          borderRadius: '0.375rem',
+                          border: '1px solid #d1d5db',
+                          backgroundColor: 'rgba(255, 255, 255)',
+                          color: '#1f2937',
+                          width: '200px',
+                          outline: 'none'
+                        }}
+                      />
+                      <button
+                        onClick={() => {
+                          setIsSearchExpanded(false);
+                          setSearchTerm('');
+                        }}
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          color: '#9ca3af',
+                          cursor: 'pointer',
+                          padding: '0.25rem'
+                        }}
+                      >
+                        <FaTimes />
+                      </button>
+                    </div>
+                  )}
+                </>
               )}
             </div>
 
-            {user && (
+            {/* Hide logout button on mobile (will be in dropdown) */}
+            {viewportWidth >= 768 && user && (
               <button
                 onClick={() => {
                   logout();

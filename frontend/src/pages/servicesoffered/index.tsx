@@ -111,6 +111,13 @@ export function Services() {
 
   // Responsive breakpoint helpers
   const isDesktop = viewportWidth >= 1200;
+
+  // Determine which columns to show based on viewport
+  const showDescription = viewportWidth >= 992; // Hide on tablet and below
+  const showPrice = viewportWidth >= 768; // Hide on mobile
+  const showStatus = viewportWidth >= 768; // Hide on mobile
+  const showVehicleTypes = viewportWidth >= 1200; // Hide on small desktop and below
+
   const serviceDetailsRef = useRef<HTMLDivElement | null>(null);
   const servicesTableRef = useRef<HTMLDivElement | null>(null);
 
@@ -1922,10 +1929,10 @@ export function Services() {
                         )}
                         <th onClick={() => handleHeaderSort('serviceId')} style={{ padding: '0.75rem 1rem', fontWeight: '500', color: 'var(--table-header-text)', cursor: 'pointer', userSelect: 'none' }}>Service ID {sortBy === 'serviceId-asc' ? '↑' : sortBy === 'serviceId-desc' ? '↓' : ''}</th>
                         <th onClick={() => handleHeaderSort('name')} style={{ padding: '0.75rem 1rem', fontWeight: '500', color: 'var(--table-header-text)', cursor: 'pointer', userSelect: 'none' }}>Service Name {sortBy === 'name-asc' ? '↑' : sortBy === 'name-desc' ? '↓' : ''}</th>
-                        <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: '500', color: 'var(--table-header-text)' }}>Description</th>
-                        <th onClick={() => handleHeaderSort('price')} style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: '500', color: 'var(--table-header-text)', cursor: 'pointer', userSelect: 'none' }}>Price {sortBy === 'price-asc' ? '↑' : sortBy === 'price-desc' ? '↓' : ''}</th>
-                        <th onClick={() => handleHeaderSort('status')} style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: '500', color: 'var(--table-header-text)', cursor: 'pointer', userSelect: 'none' }}>Status {sortBy === 'status-asc' ? '↑' : sortBy === 'status-desc' ? '↓' : ''}</th>
-                        <th style={{ padding: '0.75rem 1rem', fontWeight: '500', color: 'var(--table-header-text)' }}>Vehicle Types</th>
+                        {showDescription && <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: '500', color: 'var(--table-header-text)' }}>Description</th>}
+                        {showPrice && <th onClick={() => handleHeaderSort('price')} style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: '500', color: 'var(--table-header-text)', cursor: 'pointer', userSelect: 'none' }}>Price {sortBy === 'price-asc' ? '↑' : sortBy === 'price-desc' ? '↓' : ''}</th>}
+                        {showStatus && <th onClick={() => handleHeaderSort('status')} style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: '500', color: 'var(--table-header-text)', cursor: 'pointer', userSelect: 'none' }}>Status {sortBy === 'status-asc' ? '↑' : sortBy === 'status-desc' ? '↓' : ''}</th>}
+                        {showVehicleTypes && <th style={{ padding: '0.75rem 1rem', fontWeight: '500', color: 'var(--table-header-text)' }}>Vehicle Types</th>}
                       </tr>
                     </thead>
                     <tbody>
@@ -1982,70 +1989,76 @@ export function Services() {
                           </td>
                           <td style={{ padding: '0.75rem 1rem', color: 'var(--table-row-text)' }}>{service.name}</td>
 
-                          <td style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation(); // don't trigger row select
-                                setDescriptionModalService(service);
-                              }}
-                              style={{
-                                padding: '0.25rem 0.75rem',
-                                borderRadius: '9999px',
-                                border: '1px solid #2563eb',
-                                backgroundColor: 'var(--surface-elevated)',
-                                color: '#2563eb',
-                                fontSize: '0.75rem',
-                                fontWeight: 500,
-                                cursor: 'pointer'
-                              }}
-                            >
-                              Description
-                            </button>
-                          </td>
-                          <td style={{ padding: '0.75rem 1rem', textAlign: 'right', color: 'var(--table-row-text)' }}>₱{service.price.toLocaleString()}</td>
-                          <td style={{ padding: '0.75rem 1rem', color: 'var(--table-row-text)', }}>
-                            <button
-                              type="button"
-                              disabled={!canToggleStatus}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleToggleServiceStatus(service);
-                              }}
-                              style={{
-                                display: 'inline-block',
-                                padding: '0.25rem 0.5rem',
-                                borderRadius: '9999px',
-                                backgroundColor: service.status === 'Active' ? '#dcfce7' : '#fee2e2',
-                                color: service.status === 'Active' ? '#166534' : '#991b1b',
-                                fontSize: '0.75rem',
-                                fontWeight: 500,
-                                border: 'none',
-                                cursor: canToggleStatus ? 'pointer' : 'default',
-                              }}
-                            >
-                              {service.status}
-                            </button>
-                          </td>
-                          <td style={{ padding: '0.75rem 1rem' }}>
-                            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                              {service.vehicleTypes.map((type, i) => (
-                                <span
-                                  key={i}
-                                  style={{
-                                    backgroundColor: 'var(--surface-hover)',
-                                    color: 'var(--text-primary)',
-                                    padding: '0.25rem 0.5rem',
-                                    borderRadius: '0.25rem',
-                                    fontSize: '0.75rem',
-                                    border: '1px solid var(--border)'
-                                  }}
-                                >
-                                  {type}
-                                </span>
-                              ))}
-                            </div>
-                          </td>
+                          {showDescription && (
+                            <td className="md:hidden" style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDescriptionModalService(service);
+                                }}
+                                style={{
+                                  padding: '0.25rem 0.75rem',
+                                  borderRadius: '9999px',
+                                  border: '1px solid #2563eb',
+                                  backgroundColor: 'var(--surface-elevated)',
+                                  color: '#2563eb',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 500,
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                Description
+                              </button>
+                            </td>
+                          )}
+                          {showPrice && <td className="md:hidden" style={{ padding: '0.75rem 1rem', textAlign: 'right', color: 'var(--table-row-text)' }}>₱{service.price.toLocaleString()}</td>}
+                          {showStatus && (
+                            <td className="md:hidden" style={{ padding: '0.75rem 1rem', color: 'var(--table-row-text)', }}>
+                              <button
+                                type="button"
+                                disabled={!canToggleStatus}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleToggleServiceStatus(service);
+                                }}
+                                style={{
+                                  display: 'inline-block',
+                                  padding: '0.25rem 0.5rem',
+                                  borderRadius: '9999px',
+                                  backgroundColor: service.status === 'Active' ? '#dcfce7' : '#fee2e2',
+                                  color: service.status === 'Active' ? '#166534' : '#991b1b',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 500,
+                                  border: 'none',
+                                  cursor: canToggleStatus ? 'pointer' : 'default',
+                                }}
+                              >
+                                {service.status}
+                              </button>
+                            </td>
+                          )}
+                          {showVehicleTypes && (
+                            <td className="md:hidden" style={{ padding: '0.75rem 1rem' }}>
+                              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                {service.vehicleTypes.map((type, i) => (
+                                  <span
+                                    key={i}
+                                    style={{
+                                      backgroundColor: 'var(--surface-hover)',
+                                      color: 'var(--text-primary)',
+                                      padding: '0.25rem 0.5rem',
+                                      borderRadius: '0.25rem',
+                                      fontSize: '0.75rem',
+                                      border: '1px solid var(--border)'
+                                    }}
+                                  >
+                                    {type}
+                                  </span>
+                                ))}
+                              </div>
+                            </td>
+                          )}
                         </tr>
                       ))}
                     </tbody>

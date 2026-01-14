@@ -14,6 +14,7 @@ import { HeaderDropdown } from '../../components/HeaderDropdown';
 import { RoleBadge } from '../../components/RoleBadge';
 import Switch from '../../components/ui/Switch';
 import { migrateUserDates } from '../../utils/migrateUserDates';
+import { ViewDetailsModal } from '../../components/ViewDetailsModal';
 
 async function hashPassword(raw: string): Promise<string> {
   const normalized = raw.trim();
@@ -140,6 +141,7 @@ export function Users() {
   const { roles: firestoreRoles, loading: rolesLoading } = useRoles();
   const { effectiveRoleIds } = useEffectiveRoleIds();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [viewportWidth, setViewportWidth] = useState(window.innerWidth);
   const [isNavExpanded, setIsNavExpanded] = useState(false);
   const [isUserSettingsOpen, setIsUserSettingsOpen] = useState(false);
   let closeMenuTimeout: number | undefined;
@@ -177,6 +179,10 @@ export function Users() {
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
 
   const [sortBy, setSortBy] = useState('role-asc');
+
+  // View Details modal state
+  const [viewDetailsUser, setViewDetailsUser] = useState<UserRow | null>(null);
+  const [isViewDetailsOpen, setIsViewDetailsOpen] = useState(false);
 
   const currentUsername = user?.name ?? '';
   const [isEditing, setIsEditing] = useState(false);
@@ -409,6 +415,25 @@ export function Users() {
   useEffect(() => {
     loadUsers();
   }, [rolesLoading, loadUsers]);
+
+  // Track viewport width for responsive breakpoints
+  useEffect(() => {
+    const handleResize = () => {
+      const width = window.innerWidth;
+      setViewportWidth(width);
+      setIsMobile(width < 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Responsive breakpoint helpers
+  const isExtraSmall = viewportWidth <= 479;
+  const isSmall = viewportWidth >= 480 && viewportWidth <= 767;
+  const isTablet = viewportWidth >= 768 && viewportWidth <= 991;
+  const isSmallDesktop = viewportWidth >= 992 && viewportWidth <= 1199;
+  const isDesktop = viewportWidth >= 1200;
 
   const handleSaveUser = async () => {
     const { docId, userId, username, password, confirmPassword, fullName, email, contactNumber, status, role } = formData;

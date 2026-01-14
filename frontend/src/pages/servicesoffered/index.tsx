@@ -111,9 +111,6 @@ export function Services() {
   }, []);
 
   // Responsive breakpoint helpers
-  const isDesktop = viewportWidth >= 1200;
-
-  // Determine which columns to show based on viewport
   const showDescription = viewportWidth >= 992; // Hide on tablet and below
   const showPrice = viewportWidth >= 768; // Hide on mobile
   const showStatus = viewportWidth >= 768; // Hide on mobile
@@ -242,7 +239,7 @@ export function Services() {
     setTimeout(() => setShouldShowDetails(false), 300);
   };
   useEffect(() => {
-    if (!isDesktop) return;
+    if (isMobile) return;
     if (!shouldShowDetails || !isDetailsVisible) return;
 
     const handlePointerDown = (e: PointerEvent) => {
@@ -260,7 +257,8 @@ export function Services() {
 
     document.addEventListener('pointerdown', handlePointerDown);
     return () => document.removeEventListener('pointerdown', handlePointerDown);
-  }, [isDesktop, shouldShowDetails, isDetailsVisible]);
+  }, [isMobile, shouldShowDetails, isDetailsVisible]);
+
   // App-level confirmation / message modal
   const [modalState, setModalState] = useState<{
     open: boolean;
@@ -1099,8 +1097,8 @@ export function Services() {
             }}>
               {/* Service Form Section */}
               {shouldShowDetails && (
-                isDesktop ? (
-                  // Desktop: keep inline sticky card beside the table
+                !isMobile ? (
+                  // Desktop/Tablet: keep inline sticky card beside the table
                   <div ref={serviceDetailsRef} style={{
                     backgroundColor: 'var(--surface-elevated)',
                     backdropFilter: 'blur(12px)',
@@ -1835,7 +1833,7 @@ export function Services() {
                 border: '1px solid rgba(255, 255, 255, 0.18)',
                 boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.15)',
                 flexGrow: 1,
-                flexBasis: isDesktop && isDetailsVisible ? '68%' : '100%',
+                flexBasis: !isMobile && isDetailsVisible ? '68%' : '100%',
                 transition: 'flex-basis 0.3s ease'
               }}>
                 {loading && (

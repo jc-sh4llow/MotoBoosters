@@ -13,6 +13,7 @@ import bcrypt from 'bcryptjs';
 import { HeaderDropdown } from '../../components/HeaderDropdown';
 import { RoleBadge } from '../../components/RoleBadge';
 import Switch from '../../components/ui/Switch';
+import { migrateUserDates } from '../../utils/migrateUserDates';
 
 async function hashPassword(raw: string): Promise<string> {
   const normalized = raw.trim();
@@ -41,6 +42,8 @@ type UserRow = {
   password: string; // Plain password kept temporarily for compatibility
   passwordHash?: string; // Hashed password for secure verification
   archived?: boolean;
+  createdAt?: string; // ISO timestamp when user was created
+  updatedAt?: string; // ISO timestamp when user was last updated
 };
 
 export function Users() {
@@ -190,11 +193,6 @@ export function Users() {
     userId: string;
     previousRole: string;
     nextRole: string;
-  } | null>(null);
-
-  const [usersAlert, setUsersAlert] = useState<{
-    title: string;
-    message: string;
   } | null>(null);
 
   const generateUserId = (fullName: string, role: string) => {
@@ -376,8 +374,9 @@ export function Users() {
           lastLogin: data.lastLogin ?? '',
           password: data.password ?? '',
           passwordHash: data.passwordHash ?? '',
-
           archived: data.archived === true,
+          createdAt: data.createdAt ?? '',
+          updatedAt: data.updatedAt ?? '',
         } as UserRow;
       });
 
@@ -415,17 +414,11 @@ export function Users() {
       if (password || confirmPassword) {
 
         if (!password || !confirmPassword) {
-          setUsersAlert({
-            title: 'Password Incomplete',
-            message: 'Please fill both Password and Confirm Password to change the password.',
-          });
+          console.warn('Password Incomplete: Please fill both Password and Confirm Password to change the password.');
           return;
         }
         if (password !== confirmPassword) {
-          setUsersAlert({
-            title: 'Password Mismatch',
-            message: 'Passwords do not match.',
-          });
+          console.warn('Password Mismatch: Passwords do not match.');
           return;
         }
       }
@@ -433,10 +426,7 @@ export function Users() {
 
     try {
       if (!docId) {
-        setUsersAlert({
-          title: 'Cannot Create User',
-          message: 'Users can no longer be created here. New users must sign up using the Sign Up page.',
-        });
+        console.warn('Cannot save: No user selected for update.');
         return;
       }
 
@@ -458,15 +448,25 @@ export function Users() {
           status: status === 'active' ? 'Active' : 'Inactive',
           role: primaryRoleId,
           roles: normalizedRoles,
+          updatedAt: new Date().toISOString(),
         };
 
-        if (password && confirmPassword && password === confirmPassword) {
-          // When password is changed, update both plain password and hash
+        // Only update password if it's not the placeholder and has been changed
+        const passwordPlaceholder = '••••••••';
+        if (password && confirmPassword && password === confirmPassword && password !== passwordPlaceholder) {
           const newHash = await hashPassword(password);
           updateData.password = password;
           if (newHash) {
             updateData.passwordHash = newHash;
           }
+        }
+
+        // Preserve createdAt if it exists
+        if (existing && existing.createdAt) {
+          updateData.createdAt = existing.createdAt;
+        } else if (!existing?.createdAt) {
+          // If no createdAt exists, set it now (for legacy records)
+          updateData.createdAt = new Date().toISOString();
         }
 
         await updateDoc(userRef, updateData);
@@ -481,7 +481,15 @@ export function Users() {
           // Preserve original role and status
           role: existing.role,
           status: existing.status,
+          updatedAt: new Date().toISOString(),
         };
+
+        // Preserve createdAt if it exists
+        if (existing && existing.createdAt) {
+          updateData.createdAt = existing.createdAt;
+        } else if (!existing?.createdAt) {
+          updateData.createdAt = new Date().toISOString();
+        }
 
         await updateDoc(userRef, updateData);
       }
@@ -490,11 +498,7 @@ export function Users() {
       setIsUserDetailsExpanded(false);
       setIsEditing(false);
     } catch (err) {
-      console.error('Error saving user', err);
-      setUsersAlert({
-        title: 'Save Failed',
-        message: 'Failed to save user changes. Please try again.',
-      });
+      console.error('Error saving user:', err);
     }
   };
 
@@ -506,6 +510,25 @@ export function Users() {
       }
       return { ...prev, column, direction: 'asc' };
     });
+  };
+
+  const handleMigrateDates = async () => {
+    if (!window.confirm('This will add createdAt and updatedAt fields to all existing user records. Continue?')) {
+      return;
+    }
+
+    try {
+      const result = await migrateUserDates();
+      if (result.success) {
+        alert(`Migration successful!\nUpdated: ${result.updated} records\nSkipped: ${result.skipped} records\nTotal: ${result.total} records`);
+        await loadUsers();
+      } else {
+        alert(`Migration failed: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Migration error:', error);
+      alert('Migration failed. Check console for details.');
+    }
   };
 
   // Permission checks for Users page
@@ -954,7 +977,7 @@ export function Users() {
                 ref={userDetailsRef}
                 >
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.5rem' }}>
-                    {/* Row: User ID - Date Created */}
+                    {/* Row: User ID */}
                     <div>
                       <label style={{
                         display: 'block',
@@ -980,28 +1003,56 @@ export function Users() {
                       />
                     </div>
 
-                    <div>
-                      <label style={{
-                        display: 'block',
-                        marginBottom: '0.5rem',
-                        fontSize: '0.875rem',
-                        color: '#4b5563'
-                      }}>
-                        Date Created
-                      </label>
-                      <input
-                        type="text"
-                        value={new Date(formData.dateCreated).toLocaleDateString()}
-                        disabled
-                        style={{
-                          width: '100%',
-                          padding: '0.5rem 0.75rem',
-                          borderRadius: '0.375rem',
-                          border: '1px solid #d1d5db',
-                          backgroundColor: '#f9fafb',
-                          color: '#6b7280'
-                        }}
-                      />
+                    {/* Row: Date Created and Date Updated side-by-side */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem' }}>
+                      <div>
+                        <label style={{
+                          display: 'block',
+                          marginBottom: '0.5rem',
+                          fontSize: '0.875rem',
+                          color: '#4b5563'
+                        }}>
+                          Date Created
+                        </label>
+                        <input
+                          type="text"
+                          value={selectedUserRow?.createdAt ? new Date(selectedUserRow.createdAt).toLocaleDateString() : 'N/A'}
+                          disabled
+                          style={{
+                            width: '100%',
+                            padding: '0.5rem 0.75rem',
+                            borderRadius: '0.375rem',
+                            border: '1px solid #d1d5db',
+                            backgroundColor: '#f9fafb',
+                            color: '#6b7280',
+                            fontSize: '0.875rem'
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{
+                          display: 'block',
+                          marginBottom: '0.5rem',
+                          fontSize: '0.875rem',
+                          color: '#4b5563'
+                        }}>
+                          Date Updated
+                        </label>
+                        <input
+                          type="text"
+                          value={selectedUserRow?.updatedAt ? new Date(selectedUserRow.updatedAt).toLocaleDateString() : 'N/A'}
+                          disabled
+                          style={{
+                            width: '100%',
+                            padding: '0.5rem 0.75rem',
+                            borderRadius: '0.375rem',
+                            border: '1px solid #d1d5db',
+                            backgroundColor: '#f9fafb',
+                            color: '#6b7280',
+                            fontSize: '0.875rem'
+                          }}
+                        />
+                      </div>
                     </div>
 
                     {/* Row: Full Name - Username */}
@@ -1484,6 +1535,28 @@ export function Users() {
                         }}
                       >
                         Export to CSV <FaFileExcel />
+                      </button>
+                    )}
+                    {isAdminLike && (
+                      <button
+                        onClick={handleMigrateDates}
+                        style={{
+                          backgroundColor: '#7c3aed',
+                          color: 'white',
+                          padding: '0.5rem 1rem',
+                          borderRadius: '0.375rem',
+                          border: 'none',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          fontWeight: 500,
+                          fontSize: '0.875rem',
+                          height: '40px',
+                        }}
+                        title="One-time migration to add createdAt and updatedAt fields to all existing user records"
+                      >
+                        Migrate Dates
                       </button>
                     )}
                     <button
@@ -2130,62 +2203,6 @@ export function Users() {
           </div>
         </main>
       </div>
-
-      {usersAlert && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          backgroundColor: 'rgba(0,0,0,0.4)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1990,
-        }}>
-          <div style={{
-            backgroundColor: 'white',
-            borderRadius: '0.75rem',
-            padding: '1.5rem 2rem',
-            width: '100%',
-            maxWidth: '420px',
-            boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
-          }}>
-            <h3 style={{
-              margin: 0,
-              marginBottom: '0.75rem',
-              fontSize: '1.125rem',
-              fontWeight: 600,
-              color: '#111827',
-            }}>
-              {usersAlert.title}
-            </h3>
-            <p style={{
-              margin: 0,
-              marginBottom: '1.25rem',
-              fontSize: '0.875rem',
-              color: '#4b5563',
-            }}>
-              {usersAlert.message}
-            </p>
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <button
-                type="button"
-                onClick={() => setUsersAlert(null)}
-                style={{
-                  padding: '0.4rem 1rem',
-                  backgroundColor: '#2563eb',
-                  border: 'none',
-                  borderRadius: '0.375rem',
-                  fontSize: '0.875rem',
-                  color: 'white',
-                  cursor: 'pointer',
-                }}
-              >
-                OK
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* In-app confirmation modal */}
       {confirmState && (

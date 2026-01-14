@@ -137,6 +137,13 @@ export function Inventory() {
   const [isCompactSearchOpen, setIsCompactSearchOpen] = useState(false);
 
   const isSmallDesktop = !isMobile && isCompactTable;
+
+  // Responsive column visibility for full table view
+  const showType = viewportWidth >= 992; // Hide on tablet and below
+  const showSold = viewportWidth >= 768; // Hide on mobile
+  const showDiscountMarkup = viewportWidth >= 1200; // Hide on small desktop and below
+  const showRemarks = viewportWidth >= 1200; // Hide on small desktop and below
+
   const collapseItemDetails = () => {
     setSelectedInventoryItem(null);
     setFormItem({

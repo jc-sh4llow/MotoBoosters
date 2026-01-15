@@ -4,7 +4,7 @@ import { can, DEVELOPER_ROLE_ID } from '../config/permissions';
 import { useRolePreview } from '../contexts/RolePreviewContext';
 import { useRoles } from '../contexts/PermissionsContext';
 import { useEffectiveRoleIds } from '../hooks/useEffectiveRoleIds';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 interface HeaderDropdownProps {
   isNavExpanded: boolean;
@@ -68,6 +68,23 @@ export function HeaderDropdown({
   const { actualRoleIds, effectiveRoleIds } = useEffectiveRoleIds();
   const [selectedRoleId, setSelectedRoleId] = useState<string>('');
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Click outside listener to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        if (isNavExpanded) {
+          setIsNavExpanded(false);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isNavExpanded, setIsNavExpanded]);
 
   // Check if user can see a path based on permissions (using effective roles for preview)
   const canSeePath = (path: string) => {
@@ -98,6 +115,7 @@ export function HeaderDropdown({
 
   return (
     <div
+      ref={dropdownRef}
       style={{
         position: 'absolute',
         top: '100%',

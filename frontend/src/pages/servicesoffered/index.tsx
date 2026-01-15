@@ -1206,6 +1206,7 @@ export function Services() {
                       </button>
                     </div>
                   )}
+                  </div>
               ) : (
                 /* Desktop: Horizontal layout */
                 <div style={{ backgroundColor: 'var(--surface-elevated)', borderRadius: '0.5rem', padding: '1rem', border: '1px solid #e5e7eb' }}>
@@ -1449,32 +1450,109 @@ export function Services() {
                     </div>
                   </div>
                   {showFilters && (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1rem', paddingTop: '1rem', borderTop: '1px solid #e5e7eb' }}>
-                      <div>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#4b5563' }}>Status</label>
-                        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ width: '100%', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #d1d5db', backgroundColor: 'white', color: '#111827' }}>
+                    <div style={{ 
+                      display: 'grid', 
+                      gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(180px, 1fr))', 
+                      gap: '1rem', 
+                      paddingTop: '1rem', 
+                      borderTop: '1px solid #e5e7eb' 
+                    }}>
+                      {/* Status - Full width on mobile */}
+                      <div style={isMobile ? { gridColumn: '1' } : {}}>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#4b5563' }}>
+                          Status
+                        </label>
+                        <select 
+                          value={statusFilter} 
+                          onChange={(e) => setStatusFilter(e.target.value)} 
+                          style={{ 
+                            width: '100%', 
+                            padding: '0.5rem', 
+                            borderRadius: '0.375rem', 
+                            border: '1px solid #d1d5db', 
+                            backgroundColor: 'white', 
+                            color: '#111827' 
+                          }}
+                        >
                           <option value="">All Status</option>
                           <option value="Active">Active</option>
                           <option value="Inactive">Inactive</option>
                         </select>
                       </div>
-                      <div>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#4b5563' }}>Price Range</label>
+                      
+                      {/* Price Range - Responsive */}
+                      <div style={isMobile ? { gridColumn: '1' } : {}}>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#4b5563' }}>
+                          Price Range
+                        </label>
                         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                          <input type="number" placeholder="Min" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} style={{ width: '70px', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #d1d5db', fontSize: '0.875rem', backgroundColor: 'white', color: '#111827' }} />
+                          <input 
+                            type="number" 
+                            placeholder="Min" 
+                            value={minPrice} 
+                            onChange={(e) => setMinPrice(e.target.value)} 
+                            style={{ 
+                              width: isMobile ? 'calc(50% - 1rem)' : '70px', 
+                              padding: '0.5rem', 
+                              borderRadius: '0.375rem', 
+                              border: '1px solid #d1d5db', 
+                              fontSize: '0.875rem', 
+                              backgroundColor: 'white', 
+                              color: '#111827' 
+                            }} 
+                          />
                           <span>-</span>
-                          <input type="number" placeholder="Max" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} style={{ width: '70px', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #d1d5db', fontSize: '0.875rem', backgroundColor: 'white', color: '#111827' }} />
+                          <input 
+                            type="number" 
+                            placeholder="Max" 
+                            value={maxPrice} 
+                            onChange={(e) => setMaxPrice(e.target.value)} 
+                            style={{ 
+                              width: isMobile ? 'calc(50% - 1rem)' : '70px', 
+                              padding: '0.5rem', 
+                              borderRadius: '0.375rem', 
+                              border: '1px solid #d1d5db', 
+                              fontSize: '0.875rem', 
+                              backgroundColor: 'white', 
+                              color: '#111827' 
+                            }} 
+                          />
                         </div>
                       </div>
-                      <div>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#4b5563' }}>Vehicle Type</label>
-                        <select value={vehicleTypeFilter} onChange={(e) => setVehicleTypeFilter(e.target.value)} style={{ width: '100%', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #d1d5db', backgroundColor: 'white', color: '#111827' }}>
+                      
+                      {/* Vehicle Type - Full width on mobile */}
+                      <div style={isMobile ? { gridColumn: '1' } : {}}>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#4b5563' }}>
+                          Vehicle Type
+                        </label>
+                        <select 
+                          value={vehicleTypeFilter} 
+                          onChange={(e) => setVehicleTypeFilter(e.target.value)} 
+                          style={{ 
+                            width: '100%', 
+                            padding: '0.5rem', 
+                            borderRadius: '0.375rem', 
+                            border: '1px solid #d1d5db', 
+                            backgroundColor: 'white', 
+                            color: '#111827' 
+                          }}
+                        >
                           <option value="">All Types</option>
-                          {vehicleTypeOptions.filter(t => t !== 'All Types').map(type => (<option key={type} value={type}>{type}</option>))}
+                          {vehicleTypeOptions.filter(t => t !== 'All Types').map(type => (
+                            <option key={type} value={type}>{type}</option>
+                          ))}
                         </select>
                       </div>
+                      
+                      {/* Show Archived - Full width on mobile */}
                       {canViewArchived && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', paddingTop: '1.5rem' }}>
+                        <div style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: '0.5rem', 
+                          paddingTop: '1.5rem',
+                          ...(isMobile && { gridColumn: '1' })
+                        }}>
                           <div style={{ fontSize: '0.875rem', color: '#4b5563', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             <Switch checked={showArchivedFilter} onChange={(checked) => setShowArchivedFilter(checked)} size="sm" />
                             Show Archived
@@ -1485,7 +1563,6 @@ export function Services() {
                   )}
                 </div>
               )}
-              </div>
             </section>
 
             <div style={{

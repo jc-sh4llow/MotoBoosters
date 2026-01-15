@@ -112,13 +112,15 @@ export function Sales() {
     )
   ).sort();
 
-  const itemOptions = Array.from(
-    new Set(
-      sourceForLov
-        .map(s => (s.itemId ?? '').toString())
-        .filter(code => code)
-    )
-  ).sort();
+  // Create a map of itemId to itemName for the modal
+  const itemIdToNameMap = new Map<string, string>();
+  sourceForLov.forEach(s => {
+    if (s.itemId && s.itemName) {
+      itemIdToNameMap.set(s.itemId, s.itemName);
+    }
+  });
+
+  const itemOptions = Array.from(itemIdToNameMap, ([id, name]) => ({ id, name }));
 
   const getFilteredByTab = () => {
     const source = (firestoreSales.length ? firestoreSales : salesData);
@@ -348,6 +350,12 @@ export function Sales() {
         const transactionCode = (data.transactionCode ?? '').toString() || undefined;
 
         itemsArray.forEach((item: any, idx: number) => {
+          // Only include parts items, exclude services
+          const itemType = (item.type ?? '').toString().toLowerCase();
+          if (itemType === 'service') {
+            return; // Skip service items
+          }
+
           const quantity = Number(item.quantity ?? 0) || 0;
           const unitPrice = Number(item.price ?? 0) || 0;
           const totalAmount = Number(item.subtotal ?? 0) || (quantity * unitPrice);
@@ -1276,7 +1284,8 @@ export function Sales() {
                           )}
                           <td
                             style={{
-                              padding: viewportWidth < 768 ? '0.5rem' : '1rem',
+                              padding: '1rem',
+                              paddingRight: viewportWidth < 768 ? '0.25rem' : '1rem',
                               fontSize: '0.875rem',
                               color: 'var(--table-row-text)',
                               whiteSpace: 'nowrap',
@@ -1357,7 +1366,8 @@ export function Sales() {
                           {showTotalAmount && (
                             <td
                               style={{
-                                padding: viewportWidth < 768 ? '0.5rem' : '1rem',
+                                padding: '1rem',
+                                paddingLeft: viewportWidth < 768 ? '0.25rem' : '1rem',
                                 fontSize: '0.875rem',
                                 color: 'var(--table-row-text)',
                                 textAlign: 'right',
@@ -1652,12 +1662,15 @@ export function Sales() {
                 borderRadius: '0.375rem'
               }}>
                 {itemOptions
-                  .filter(code => code.toLowerCase().includes(itemSearchTerm.toLowerCase()))
-                  .map(code => (
+                  .filter(item => 
+                    item.id.toLowerCase().includes(itemSearchTerm.toLowerCase()) ||
+                    item.name.toLowerCase().includes(itemSearchTerm.toLowerCase())
+                  )
+                  .map(item => (
                     <div
-                      key={code}
+                      key={item.id}
                       onClick={() => {
-                        setItemFilter(code);
+                        setItemFilter(item.id);
                         setShowItemModal(false);
                         setItemSearchTerm('');
                         setItemFilterMode('all');
@@ -1666,16 +1679,26 @@ export function Sales() {
                         padding: '0.75rem 1rem',
                         cursor: 'pointer',
                         borderBottom: '1px solid #e5e7eb',
-                        backgroundColor: itemFilter === code ? '#eff6ff' : 'var(--surface-elevated)',
+                        backgroundColor: itemFilter === item.id ? '#eff6ff' : 'var(--surface-elevated)',
                         transition: 'background-color 0.15s'
                       }}
-                      onMouseOver={(e) => { if (itemFilter !== code) e.currentTarget.style.backgroundColor = 'var(--surface-hover)'; }}
-                      onMouseOut={(e) => { if (itemFilter !== code) e.currentTarget.style.backgroundColor = 'var(--surface-elevated)'; }}
+                      onMouseOver={(e) => { if (itemFilter !== item.id) e.currentTarget.style.backgroundColor = 'var(--surface-hover)'; }}
+                      onMouseOut={(e) => { if (itemFilter !== item.id) e.currentTarget.style.backgroundColor = 'var(--surface-elevated)'; }}
                     >
-                      {code}
+                      <div>{item.id}</div>
+                      <div style={{
+                        fontSize: '0.75rem',
+                        color: 'var(--field-label-text)',
+                        marginTop: '0.25rem'
+                      }}>
+                        {item.name}
+                      </div>
                     </div>
                   ))}
-                {itemOptions.filter(code => code.toLowerCase().includes(itemSearchTerm.toLowerCase())).length === 0 && (
+                {itemOptions.filter(item => 
+                  item.id.toLowerCase().includes(itemSearchTerm.toLowerCase()) ||
+                  item.name.toLowerCase().includes(itemSearchTerm.toLowerCase())
+                ).length === 0 && (
                   <div style={{ padding: '1rem', textAlign: 'center', color: '#6b7280', fontStyle: 'italic' }}>
                     No items found
                   </div>

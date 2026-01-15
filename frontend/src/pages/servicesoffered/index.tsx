@@ -640,7 +640,7 @@ export function Services() {
             position: 'relative'
           }}>
             {/* Left: Logo, title, and welcome text */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+            <div style={{ display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', gap: '1.5rem' }}>
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -660,80 +660,87 @@ export function Services() {
                   }}
                 />
               </div>
-              <h1 style={{
-                fontSize: '1.875rem',
-                fontWeight: 'bold',
-                color: 'var(--text-primary)',
-                margin: 0,
-              }}>
-                Services
-              </h1>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginLeft: '1rem' }}>
-                <span style={{ color: '#374151', fontSize: '0.9rem' }}>
-                  Welcome, {user?.name || 'Guest'}
-                </span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                <h1 style={{
+                  fontSize: '1.875rem',
+                  fontWeight: 'bold',
+                  color: '#1e40af',
+                  margin: 0,
+                }}>
+                  Services
+                </h1>
+                {isMobile && (
+                  <span style={{ color: '#374151', fontSize: '0.9rem' }}>
+                    Welcome, {user?.name || 'Guest'}
+                  </span>
+                )}
               </div>
-            </div>
-            {/* Center: Search bar */}
-            <div style={{
-              position: 'relative',
-              display: 'flex',
-              alignItems: 'center',
-              marginLeft: 'auto',
-              marginRight: '1rem'
-            }}>
-              <FaSearch style={{
-                position: 'absolute',
-                left: '12px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                color: '#9ca3af'
-              }} />
-              <input
-                type="text"
-                placeholder="Search by any field..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                style={{
-                  padding: '0.5rem 2.5rem 0.5rem 2.5rem',
-                  borderRadius: '0.5rem',
-                  border: '1px solid #d1d5db',
-                  backgroundColor: 'rgba(255, 255, 255)',
-                  color: '#1f2937',
-                  width: '320px',
-                  outline: 'none'
-                }}
-              />
-              {searchTerm && (
-                <button
-                  onClick={() => setSearchTerm('')}
-                  style={{
-                    position: 'absolute',
-                    right: '8px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'transparent',
-                    border: 'none',
-                    color: '#9ca3af',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '4px'
-                  }}
-                >
-                  <FaTimes size={14} />
-                </button>
+              {!isMobile && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginLeft: '1rem' }}>
+                  <span style={{ color: '#374151', fontSize: '0.9rem' }}>
+                    Welcome, {user?.name || 'Guest'}
+                  </span>
+                </div>
               )}
             </div>
 
-            {/* Right: Logout + Navbar toggle */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.75rem'
-            }}>
-              {user && (
+            {/* Right: search bar, Logout, navbar toggle */}
+            <div style={{ display: 'flex', alignItems: 'center', marginLeft: 'auto' }}>
+              {!isMobile && (
+                <div style={{
+                  position: 'relative',
+                  display: 'flex',
+                  alignItems: 'center',
+                  marginLeft: 'auto',
+                  marginRight: '1rem'
+                }}>
+                  <FaSearch style={{
+                    position: 'absolute',
+                    left: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    color: '#9ca3af'
+                  }} />
+                  <input
+                    type="text"
+                    placeholder="Search by any field..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    style={{
+                      padding: '0.5rem 2.5rem 0.5rem 2.5rem',
+                      borderRadius: '0.5rem',
+                      border: '1px solid #d1d5db',
+                      backgroundColor: 'rgba(255, 255, 255)',
+                      color: '#1f2937',
+                      width: '320px',
+                      outline: 'none'
+                    }}
+                  />
+                  {searchTerm && (
+                    <button
+                      onClick={() => setSearchTerm('')}
+                      style={{
+                        position: 'absolute',
+                        right: '8px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#9ca3af',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '4px'
+                      }}
+                    >
+                      <FaTimes size={14} />
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {!isMobile && user && (
                 <button
                   onClick={() => {
                     logout();
@@ -746,12 +753,15 @@ export function Services() {
                     padding: '0.25rem 0.75rem',
                     borderRadius: '0.25rem',
                     cursor: 'pointer',
-                    fontSize: '0.875rem'
+                    fontSize: '0.875rem',
+                    marginRight: '0.75rem'
                   }}
                 >
                   Logout
                 </button>
               )}
+
+              {/* Navbar Toggle Button */}
               <button
                 onClick={() => setIsNavExpanded(!isNavExpanded)}
                 onMouseEnter={() => {
@@ -783,26 +793,34 @@ export function Services() {
               >
                 <FaBars />
               </button>
-            </div>
 
-            {/* Dropdown Menu */}
-            <HeaderDropdown
-              isNavExpanded={isNavExpanded}
-              setIsNavExpanded={setIsNavExpanded}
-              isMobile={isMobile}
-              onMouseEnter={() => {
-                if (!isMobile && closeMenuTimeout) {
-                  clearTimeout(closeMenuTimeout);
-                }
-              }}
-              onMouseLeave={() => {
-                if (!isMobile) {
-                  closeMenuTimeout = window.setTimeout(() => {
-                    setIsNavExpanded(false);
-                  }, 200);
-                }
-              }}
-            />
+              {/* Dropdown Menu */}
+              <HeaderDropdown
+                isNavExpanded={isNavExpanded}
+                setIsNavExpanded={setIsNavExpanded}
+                isMobile={isMobile}
+                currentPage="services"
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+                onLogout={() => {
+                  logout();
+                  navigate('/login');
+                }}
+                userName={user?.name}
+                onMouseEnter={() => {
+                  if (!isMobile && closeMenuTimeout) {
+                    clearTimeout(closeMenuTimeout);
+                  }
+                }}
+                onMouseLeave={() => {
+                  if (!isMobile) {
+                    closeMenuTimeout = window.setTimeout(() => {
+                      setIsNavExpanded(false);
+                    }, 200);
+                  }
+                }}
+              />
+            </div>
           </div>
         </header>
 
@@ -829,7 +847,7 @@ export function Services() {
                     overflow: 'hidden'
                   }}
                 >
-                                    {/* Accordion Header */}
+                  {/* Accordion Header */}
                   <div
                     onClick={() => !isSelectMode && setIsActionBarExpanded(!isActionBarExpanded)}
                     style={{
@@ -845,7 +863,7 @@ export function Services() {
                       Actions
                     </span>
                     {!isSelectMode && (
-                      <FaChevronDown 
+                      <FaChevronDown
                         style={{
                           transform: isActionBarExpanded ? 'rotate(180deg)' : 'rotate(0)',
                           transition: 'transform 0.2s ease',
@@ -854,18 +872,18 @@ export function Services() {
                       />
                     )}
                   </div>
-                  
+
                   {/* Accordion Content */}
                   {(isActionBarExpanded || isSelectMode) && (
-                    <div style={{ 
-                      padding: '1rem', 
+                    <div style={{
+                      padding: '1rem',
                       paddingTop: '0',
                       borderTop: '1px solid #e5e7eb',
                       display: 'flex',
                       flexDirection: 'column',
                       gap: '0.5rem'
                     }}>
-                                            {/* New Service Button - First */}
+                      {/* New Service Button - First */}
                       {canEditServices && (
                         <button
                           onClick={() => {
@@ -916,7 +934,7 @@ export function Services() {
                           }}>
                             {selectedItems.size} service{selectedItems.size !== 1 ? 's' : ''} selected
                           </div>
-                          
+
                           {/* Archive button */}
                           {selectedUnarchivedCount > 0 && (
                             <button
@@ -972,7 +990,7 @@ export function Services() {
                               <FaTrash /> Archive {selectedUnarchivedCount} service{selectedUnarchivedCount !== 1 ? 's' : ''}
                             </button>
                           )}
-                          
+
                           {/* Unarchive button */}
                           {selectedArchivedCount > 0 && (
                             <button
@@ -1028,7 +1046,7 @@ export function Services() {
                               <FaUndoAlt /> Unarchive {selectedArchivedCount} service{selectedArchivedCount !== 1 ? 's' : ''}
                             </button>
                           )}
-                          
+
                           {/* Delete button */}
                           {canDeleteServices && selectedArchivedCount > 0 && selectedUnarchivedCount === 0 && (
                             <button
@@ -1099,8 +1117,8 @@ export function Services() {
 
                       {/* Export Button */}
                       {canExportServices && (
-                        <button 
-                          type="button" 
+                        <button
+                          type="button"
                           onClick={() => {
                             const rows = filteredServices;
                             if (!rows.length) return;
@@ -1109,19 +1127,19 @@ export function Services() {
                             const csv = [headers.join(','), ...rows.map(s => [s.serviceId, s.name, s.price, s.status, s.description, s.vehicleTypes.join('; '), s.archived ? 'Yes' : 'No'].map(escapeCell).join(','))].join('\r\n');
                             const blob = new Blob([csv], { type: 'text/csv' });
                             const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `services_${new Date().toISOString().split('T')[0]}.csv`; document.body.appendChild(link); link.click(); document.body.removeChild(link);
-                          }} 
-                          style={{ 
-                            backgroundColor: '#059669', 
-                            color: 'white', 
-                            padding: '0.75rem', 
-                            borderRadius: '0.375rem', 
-                            border: 'none', 
-                            cursor: 'pointer', 
-                            display: 'flex', 
-                            alignItems: 'center', 
+                          }}
+                          style={{
+                            backgroundColor: '#059669',
+                            color: 'white',
+                            padding: '0.75rem',
+                            borderRadius: '0.375rem',
+                            border: 'none',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
                             justifyContent: 'center',
-                            gap: '0.5rem', 
-                            fontWeight: 500, 
+                            gap: '0.5rem',
+                            fontWeight: 500,
                             fontSize: '0.875rem',
                             width: '100%'
                           }}
@@ -1163,21 +1181,21 @@ export function Services() {
                       )}
 
                       {/* Filters Button */}
-                      <button 
-                        type="button" 
-                        onClick={() => setShowFilters(!showFilters)} 
-                        style={{ 
-                          backgroundColor: '#1e40af', 
-                          color: 'white', 
-                          padding: '0.75rem', 
-                          borderRadius: '0.375rem', 
-                          border: 'none', 
-                          cursor: 'pointer', 
-                          display: 'flex', 
-                          alignItems: 'center', 
+                      <button
+                        type="button"
+                        onClick={() => setShowFilters(!showFilters)}
+                        style={{
+                          backgroundColor: '#1e40af',
+                          color: 'white',
+                          padding: '0.75rem',
+                          borderRadius: '0.375rem',
+                          border: 'none',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
                           justifyContent: 'center',
-                          gap: '0.5rem', 
-                          fontWeight: 500, 
+                          gap: '0.5rem',
+                          fontWeight: 500,
                           fontSize: '0.875rem',
                           width: '100%'
                         }}
@@ -1186,24 +1204,24 @@ export function Services() {
                       </button>
 
                       {/* Clear Filters Button */}
-                      <button 
-                        type="button" 
-                        onClick={() => { 
-                          setStatusFilter(''); 
-                          setMinPrice(''); 
-                          setMaxPrice(''); 
-                          setVehicleTypeFilter(''); 
-                          setShowArchivedFilter(false); 
-                          setSortBy('serviceId-asc'); 
-                        }} 
-                        style={{ 
-                          backgroundColor: '#6b7280', 
-                          color: 'white', 
-                          padding: '0.75rem', 
-                          borderRadius: '0.375rem', 
-                          border: 'none', 
-                          cursor: 'pointer', 
-                          fontWeight: 500, 
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setStatusFilter('');
+                          setMinPrice('');
+                          setMaxPrice('');
+                          setVehicleTypeFilter('');
+                          setShowArchivedFilter(false);
+                          setSortBy('serviceId-asc');
+                        }}
+                        style={{
+                          backgroundColor: '#6b7280',
+                          color: 'white',
+                          padding: '0.75rem',
+                          borderRadius: '0.375rem',
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontWeight: 500,
                           fontSize: '0.875rem',
                           width: '100%'
                         }}
@@ -1212,10 +1230,10 @@ export function Services() {
                       </button>
                     </div>
                   )}
-                  
+
                   {/* Mobile Filter Section */}
                   {showFilters && (
-                    <div style={{ 
+                    <div style={{
                       padding: '1rem',
                       borderTop: '1px solid #e5e7eb',
                       display: 'flex',
@@ -1227,16 +1245,16 @@ export function Services() {
                         <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#4b5563' }}>
                           Status
                         </label>
-                        <select 
-                          value={statusFilter} 
-                          onChange={(e) => setStatusFilter(e.target.value)} 
-                          style={{ 
-                            width: '100%', 
-                            padding: '0.5rem', 
-                            borderRadius: '0.375rem', 
-                            border: '1px solid #d1d5db', 
-                            backgroundColor: 'white', 
-                            color: '#111827' 
+                        <select
+                          value={statusFilter}
+                          onChange={(e) => setStatusFilter(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '0.5rem',
+                            borderRadius: '0.375rem',
+                            border: '1px solid #d1d5db',
+                            backgroundColor: 'white',
+                            color: '#111827'
                           }}
                         >
                           <option value="">All Status</option>
@@ -1244,62 +1262,62 @@ export function Services() {
                           <option value="Inactive">Inactive</option>
                         </select>
                       </div>
-                      
+
                       {/* Price Range - Responsive */}
                       <div>
                         <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#4b5563' }}>
                           Price Range
                         </label>
                         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                          <input 
-                            type="number" 
-                            placeholder="Min" 
-                            value={minPrice} 
-                            onChange={(e) => setMinPrice(e.target.value)} 
-                            style={{ 
-                              width: 'calc(50% - 1rem)', 
-                              padding: '0.5rem', 
-                              borderRadius: '0.375rem', 
-                              border: '1px solid #d1d5db', 
-                              fontSize: '0.875rem', 
-                              backgroundColor: 'white', 
-                              color: '#111827' 
-                            }} 
+                          <input
+                            type="number"
+                            placeholder="Min"
+                            value={minPrice}
+                            onChange={(e) => setMinPrice(e.target.value)}
+                            style={{
+                              width: 'calc(50% - 1rem)',
+                              padding: '0.5rem',
+                              borderRadius: '0.375rem',
+                              border: '1px solid #d1d5db',
+                              fontSize: '0.875rem',
+                              backgroundColor: 'white',
+                              color: '#111827'
+                            }}
                           />
                           <span>-</span>
-                          <input 
-                            type="number" 
-                            placeholder="Max" 
-                            value={maxPrice} 
-                            onChange={(e) => setMaxPrice(e.target.value)} 
-                            style={{ 
-                              width: 'calc(50% - 1rem)', 
-                              padding: '0.5rem', 
-                              borderRadius: '0.375rem', 
-                              border: '1px solid #d1d5db', 
-                              fontSize: '0.875rem', 
-                              backgroundColor: 'white', 
-                              color: '#111827' 
-                            }} 
+                          <input
+                            type="number"
+                            placeholder="Max"
+                            value={maxPrice}
+                            onChange={(e) => setMaxPrice(e.target.value)}
+                            style={{
+                              width: 'calc(50% - 1rem)',
+                              padding: '0.5rem',
+                              borderRadius: '0.375rem',
+                              border: '1px solid #d1d5db',
+                              fontSize: '0.875rem',
+                              backgroundColor: 'white',
+                              color: '#111827'
+                            }}
                           />
                         </div>
                       </div>
-                      
+
                       {/* Vehicle Type - Full width on mobile */}
                       <div>
                         <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#4b5563' }}>
                           Vehicle Type
                         </label>
-                        <select 
-                          value={vehicleTypeFilter} 
-                          onChange={(e) => setVehicleTypeFilter(e.target.value)} 
-                          style={{ 
-                            width: '100%', 
-                            padding: '0.5rem', 
-                            borderRadius: '0.375rem', 
-                            border: '1px solid #d1d5db', 
-                            backgroundColor: 'white', 
-                            color: '#111827' 
+                        <select
+                          value={vehicleTypeFilter}
+                          onChange={(e) => setVehicleTypeFilter(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '0.5rem',
+                            borderRadius: '0.375rem',
+                            border: '1px solid #d1d5db',
+                            backgroundColor: 'white',
+                            color: '#111827'
                           }}
                         >
                           <option value="">All Types</option>
@@ -1308,12 +1326,12 @@ export function Services() {
                           ))}
                         </select>
                       </div>
-                      
+
                       {/* Show Archived - Full width on mobile */}
                       {canViewArchived && (
-                        <div style={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
                           gap: '0.5rem'
                         }}>
                           <div style={{ fontSize: '0.875rem', color: '#4b5563', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -1324,7 +1342,7 @@ export function Services() {
                       )}
                     </div>
                   )}
-                  </div>
+                </div>
               ) : (
                 /* Desktop: Horizontal layout */
                 <div style={{ backgroundColor: 'var(--surface-elevated)', borderRadius: '0.5rem', padding: '1rem', border: '1px solid #e5e7eb' }}>
@@ -1568,28 +1586,28 @@ export function Services() {
                     </div>
                   </div>
                   {showFilters && (
-                    <div style={{ 
-                      display: 'grid', 
-                      gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(180px, 1fr))', 
-                      gap: '1rem', 
-                      paddingTop: '1rem', 
-                      borderTop: '1px solid #e5e7eb' 
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(180px, 1fr))',
+                      gap: '1rem',
+                      paddingTop: '1rem',
+                      borderTop: '1px solid #e5e7eb'
                     }}>
                       {/* Status - Full width on mobile */}
                       <div style={isMobile ? { gridColumn: '1' } : {}}>
                         <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#4b5563' }}>
                           Status
                         </label>
-                        <select 
-                          value={statusFilter} 
-                          onChange={(e) => setStatusFilter(e.target.value)} 
-                          style={{ 
-                            width: '100%', 
-                            padding: '0.5rem', 
-                            borderRadius: '0.375rem', 
-                            border: '1px solid #d1d5db', 
-                            backgroundColor: 'white', 
-                            color: '#111827' 
+                        <select
+                          value={statusFilter}
+                          onChange={(e) => setStatusFilter(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '0.5rem',
+                            borderRadius: '0.375rem',
+                            border: '1px solid #d1d5db',
+                            backgroundColor: 'white',
+                            color: '#111827'
                           }}
                         >
                           <option value="">All Status</option>
@@ -1597,62 +1615,62 @@ export function Services() {
                           <option value="Inactive">Inactive</option>
                         </select>
                       </div>
-                      
+
                       {/* Price Range - Responsive */}
                       <div style={isMobile ? { gridColumn: '1' } : {}}>
                         <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#4b5563' }}>
                           Price Range
                         </label>
                         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                          <input 
-                            type="number" 
-                            placeholder="Min" 
-                            value={minPrice} 
-                            onChange={(e) => setMinPrice(e.target.value)} 
-                            style={{ 
-                              width: isMobile ? 'calc(50% - 1rem)' : '70px', 
-                              padding: '0.5rem', 
-                              borderRadius: '0.375rem', 
-                              border: '1px solid #d1d5db', 
-                              fontSize: '0.875rem', 
-                              backgroundColor: 'white', 
-                              color: '#111827' 
-                            }} 
+                          <input
+                            type="number"
+                            placeholder="Min"
+                            value={minPrice}
+                            onChange={(e) => setMinPrice(e.target.value)}
+                            style={{
+                              width: isMobile ? 'calc(50% - 1rem)' : '70px',
+                              padding: '0.5rem',
+                              borderRadius: '0.375rem',
+                              border: '1px solid #d1d5db',
+                              fontSize: '0.875rem',
+                              backgroundColor: 'white',
+                              color: '#111827'
+                            }}
                           />
                           <span>-</span>
-                          <input 
-                            type="number" 
-                            placeholder="Max" 
-                            value={maxPrice} 
-                            onChange={(e) => setMaxPrice(e.target.value)} 
-                            style={{ 
-                              width: isMobile ? 'calc(50% - 1rem)' : '70px', 
-                              padding: '0.5rem', 
-                              borderRadius: '0.375rem', 
-                              border: '1px solid #d1d5db', 
-                              fontSize: '0.875rem', 
-                              backgroundColor: 'white', 
-                              color: '#111827' 
-                            }} 
+                          <input
+                            type="number"
+                            placeholder="Max"
+                            value={maxPrice}
+                            onChange={(e) => setMaxPrice(e.target.value)}
+                            style={{
+                              width: isMobile ? 'calc(50% - 1rem)' : '70px',
+                              padding: '0.5rem',
+                              borderRadius: '0.375rem',
+                              border: '1px solid #d1d5db',
+                              fontSize: '0.875rem',
+                              backgroundColor: 'white',
+                              color: '#111827'
+                            }}
                           />
                         </div>
                       </div>
-                      
+
                       {/* Vehicle Type - Full width on mobile */}
                       <div style={isMobile ? { gridColumn: '1' } : {}}>
                         <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#4b5563' }}>
                           Vehicle Type
                         </label>
-                        <select 
-                          value={vehicleTypeFilter} 
-                          onChange={(e) => setVehicleTypeFilter(e.target.value)} 
-                          style={{ 
-                            width: '100%', 
-                            padding: '0.5rem', 
-                            borderRadius: '0.375rem', 
-                            border: '1px solid #d1d5db', 
-                            backgroundColor: 'white', 
-                            color: '#111827' 
+                        <select
+                          value={vehicleTypeFilter}
+                          onChange={(e) => setVehicleTypeFilter(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '0.5rem',
+                            borderRadius: '0.375rem',
+                            border: '1px solid #d1d5db',
+                            backgroundColor: 'white',
+                            color: '#111827'
                           }}
                         >
                           <option value="">All Types</option>
@@ -1661,13 +1679,13 @@ export function Services() {
                           ))}
                         </select>
                       </div>
-                      
+
                       {/* Show Archived - Full width on mobile */}
                       {canViewArchived && (
-                        <div style={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          gap: '0.5rem', 
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
                           paddingTop: '1.5rem',
                           ...(isMobile && { gridColumn: '1' })
                         }}>
@@ -2272,36 +2290,36 @@ export function Services() {
                             </div>
 
                             {/* MULTI-SELECT CHIPS (Alternative visual representation) */}
-                            <div style={{ 
-                              marginTop: '1rem', 
-                              padding: '0.75rem', 
-                              backgroundColor: '#f8fafc', 
+                            <div style={{
+                              marginTop: '1rem',
+                              padding: '0.75rem',
+                              backgroundColor: '#f8fafc',
                               borderRadius: '0.375rem',
                               border: '1px solid #e2e8f0'
                             }}>
-                              <div style={{ 
-                                fontSize: '0.75rem', 
-                                color: '#64748b', 
+                              <div style={{
+                                fontSize: '0.75rem',
+                                color: '#64748b',
                                 marginBottom: '0.5rem',
                                 fontWeight: 500
                               }}>
                                 Selected Vehicle Types (Chips):
                               </div>
-                              <div style={{ 
-                                display: 'flex', 
-                                flexWrap: 'wrap', 
+                              <div style={{
+                                display: 'flex',
+                                flexWrap: 'wrap',
                                 gap: '0.375rem',
                                 minHeight: '2rem'
                               }}>
                                 {Array.from(selectedTypes).filter(t => t !== 'All Types').length > 0 ? (
                                   Array.from(selectedTypes).filter(t => t !== 'All Types').map(type => (
-                                    <span 
-                                      key={type} 
-                                      style={{ 
-                                        backgroundColor: '#dbeafe', 
-                                        color: '#1d4ed8', 
-                                        padding: '0.25rem 0.625rem', 
-                                        borderRadius: '9999px', 
+                                    <span
+                                      key={type}
+                                      style={{
+                                        backgroundColor: '#dbeafe',
+                                        color: '#1d4ed8',
+                                        padding: '0.25rem 0.625rem',
+                                        borderRadius: '9999px',
                                         fontSize: '0.75rem',
                                         fontWeight: 500,
                                         display: 'flex',
@@ -2311,15 +2329,15 @@ export function Services() {
                                       }}
                                     >
                                       {type}
-                                      <button 
+                                      <button
                                         onClick={() => handleTypeChange(type)}
                                         disabled={!canEditServices}
-                                        style={{ 
-                                          background: 'none', 
-                                          border: 'none', 
-                                          color: '#1d4ed8', 
-                                          cursor: canEditServices ? 'pointer' : 'not-allowed', 
-                                          padding: '0', 
+                                        style={{
+                                          background: 'none',
+                                          border: 'none',
+                                          color: '#1d4ed8',
+                                          cursor: canEditServices ? 'pointer' : 'not-allowed',
+                                          padding: '0',
                                           fontSize: '1rem',
                                           fontWeight: 'bold',
                                           lineHeight: 1,
@@ -2575,7 +2593,7 @@ export function Services() {
                         </span>
                       )}
                     </div>
-                                        {!isMobile && canEditServices && (
+                    {!isMobile && canEditServices && (
                       <button
                         type="button"
                         onClick={() => {

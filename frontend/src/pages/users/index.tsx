@@ -84,6 +84,11 @@ export function Users() {
   const userDetailsToggleRef = useRef<HTMLButtonElement | null>(null);
 
   const collapseUserDetails = () => {
+    // Don't collapse if user is in edit mode to prevent losing unsaved changes
+    if (isEditing) {
+      return;
+    }
+
     const today = new Date().toISOString().split('T')[0];
     setFormData({
       docId: '',
@@ -105,9 +110,6 @@ export function Users() {
     setShowConfirmPassword(false);
     setIsPasswordFocused(false);
     setIsConfirmFocused(false);
-    setPasswordDirty(false);
-    setPasswordUnlockedForRowId(null);
-    setStatusChangeConfirmed(false);
     setIsUserDetailsExpanded(false);
   };
 
@@ -420,16 +422,16 @@ export function Users() {
       setIsMobile(width < 768);
     };
 
-window.addEventListener('resize', handleResize);
-return () => window.removeEventListener('resize', handleResize);
-}, []);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
-// Column visibility based on viewport
-const showUsername = viewportWidth >= 768; // Hide on mobile
-const showEmail = viewportWidth >= 992; // Hide on mobile and tablet
-const showRole = viewportWidth >= 768; // Hide on mobile
-const showStatus = viewportWidth >= 768; // Hide on mobile
-const showLastLogin = viewportWidth >= 1200; // Hide on all except desktop
+  // Column visibility based on viewport
+  const showUsername = viewportWidth >= 768; // Hide on mobile
+  const showEmail = viewportWidth >= 992; // Hide on mobile and tablet
+  const showRole = viewportWidth >= 768; // Hide on mobile
+  const showStatus = viewportWidth >= 768; // Hide on mobile
+  const showLastLogin = viewportWidth >= 1200; // Hide on all except desktop
 
   const handleSaveUser = async () => {
     const { docId, userId, username, password, confirmPassword, fullName, email, contactNumber, status, role } = formData;
@@ -970,9 +972,9 @@ const showLastLogin = viewportWidth >= 1200; // Hide on all except desktop
                   padding: isUserDetailsExpanded ? '1.5rem' : '0 1.5rem',
                   backgroundColor: 'white'
                 }}
-                ref={userDetailsRef}
+                  ref={userDetailsRef}
                 >
-                  <div style={{ display: 'grid', gridTemplateColumns: viewportWidth <= 767 ? '1fr' : 'repeat(2, 1fr)', gap: '1.5rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: '1.5rem' }}>
                     {/* Row: User ID */}
                     <div>
                       <label style={{
@@ -1000,7 +1002,7 @@ const showLastLogin = viewportWidth >= 1200; // Hide on all except desktop
                     </div>
 
                     {/* Row: Date Created and Date Updated side-by-side */}
-                    <div style={{ display: 'grid', gridTemplateColumns: viewportWidth <= 767 ? '1fr' : 'repeat(2, 1fr)', gap: '0.75rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: '0.75rem' }}>
                       <div>
                         <label style={{
                           display: 'block',
@@ -1421,7 +1423,32 @@ const showLastLogin = viewportWidth >= 1200; // Hide on all except desktop
                         <option value="inactive">Inactive</option>
                       </select>
                     </div>
-
+                    {/* Last Login - Show in details when column is hidden */}
+                    {viewportWidth < 1200 && (
+                      <div>
+                        <label style={{
+                          display: 'block',
+                          marginBottom: '0.5rem',
+                          fontSize: '0.875rem',
+                          color: '#4b5563'
+                        }}>
+                          Last Login
+                        </label>
+                        <input
+                          type="text"
+                          value={selectedUserRow?.lastLogin ? new Date(selectedUserRow.lastLogin).toLocaleString() : 'Never'}
+                          disabled
+                          style={{
+                            width: '100%',
+                            padding: '0.5rem 0.75rem',
+                            borderRadius: '0.375rem',
+                            border: '1px solid #d1d5db',
+                            backgroundColor: '#f9fafb',
+                            color: '#6b7280'
+                          }}
+                        />
+                      </div>
+                    )}
                   </div>
 
                   {/* Action Buttons */}

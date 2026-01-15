@@ -285,6 +285,30 @@ export function Services() {
     setIsModalOpen(modalState.open);
   }, [modalState.open]);
 
+  // Click-outside listener for Action Bar
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      if (
+        actionBarRef.current &&
+        !actionBarRef.current.contains(event.target as Node) &&
+        isActionBarExpanded &&
+        !isSelectMode
+      ) {
+        setIsActionBarExpanded(false);
+      }
+    };
+
+    if (isMobile && isActionBarExpanded && !isSelectMode) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [isMobile, isActionBarExpanded, isSelectMode]);
+
   const handleSaveService = async () => {
     if (!canEditServices) return;
 

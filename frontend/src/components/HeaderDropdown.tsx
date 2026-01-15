@@ -152,7 +152,7 @@ export function HeaderDropdown({
             borderBottom: '1px solid #e5e7eb',
           }}>
             {/* Search Icon Button - Show for pages with search functionality */}
-            {(currentPage === 'inventory' || currentPage === 'users' || currentPage === 'sales' || currentPage === 'transactions') && onSearchChange && (
+            {(currentPage === 'inventory' || currentPage === 'users' || currentPage === 'sales' || currentPage === 'transactions' || currentPage === 'services') && onSearchChange && (
               <button
                 onClick={() => setIsSearchExpanded(!isSearchExpanded)}
                 style={{
@@ -202,7 +202,7 @@ export function HeaderDropdown({
           </div>
 
           {/* Expandable Search Bar - For pages with search functionality */}
-          {(currentPage === 'inventory' || currentPage === 'users' || currentPage === 'sales' || currentPage === 'transactions') && onSearchChange && isSearchExpanded && (
+          {(currentPage === 'inventory' || currentPage === 'users' || currentPage === 'sales' || currentPage === 'transactions' || currentPage === 'services') && onSearchChange && isSearchExpanded && (
             <div style={{
               padding: '0.75rem 1.25rem',
               backgroundColor: '#f9fafb',
@@ -225,6 +225,7 @@ export function HeaderDropdown({
                   placeholder={
                     currentPage === 'users' ? 'Search by Name or Username...' :
                     currentPage === 'transactions' ? 'Search by Customer or Transaction ID...' :
+                    currentPage === 'services' ? 'Search by any field...' :
                     'Search by Brand or Item Name...'
                   }
                   value={searchTerm || ''}

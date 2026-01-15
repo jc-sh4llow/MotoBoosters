@@ -1414,7 +1414,7 @@ export function Transactions() {
                           value={minPrice}
                           onChange={(e) => setMinPrice(e.target.value)}
                           style={{
-                            flex: 1,
+                            width: 'calc(50% - 1rem)',
                             padding: '0.5rem',
                             borderRadius: '0.375rem',
                             border: '1px solid #d1d5db',
@@ -1429,7 +1429,7 @@ export function Transactions() {
                           value={maxPrice}
                           onChange={(e) => setMaxPrice(e.target.value)}
                           style={{
-                            flex: 1,
+                            width: 'calc(50% - 1rem)',
                             padding: '0.5rem',
                             borderRadius: '0.375rem',
                             border: '1px solid #d1d5db',

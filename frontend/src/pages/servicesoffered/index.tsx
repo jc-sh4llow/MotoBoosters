@@ -118,6 +118,7 @@ export function Services() {
 
   const serviceDetailsRef = useRef<HTMLDivElement | null>(null);
   const servicesTableRef = useRef<HTMLDivElement | null>(null);
+  const actionBarRef = useRef<HTMLDivElement | null>(null);
 
   const handleTypeChange = (type: string) => {
     if (!canEditServices) return;

@@ -1240,12 +1240,19 @@ export function Sales() {
                       return (
                         <tr
                           key={sale.id}
+                          onClick={() => {
+                            if (isMobile) {
+                              setSelectedSale(sale);
+                              setIsDetailsModalOpen(true);
+                            }
+                          }}
                           style={{
                             borderBottom:
                               index === filteredSalesWithGroup.length - 1
                                 ? 'none'
                                 : '1px solid var(--table-border)',
                             backgroundColor: rowBg,
+                            cursor: isMobile ? 'pointer' : 'default',
                           }}
                         >
                           {showTransactionId && (

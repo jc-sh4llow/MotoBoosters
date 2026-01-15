@@ -62,7 +62,7 @@ export function Sales() {
   const [showItemModal, setShowItemModal] = useState(false);
   const [itemSearchTerm, setItemSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('date-desc');
-
+  const [isActionBarExpanded, setIsActionBarExpanded] = useState(true);
   const [firestoreSales, setFirestoreSales] = useState<SaleItem[]>([]);
 
   // Responsive column visibility helpers
@@ -644,19 +644,81 @@ export function Sales() {
                 backgroundColor: 'var(--surface-elevated)',
                 borderRadius: '0.5rem',
                 padding: '1rem',
-                marginBottom: '1rem',
                 border: '1px solid var(--border)'
               }}>
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  width: '100%',
-                  marginBottom: showFilters ? '1rem' : 0
-                }}>
-                  {/* Left side: Export to CSV + Select */}
-                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                {/* Accordion Header */}
+                <button
+                  onClick={() => setIsActionBarExpanded(!isActionBarExpanded)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    width: '100%',
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: 0,
+                    marginBottom: isActionBarExpanded ? '1rem' : 0,
+                    fontSize: '1.125rem',
+                    fontWeight: 600,
+                    color: '#1e40af',
+                    textAlign: 'left'
+                  }}
+                >
+                  <span>Action Bar</span>
+                  <span
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'transform 0.2s ease',
+                      transform: isActionBarExpanded ? 'rotate(180deg)' : 'rotate(0)'
+                    }}
+                  >
+                    ▼
+                  </span>
+                </button>
+
+                {isActionBarExpanded && (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', marginBottom: showFilters ? '1rem' : 0 }}>
+                    {/* Transaction Type Pills */}
+                    <div style={{
+                      display: 'flex',
+                      gap: '0.5rem',
+                      width: '100%',
+                      maxWidth: '600px',
+                      justifyContent: 'center',
+                      flexWrap: 'wrap'
+                    }}>
+                      {[
+                        { key: 'all', label: 'All' },
+                        { key: 'parts', label: 'Parts' },
+                        { key: 'service', label: 'Service' },
+                        { key: 'partsAndService', label: 'Parts & Service' }
+                      ].map(tab => (
+                        <button
+                          key={tab.key}
+                          onClick={() => setActiveTab(tab.key as 'all' | 'parts' | 'service' | 'partsAndService')}
+                          style={{
+                            padding: '0.5rem 1rem',
+                            borderRadius: '9999px',
+                            border: activeTab === tab.key ? '1px solid #1e40af' : '1px solid #e5e7eb',
+                            backgroundColor: activeTab === tab.key ? '#1e40af' : 'white',
+                            color: activeTab === tab.key ? 'white' : '#374151',
+                            fontSize: '0.875rem',
+                            fontWeight: 500,
+                            cursor: 'pointer',
+                            height: '40px',
+                            transition: 'all 0.2s',
+                            whiteSpace: 'nowrap',
+                            flexShrink: 0,
+                          }}
+                        >
+                          {tab.label}
+                        </button>
+                      ))}
+                    </div>
+                    {/* Export Button */}
                     <button
                       onClick={handleExportToExcel}
                       style={{
@@ -672,61 +734,16 @@ export function Sales() {
                         fontWeight: 500,
                         fontSize: '0.875rem',
                         height: '40px',
-                        transition: 'background-color 0.2s',
-                      }}
-                      onMouseOver={(e) => {
-                        e.currentTarget.style.backgroundColor = '#047857';
-                      }}
-                      onMouseOut={(e) => {
-                        e.currentTarget.style.backgroundColor = '#059669';
+                        width: '100%',
+                        maxWidth: '300px',
+                        justifyContent: 'center'
                       }}
                     >
                       Export to CSV <FaFileExcel />
                     </button>
-                  </div>
 
-                  {/* Center: Type toggle buttons - horizontally scrollable on small devices */}
-                  <div style={{
-                    display: 'flex',
-                    gap: '0.5rem',
-                    overflowX: 'auto',
-                    flex: isMobile ? '1' : 'initial',
-                    WebkitOverflowScrolling: 'touch',
-                    scrollbarWidth: 'thin',
-                  }}>
-                    {[
-                      { key: 'all', label: 'All' },
-                      { key: 'parts', label: 'Parts Only' },
-                      { key: 'service', label: 'Service Only' },
-                      { key: 'partsAndService', label: 'Parts & Service' }
-                    ].map(tab => (
-                      <button
-                        key={tab.key}
-                        onClick={() => setActiveTab(tab.key as 'all' | 'parts' | 'service' | 'partsAndService')}
-                        style={{
-                          padding: '0.5rem 1rem',
-                          borderRadius: '9999px',
-                          border: activeTab === tab.key ? '1px solid #1e40af' : '1px solid #e5e7eb',
-                          backgroundColor: activeTab === tab.key ? '#1e40af' : 'white',
-                          color: activeTab === tab.key ? 'white' : '#374151',
-                          fontSize: '0.875rem',
-                          fontWeight: 500,
-                          cursor: 'pointer',
-                          height: '40px',
-                          transition: 'all 0.2s',
-                          whiteSpace: 'nowrap',
-                          flexShrink: 0,
-                        }}
-                      >
-                        {tab.label}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Right side: Filters + Clear Filters */}
-                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    {/* Filters Button */}
                     <button
-                      type="button"
                       onClick={() => setShowFilters(!showFilters)}
                       style={{
                         backgroundColor: '#1e40af',
@@ -741,19 +758,16 @@ export function Sales() {
                         fontWeight: 500,
                         fontSize: '0.875rem',
                         height: '40px',
-                        transition: 'background-color 0.2s',
-                      }}
-                      onMouseOver={(e) => {
-                        e.currentTarget.style.backgroundColor = '#1e3a8a';
-                      }}
-                      onMouseOut={(e) => {
-                        e.currentTarget.style.backgroundColor = '#1e40af';
+                        width: '100%',
+                        maxWidth: '300px',
+                        justifyContent: 'center'
                       }}
                     >
                       Filters <FaFilter />
                     </button>
+
+                    {/* Clear Filters Button */}
                     <button
-                      type="button"
                       onClick={() => {
                         setTimeframe('today');
                         setCustomStart('');
@@ -778,21 +792,16 @@ export function Sales() {
                         fontWeight: 500,
                         fontSize: '0.875rem',
                         height: '40px',
-                        transition: 'background-color 0.2s',
-                      }}
-                      onMouseOver={(e) => {
-                        e.currentTarget.style.backgroundColor = '#4b5563';
-                      }}
-                      onMouseOut={(e) => {
-                        e.currentTarget.style.backgroundColor = '#6b7280';
+                        width: '100%',
+                        maxWidth: '300px',
+                        justifyContent: 'center'
                       }}
                     >
                       Clear Filters
                     </button>
                   </div>
-                </div>
+                )}
 
-                {/* Inline Filters Section - shown when Filters button is clicked */}
                 {showFilters && (
                   <div style={{
                     display: 'grid',
@@ -802,7 +811,7 @@ export function Sales() {
                     borderTop: '1px solid #e5e7eb'
                   }}>
                     {/* Timeframe Filter */}
-                    <div style={{ position: 'relative' }}>
+                    <div>
                       <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'rgb(75, 85, 99)' }}>
                         Timeframe
                       </label>
@@ -825,363 +834,21 @@ export function Sales() {
                         <option value="year">Last 365 Days</option>
                         <option value="custom">{customStart && customEnd ? `${customStart} – ${customEnd}` : 'Custom Range'}</option>
                       </select>
-                      {/* Custom Date Range Picker Dropdown with Visual Calendar */}
-                      {showCalendarPicker && (() => {
-                        const minDate = new Date('2025-08-05');
-                        const maxDate = new Date();
-                        const year = calendarViewDate.getFullYear();
-                        const month = calendarViewDate.getMonth();
-                        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                        const dayNames = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+                    </div>
 
-                        const firstDayOfMonth = new Date(year, month, 1).getDay();
-                        const daysInMonth = new Date(year, month + 1, 0).getDate();
-                        const days: (number | null)[] = [];
-
-                        for (let i = 0; i < firstDayOfMonth; i++) days.push(null);
-                        for (let i = 1; i <= daysInMonth; i++) days.push(i);
-
-                        const isDateDisabled = (day: number) => {
-                          const date = new Date(year, month, day);
-                          return date < minDate || date > maxDate;
-                        };
-
-                        const isDateSelected = (day: number) => {
-                          const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                          return dateStr === customStart || dateStr === customEnd;
-                        };
-
-                        const isDateInRange = (day: number) => {
-                          if (!customStart || !customEnd) return false;
-                          const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                          return dateStr > customStart && dateStr < customEnd;
-                        };
-
-                        const handleDayClick = (day: number) => {
-                          if (isDateDisabled(day)) return;
-                          const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-
-                          if (selectingDate === 'start') {
-                            setCustomStart(dateStr);
-                            setSelectingDate('end');
-                          } else {
-                            if (dateStr < customStart) {
-                              setCustomEnd(customStart);
-                              setCustomStart(dateStr);
-                            } else {
-                              setCustomEnd(dateStr);
-                            }
-                            setSelectingDate('start');
-                          }
-                        };
-
-                        const canGoPrev = new Date(year, month - 1, 1) >= new Date(minDate.getFullYear(), minDate.getMonth(), 1);
-                        const canGoNext = new Date(year, month + 1, 1) <= new Date(maxDate.getFullYear(), maxDate.getMonth(), 1);
-
-                        return (
-                          <div style={{
-                            position: 'absolute',
-                            top: '100%',
-                            left: 0,
-                            zIndex: 1000,
-                            backgroundColor: 'var(--surface-elevated)',
-                            borderRadius: '0.5rem',
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                            border: '1px solid var(--border)',
-                            padding: '1rem',
-                            marginTop: '0.25rem',
-                            minWidth: '300px'
-                          }}>
-                            {/* Date inputs row */}
-                            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
-                              <div style={{ flex: 1 }}>
-                                <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.75rem', color: 'var(--field-label-text)' }}>Start</label>
-                                <input
-                                  type="text"
-                                  readOnly
-                                  value={customStart || 'dd/mm/yyyy'}
-                                  onClick={() => setSelectingDate('start')}
-                                  style={{
-                                    width: '100%',
-                                    padding: '0.4rem',
-                                    borderRadius: '0.375rem',
-                                    border: selectingDate === 'start' ? '2px solid #1e40af' : '1px solid #d1d5db',
-                                    backgroundColor: 'var(--surface-elevated)',
-                                    color: customStart ? 'var(--text-primary)' : '#9ca3af',
-                                    fontSize: '0.8rem',
-                                    cursor: 'pointer',
-                                    boxSizing: 'border-box'
-                                  }}
-                                />
-                              </div>
-                              <div style={{ flex: 1 }}>
-                                <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.75rem', color: 'var(--field-label-text)' }}>End</label>
-                                <input
-                                  type="text"
-                                  readOnly
-                                  value={customEnd || 'dd/mm/yyyy'}
-                                  onClick={() => setSelectingDate('end')}
-                                  style={{
-                                    width: '100%',
-                                    padding: '0.4rem',
-                                    borderRadius: '0.375rem',
-                                    border: selectingDate === 'end' ? '2px solid #1e40af' : '1px solid #d1d5db',
-                                    backgroundColor: 'var(--surface-elevated)',
-                                    color: customEnd ? 'var(--text-primary)' : '#9ca3af',
-                                    fontSize: '0.8rem',
-                                    cursor: 'pointer',
-                                    boxSizing: 'border-box'
-                                  }}
-                                />
-                              </div>
-                            </div>
-
-                            {/* Calendar header */}
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', position: 'relative' }}>
-                              <button
-                                type="button"
-                                onClick={() => canGoPrev && setCalendarViewDate(new Date(year, month - 1, 1))}
-                                disabled={!canGoPrev}
-                                style={{
-                                  background: 'none',
-                                  border: 'none',
-                                  cursor: canGoPrev ? 'pointer' : 'not-allowed',
-                                  color: canGoPrev ? 'var(--text-primary)' : '#d1d5db',
-                                  fontSize: '1rem',
-                                  padding: '0.25rem 0.5rem'
-                                }}
-                              >
-                                {'<'}
-                              </button>
-                              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                                <span
-                                  onClick={() => { setShowMonthPicker(!showMonthPicker); setShowYearPicker(false); }}
-                                  style={{ fontWeight: 600, color: '#1e40af', fontSize: '0.9rem', cursor: 'pointer', padding: '0.25rem 0.5rem', borderRadius: '0.25rem', transition: 'background-color 0.15s' }}
-                                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
-                                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                                >
-                                  {monthNames[month]}
-                                </span>
-                                <span
-                                  onClick={() => { setShowYearPicker(!showYearPicker); setShowMonthPicker(false); }}
-                                  style={{ fontWeight: 600, color: '#1e40af', fontSize: '0.9rem', cursor: 'pointer', padding: '0.25rem 0.5rem', borderRadius: '0.25rem', transition: 'background-color 0.15s' }}
-                                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
-                                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                                >
-                                  {year}
-                                </span>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => canGoNext && setCalendarViewDate(new Date(year, month + 1, 1))}
-                                disabled={!canGoNext}
-                                style={{
-                                  background: 'none',
-                                  border: 'none',
-                                  cursor: canGoNext ? 'pointer' : 'not-allowed',
-                                  color: canGoNext ? '#374151' : '#d1d5db',
-                                  fontSize: '1rem',
-                                  padding: '0.25rem 0.5rem'
-                                }}
-                              >
-                                {'>'}
-                              </button>
-
-                              {/* Month Picker Dropdown */}
-                              {showMonthPicker && (
-                                <div style={{
-                                  position: 'absolute',
-                                  top: '100%',
-                                  left: '50%',
-                                  transform: 'translateX(-50%)',
-                                  zIndex: 1001,
-                                  backgroundColor: 'white',
-                                  borderRadius: '0.5rem',
-                                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                                  border: '1px solid #e5e7eb',
-                                  padding: '0.5rem',
-                                  marginTop: '0.25rem',
-                                  display: 'grid',
-                                  gridTemplateColumns: 'repeat(3, 1fr)',
-                                  gap: '0.25rem',
-                                  minWidth: '180px'
-                                }}>
-                                  {monthNames.map((m, idx) => {
-                                    const isDisabled = (year === minDate.getFullYear() && idx < minDate.getMonth()) ||
-                                      (year === maxDate.getFullYear() && idx > maxDate.getMonth());
-                                    return (
-                                      <div
-                                        key={m}
-                                        onClick={() => {
-                                          if (!isDisabled) {
-                                            setCalendarViewDate(new Date(year, idx, 1));
-                                            setShowMonthPicker(false);
-                                          }
-                                        }}
-                                        style={{
-                                          padding: '0.5rem',
-                                          textAlign: 'center',
-                                          fontSize: '0.8rem',
-                                          borderRadius: '0.25rem',
-                                          cursor: isDisabled ? 'not-allowed' : 'pointer',
-                                          backgroundColor: idx === month ? '#1e40af' : 'transparent',
-                                          color: isDisabled ? '#d1d5db' : idx === month ? 'white' : '#111827',
-                                          fontWeight: idx === month ? 600 : 400,
-                                          transition: 'background-color 0.15s'
-                                        }}
-                                        onMouseOver={(e) => { if (!isDisabled && idx !== month) e.currentTarget.style.backgroundColor = '#f3f4f6'; }}
-                                        onMouseOut={(e) => { if (idx !== month) e.currentTarget.style.backgroundColor = 'transparent'; }}
-                                      >
-                                        {m}
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              )}
-
-                              {/* Year Picker Dropdown */}
-                              {showYearPicker && (() => {
-                                const minYear = minDate.getFullYear();
-                                const maxYear = maxDate.getFullYear();
-                                const years: number[] = [];
-                                for (let y = minYear; y <= maxYear; y++) years.push(y);
-
-                                return (
-                                  <div style={{
-                                    position: 'absolute',
-                                    top: '100%',
-                                    left: '50%',
-                                    transform: 'translateX(-50%)',
-                                    zIndex: 1001,
-                                    backgroundColor: 'white',
-                                    borderRadius: '0.5rem',
-                                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                                    border: '1px solid #e5e7eb',
-                                    padding: '0.5rem',
-                                    marginTop: '0.25rem',
-                                    maxHeight: '200px',
-                                    overflowY: 'auto',
-                                    minWidth: '100px'
-                                  }}>
-                                    {years.map(y => (
-                                      <div
-                                        key={y}
-                                        onClick={() => {
-                                          let newMonth = month;
-                                          if (y === minYear && month < minDate.getMonth()) newMonth = minDate.getMonth();
-                                          if (y === maxYear && month > maxDate.getMonth()) newMonth = maxDate.getMonth();
-                                          setCalendarViewDate(new Date(y, newMonth, 1));
-                                          setShowYearPicker(false);
-                                        }}
-                                        style={{
-                                          padding: '0.5rem 1rem',
-                                          textAlign: 'center',
-                                          fontSize: '0.85rem',
-                                          borderRadius: '0.25rem',
-                                          cursor: 'pointer',
-                                          backgroundColor: y === year ? '#1e40af' : 'transparent',
-                                          color: y === year ? 'white' : '#111827',
-                                          fontWeight: y === year ? 600 : 400,
-                                          transition: 'background-color 0.15s'
-                                        }}
-                                        onMouseOver={(e) => { if (y !== year) e.currentTarget.style.backgroundColor = '#f3f4f6'; }}
-                                        onMouseOut={(e) => { if (y !== year) e.currentTarget.style.backgroundColor = 'transparent'; }}
-                                      >
-                                        {y}
-                                      </div>
-                                    ))}
-                                  </div>
-                                );
-                              })()}
-                            </div>
-
-                            {/* Day names */}
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px', marginBottom: '0.25rem' }}>
-                              {dayNames.map(d => (
-                                <div key={d} style={{ textAlign: 'center', fontSize: '0.7rem', color: '#6b7280', fontWeight: 500, padding: '0.25rem' }}>
-                                  {d}
-                                </div>
-                              ))}
-                            </div>
-
-                            {/* Calendar days */}
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px' }}>
-                              {days.map((day, idx) => (
-                                <div
-                                  key={idx}
-                                  onClick={() => day && handleDayClick(day)}
-                                  style={{
-                                    textAlign: 'center',
-                                    padding: '0.4rem',
-                                    fontSize: '0.8rem',
-                                    borderRadius: '0.25rem',
-                                    cursor: day && !isDateDisabled(day) ? 'pointer' : 'default',
-                                    backgroundColor: day && isDateSelected(day) ? '#1e40af' : day && isDateInRange(day) ? '#dbeafe' : 'transparent',
-                                    color: day ? (isDateDisabled(day) ? '#d1d5db' : isDateSelected(day) ? 'white' : '#111827') : 'transparent',
-                                    fontWeight: day && isDateSelected(day) ? 600 : 400,
-                                    transition: 'background-color 0.15s'
-                                  }}
-                                  onMouseOver={(e) => {
-                                    if (day && !isDateDisabled(day) && !isDateSelected(day)) {
-                                      e.currentTarget.style.backgroundColor = '#f3f4f6';
-                                    }
-                                  }}
-                                  onMouseOut={(e) => {
-                                    if (day && !isDateSelected(day)) {
-                                      e.currentTarget.style.backgroundColor = isDateInRange(day) ? '#dbeafe' : 'transparent';
-                                    }
-                                  }}
-                                >
-                                  {day || ''}
-                                </div>
-                              ))}
-                            </div>
-
-                            {/* Action buttons */}
-                            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid #e5e7eb' }}>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setCustomStart('');
-                                  setCustomEnd('');
-                                  setShowCalendarPicker(false);
-                                  setTimeframe('today');
-                                  setSelectingDate('start');
-                                }}
-                                style={{
-                                  padding: '0.375rem 0.75rem',
-                                  borderRadius: '0.375rem',
-                                  border: '1px solid #d1d5db',
-                                  backgroundColor: 'white',
-                                  color: '#374151',
-                                  cursor: 'pointer',
-                                  fontSize: '0.8rem'
-                                }}
-                              >
-                                Cancel
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setShowCalendarPicker(false);
-                                  setSelectingDate('start');
-                                }}
-                                style={{
-                                  padding: '0.375rem 0.75rem',
-                                  borderRadius: '0.375rem',
-                                  border: 'none',
-                                  backgroundColor: '#1e40af',
-                                  color: 'white',
-                                  cursor: 'pointer',
-                                  fontSize: '0.8rem'
-                                }}
-                              >
-                                Apply
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })()}
+                    {/* Price Type Filter */}
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'rgb(75, 85, 99)' }}>
+                        Price Type
+                      </label>
+                      <select
+                        value={priceType}
+                        onChange={(e) => setPriceType(e.target.value)}
+                        style={{ width: '100%', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #d1d5db', backgroundColor: 'white', color: '#111827' }}
+                      >
+                        <option value="unit">Unit Price</option>
+                        <option value="total">Total Amount</option>
+                      </select>
                     </div>
 
                     {/* Price Range Filter */}
@@ -1233,21 +900,6 @@ export function Sales() {
                       </div>
                     </div>
 
-                    {/* Price Type Filter */}
-                    <div>
-                      <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'rgb(75, 85, 99)' }}>
-                        Price Type
-                      </label>
-                      <select
-                        value={priceType}
-                        onChange={(e) => setPriceType(e.target.value)}
-                        style={{ width: '100%', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #d1d5db', backgroundColor: 'white', color: '#111827' }}
-                      >
-                        <option value="unit">Unit Price</option>
-                        <option value="total">Total Amount</option>
-                      </select>
-                    </div>
-
                     {/* Customer Filter */}
                     <div>
                       <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'rgb(75, 85, 99)' }}>
@@ -1293,9 +945,30 @@ export function Sales() {
                         <option value="search">Search Item...</option>
                       </select>
                     </div>
+
+                    {/* Sort By Filter */}
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'rgb(75, 85, 99)' }}>
+                        Sort By
+                      </label>
+                      <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value)}
+                        style={{ width: '100%', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #d1d5db', backgroundColor: 'white', color: '#111827' }}
+                      >
+                        <option value="date-desc">Date (Newest First)</option>
+                        <option value="date-asc">Date (Oldest First)</option>
+                        <option value="totalAmount-desc">Total Amount (High to Low)</option>
+                        <option value="totalAmount-asc">Total Amount (Low to High)</option>
+                        <option value="itemName-asc">Item Name (A-Z)</option>
+                        <option value="itemName-desc">Item Name (Z-A)</option>
+                      </select>
+                    </div>
                   </div>
                 )}
               </div>
+            </section>
+            <section>
 
               <h2 style={{
                 fontSize: '1.25rem',
@@ -1425,7 +1098,7 @@ export function Sales() {
                             userSelect: 'none'
                           }}
                         >
-                          ITEM CODE {sortBy.startsWith('itemCode-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                          ITEM ID {sortBy.startsWith('itemCode-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
                         </th>
                       )}
                       <th
@@ -1442,7 +1115,7 @@ export function Sales() {
                           userSelect: 'none'
                         }}
                       >
-                        ITEM NAME {sortBy.startsWith('itemName-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                        {showItemCode ? 'ITEM NAME' : 'ITEM'} {sortBy.startsWith('itemName-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
                       </th>
                       {showQuantity && (
                         <th
@@ -1495,7 +1168,7 @@ export function Sales() {
                             userSelect: 'none'
                           }}
                         >
-                          TOTAL AMOUNT {sortBy.startsWith('totalAmount-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                          {(showQuantity && showUnitPrice) ? 'TOTAL AMOUNT' : (priceType === 'unit' ? 'UNIT PRICE' : 'TOTAL')} {sortBy.startsWith('totalAmount-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
                         </th>
                       )}
                       {showCustomer && (
@@ -1578,7 +1251,20 @@ export function Sales() {
                               whiteSpace: 'nowrap',
                             }}
                           >
-                            {sale.itemName}
+                            {showItemCode ? (
+                              sale.itemName
+                            ) : (
+                              <div>
+                                <div>{sale.itemName}</div>
+                                <div style={{
+                                  fontSize: '0.75rem',
+                                  color: 'var(--field-label-text)',
+                                  marginTop: '0.25rem'
+                                }}>
+                                  ID: {sale.itemCode}
+                                </div>
+                              </div>
+                            )}
                           </td>
                           {showQuantity && (
                             <td
@@ -1617,7 +1303,29 @@ export function Sales() {
                                 whiteSpace: 'nowrap',
                               }}
                             >
-                              ₱{(sale.totalAmount ?? 0).toFixed(2)}
+                              {(showQuantity && showUnitPrice) ? (
+                                `₱${(sale.totalAmount ?? 0).toFixed(2)}`
+                              ) : (
+                                <div>
+                                  <div>
+                                    {priceType === 'unit'
+                                      ? `₱${(sale.unitPrice ?? 0).toFixed(2)}`
+                                      : `₱${(sale.totalAmount ?? 0).toFixed(2)}`
+                                    }
+                                  </div>
+                                  <div style={{
+                                    fontSize: '0.7rem',
+                                    color: 'var(--field-label-text)',
+                                    fontWeight: 400,
+                                    marginTop: '0.25rem'
+                                  }}>
+                                    {priceType === 'unit'
+                                      ? `Qty: ${sale.quantity ?? 0} • Total: ₱${(sale.totalAmount ?? 0).toFixed(2)}`
+                                      : `₱${(sale.unitPrice ?? 0).toFixed(2)} × ${sale.quantity ?? 0}`
+                                    }
+                                  </div>
+                                </div>
+                              )}
                             </td>
                           )}
                           {showCustomer && (

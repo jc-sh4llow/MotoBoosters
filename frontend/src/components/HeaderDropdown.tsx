@@ -134,7 +134,7 @@ export function HeaderDropdown({
             borderBottom: '1px solid #e5e7eb',
           }}>
             {/* Search Icon Button - Show for pages with search functionality */}
-            {(currentPage === 'inventory' || currentPage === 'users') && onSearchChange && (
+            {(currentPage === 'inventory' || currentPage === 'users' || currentPage === 'sales') && onSearchChange && (
               <button
                 onClick={() => setIsSearchExpanded(!isSearchExpanded)}
                 style={{
@@ -184,7 +184,7 @@ export function HeaderDropdown({
           </div>
 
           {/* Expandable Search Bar - For pages with search functionality */}
-          {(currentPage === 'inventory' || currentPage === 'users') && onSearchChange && isSearchExpanded && (
+          {(currentPage === 'inventory' || currentPage === 'users' || currentPage === 'sales') && onSearchChange && isSearchExpanded && (
             <div style={{
               padding: '0.75rem 1.25rem',
               backgroundColor: '#f9fafb',

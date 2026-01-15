@@ -692,6 +692,14 @@ export function Transactions() {
                 isNavExpanded={isNavExpanded}
                 setIsNavExpanded={setIsNavExpanded}
                 isMobile={isMobile}
+                currentPage="transactions"
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+                onLogout={() => {
+                  logout();
+                  navigate('/login');
+                }}
+                userName={user?.name}
                 onMouseEnter={() => {
                   if (!isMobile && closeMenuTimeout) {
                     clearTimeout(closeMenuTimeout);

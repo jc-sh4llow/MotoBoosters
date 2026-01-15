@@ -1276,7 +1276,7 @@ export function Sales() {
                           )}
                           <td
                             style={{
-                              padding: '1rem',
+                              padding: viewportWidth < 768 ? '0.5rem' : '1rem',
                               fontSize: '0.875rem',
                               color: 'var(--table-row-text)',
                               whiteSpace: 'nowrap',
@@ -1320,13 +1320,44 @@ export function Sales() {
                                 whiteSpace: 'nowrap',
                               }}
                             >
-                              ₱{(sale.unitPrice ?? 0).toFixed(2)}
+                              {(() => {
+                                const hasItemDiscount = sale.discount && sale.discount > 0;
+                                const hasItemMarkup = sale.markup && sale.markup > 0;
+                                const currentPrice = sale.unitPrice ?? 0;
+                                
+                                if (hasItemDiscount) {
+                                  const originalPrice = currentPrice / (1 - sale.discount / 100);
+                                  return (
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                                      <span style={{ textDecoration: 'line-through', color: '#9ca3af', fontSize: '0.75rem' }}>
+                                        ₱{originalPrice.toFixed(2)}
+                                      </span>
+                                      <span style={{ color: '#10b981', fontWeight: 600 }}>
+                                        ₱{currentPrice.toFixed(2)}
+                                      </span>
+                                    </div>
+                                  );
+                                } else if (hasItemMarkup) {
+                                  const originalPrice = currentPrice / (1 + sale.markup / 100);
+                                  return (
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                                      <span style={{ textDecoration: 'line-through', color: '#9ca3af', fontSize: '0.75rem' }}>
+                                        ₱{originalPrice.toFixed(2)}
+                                      </span>
+                                      <span style={{ color: '#f59e0b', fontWeight: 600 }}>
+                                        ₱{currentPrice.toFixed(2)}
+                                      </span>
+                                    </div>
+                                  );
+                                }
+                                return `₱${currentPrice.toFixed(2)}`;
+                              })()}
                             </td>
                           )}
                           {showTotalAmount && (
                             <td
                               style={{
-                                padding: '1rem',
+                                padding: viewportWidth < 768 ? '0.5rem' : '1rem',
                                 fontSize: '0.875rem',
                                 color: 'var(--table-row-text)',
                                 textAlign: 'right',
@@ -1334,41 +1365,101 @@ export function Sales() {
                                 whiteSpace: 'nowrap',
                               }}
                             >
-                              {(showQuantity && showUnitPrice) ? (
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.25rem' }}>
-                                  <span>₱{(sale.totalAmount ?? 0).toFixed(2)}</span>
-                                  {(sale.discount || sale.markup || sale.overallDiscount || sale.overallMarkup) && (
-                                    <span style={{ fontSize: '0.75rem', color: '#f59e0b', fontWeight: 500 }} title="Discount/Markup Applied">*</span>
-                                  )}
-                                </div>
-                              ) : (
-                                <div>
-                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.25rem' }}>
-                                    <span>
-                                      {priceType === 'unit'
-                                        ? `₱${(sale.unitPrice ?? 0).toFixed(2)}`
-                                        : `₱${(sale.totalAmount ?? 0).toFixed(2)}`
-                                      }
-                                    </span>
-                                    {(sale.discount || sale.markup || sale.overallDiscount || sale.overallMarkup) && (
-                                      <span style={{ fontSize: '0.75rem', color: '#f59e0b', fontWeight: 500 }} title="Discount/Markup Applied">*</span>
-                                    )}
-                                  </div>
-                                  {!showQuantity && (
-                                    <div style={{
-                                      fontSize: '0.7rem',
-                                      color: 'var(--field-label-text)',
-                                      fontWeight: 400,
-                                      marginTop: '0.25rem'
-                                    }}>
-                                      {priceType === 'unit'
-                                        ? `Qty: ${sale.quantity ?? 0} • Total: ₱${(sale.totalAmount ?? 0).toFixed(2)}`
-                                        : `₱${(sale.unitPrice ?? 0).toFixed(2)} × ${sale.quantity ?? 0}`
-                                      }
+                              {(() => {
+                                const hasOverallDiscount = sale.overallDiscount && sale.overallDiscount > 0;
+                                const hasOverallMarkup = sale.overallMarkup && sale.overallMarkup > 0;
+                                const currentTotal = sale.totalAmount ?? 0;
+                                
+                                if (showQuantity && showUnitPrice) {
+                                  // Desktop view with all columns
+                                  if (hasOverallDiscount) {
+                                    const originalTotal = currentTotal / (1 - sale.overallDiscount / 100);
+                                    return (
+                                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                                        <span style={{ textDecoration: 'line-through', color: '#9ca3af', fontSize: '0.75rem' }}>
+                                          ₱{originalTotal.toFixed(2)}
+                                        </span>
+                                        <span style={{ color: '#10b981', fontWeight: 600 }}>
+                                          ₱{currentTotal.toFixed(2)}
+                                        </span>
+                                      </div>
+                                    );
+                                  } else if (hasOverallMarkup) {
+                                    const originalTotal = currentTotal / (1 + sale.overallMarkup / 100);
+                                    return (
+                                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                                        <span style={{ textDecoration: 'line-through', color: '#9ca3af', fontSize: '0.75rem' }}>
+                                          ₱{originalTotal.toFixed(2)}
+                                        </span>
+                                        <span style={{ color: '#f59e0b', fontWeight: 600 }}>
+                                          ₱{currentTotal.toFixed(2)}
+                                        </span>
+                                      </div>
+                                    );
+                                  }
+                                  return <span>₱{currentTotal.toFixed(2)}</span>;
+                                } else {
+                                  // Mobile/tablet view
+                                  const displayPrice = priceType === 'unit' ? (sale.unitPrice ?? 0) : currentTotal;
+                                  let priceDisplay;
+                                  
+                                  if (hasOverallDiscount) {
+                                    const originalPrice = displayPrice / (1 - sale.overallDiscount / 100);
+                                    priceDisplay = (
+                                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                                        <span style={{ textDecoration: 'line-through', color: '#9ca3af', fontSize: '0.75rem' }}>
+                                          ₱{originalPrice.toFixed(2)}
+                                        </span>
+                                        <span style={{ color: '#10b981', fontWeight: 600 }}>
+                                          ₱{displayPrice.toFixed(2)}
+                                        </span>
+                                      </div>
+                                    );
+                                  } else if (hasOverallMarkup) {
+                                    const originalPrice = displayPrice / (1 + sale.overallMarkup / 100);
+                                    priceDisplay = (
+                                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                                        <span style={{ textDecoration: 'line-through', color: '#9ca3af', fontSize: '0.75rem' }}>
+                                          ₱{originalPrice.toFixed(2)}
+                                        </span>
+                                        <span style={{ color: '#f59e0b', fontWeight: 600 }}>
+                                          ₱{displayPrice.toFixed(2)}
+                                        </span>
+                                      </div>
+                                    );
+                                  } else {
+                                    priceDisplay = (
+                                      <span>
+                                        {priceType === 'unit'
+                                          ? `₱${(sale.unitPrice ?? 0).toFixed(2)}`
+                                          : `₱${currentTotal.toFixed(2)}`
+                                        }
+                                      </span>
+                                    );
+                                  }
+                                  
+                                  return (
+                                    <div>
+                                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.25rem' }}>
+                                        {priceDisplay}
+                                      </div>
+                                      {!showQuantity && (
+                                        <div style={{
+                                          fontSize: '0.7rem',
+                                          color: 'var(--field-label-text)',
+                                          fontWeight: 400,
+                                          marginTop: '0.25rem'
+                                        }}>
+                                          {priceType === 'unit'
+                                            ? `Qty: ${sale.quantity ?? 0} • Total: ₱${currentTotal.toFixed(2)}`
+                                            : `₱${(sale.unitPrice ?? 0).toFixed(2)} × ${sale.quantity ?? 0}`
+                                          }
+                                        </div>
+                                      )}
                                     </div>
-                                  )}
-                                </div>
-                              )}
+                                  );
+                                }
+                              })()}
                             </td>
                           )}
                           {showCustomer && (

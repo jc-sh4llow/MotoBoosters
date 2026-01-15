@@ -48,6 +48,7 @@ export function Services() {
 
   const [isDetailsVisible, setIsDetailsVisible] = useState(false);
   const [shouldShowDetails, setShouldShowDetails] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [isNavExpanded, setIsNavExpanded] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -278,6 +279,11 @@ export function Services() {
     tone: 'info',
     onConfirm: undefined,
   });
+
+  // Sync isModalOpen with modalState.open to prevent overlay closure when modal is active
+  useEffect(() => {
+    setIsModalOpen(modalState.open);
+  }, [modalState.open]);
 
   const handleSaveService = async () => {
     if (!canEditServices) return;
@@ -2027,8 +2033,10 @@ export function Services() {
                   // <1200px: full-width overlay above the table
                   <div
                     onClick={() => {
-                      setIsDetailsVisible(false);
-                      setTimeout(() => setShouldShowDetails(false), 300);
+                      if (!isModalOpen) {
+                        setIsDetailsVisible(false);
+                        setTimeout(() => setShouldShowDetails(false), 300);
+                      }
                     }}
                     style={{
                       position: 'fixed',

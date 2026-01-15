@@ -2248,6 +2248,7 @@ export function Services() {
                             }}>
                               Vehicle Type(s) *
                             </label>
+                            {/* Vehicle Types Checkboxes (Existing Implementation) */}
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                               {vehicleTypeOptions.map((type) => (
                                 <label key={type} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: canEditServices ? 'pointer' : 'default' }}>
@@ -2268,6 +2269,74 @@ export function Services() {
                                   <span style={{ fontSize: '0.875rem', color: 'var(--text-primary)' }}>{type}</span>
                                 </label>
                               ))}
+                            </div>
+
+                            {/* MULTI-SELECT CHIPS (Alternative visual representation) */}
+                            <div style={{ 
+                              marginTop: '1rem', 
+                              padding: '0.75rem', 
+                              backgroundColor: '#f8fafc', 
+                              borderRadius: '0.375rem',
+                              border: '1px solid #e2e8f0'
+                            }}>
+                              <div style={{ 
+                                fontSize: '0.75rem', 
+                                color: '#64748b', 
+                                marginBottom: '0.5rem',
+                                fontWeight: 500
+                              }}>
+                                Selected Vehicle Types (Chips):
+                              </div>
+                              <div style={{ 
+                                display: 'flex', 
+                                flexWrap: 'wrap', 
+                                gap: '0.375rem',
+                                minHeight: '2rem'
+                              }}>
+                                {Array.from(selectedTypes).filter(t => t !== 'All Types').length > 0 ? (
+                                  Array.from(selectedTypes).filter(t => t !== 'All Types').map(type => (
+                                    <span 
+                                      key={type} 
+                                      style={{ 
+                                        backgroundColor: '#dbeafe', 
+                                        color: '#1d4ed8', 
+                                        padding: '0.25rem 0.625rem', 
+                                        borderRadius: '9999px', 
+                                        fontSize: '0.75rem',
+                                        fontWeight: 500,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.375rem',
+                                        border: '1px solid #93c5fd'
+                                      }}
+                                    >
+                                      {type}
+                                      <button 
+                                        onClick={() => handleTypeChange(type)}
+                                        disabled={!canEditServices}
+                                        style={{ 
+                                          background: 'none', 
+                                          border: 'none', 
+                                          color: '#1d4ed8', 
+                                          cursor: canEditServices ? 'pointer' : 'not-allowed', 
+                                          padding: '0', 
+                                          fontSize: '1rem',
+                                          fontWeight: 'bold',
+                                          lineHeight: 1,
+                                          display: 'flex',
+                                          alignItems: 'center'
+                                        }}
+                                      >
+                                        ×
+                                      </button>
+                                    </span>
+                                  ))
+                                ) : (
+                                  <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontStyle: 'italic' }}>
+                                    No vehicle types selected
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
                           {/* Form Actions (only for users with edit permission) */}

@@ -25,6 +25,7 @@ export function Home() {
   const { effectiveRoleIds } = useEffectiveRoleIds();
 
   const [viewportWidth, setViewportWidth] = useState(window.innerWidth);
+  const isMobile = viewportWidth < 768;
 
   const pathPermissionMap: Record<string, string> = {
     '/': 'page.home.view',
@@ -110,83 +111,155 @@ export function Home() {
           alignItems: 'center',
           justifyContent: 'space-between'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-            <div
-              style={{
+          {isMobile ? (
+            // Mobile layout: Logo + Welcome message container on left, Logout on right
+            <>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'flex-start',
+                    height: '1.875rem',
+                    cursor: 'pointer',
+                  }}
+                  onClick={() => navigate('/')}
+                >
+                  <img
+                    src={logo}
+                    alt="Business Logo"
+                    style={{
+                      height: '100%',
+                      width: 'auto',
+                      objectFit: 'contain',
+                    }}
+                  />
+                </div>
+                <div style={{
+                  color: 'var(--text)',
+                  fontSize: '0.9rem'
+                }}>
+                  Welcome, {user ? user.name : 'Guest'}
+                </div>
+              </div>
+              {user ? (
+                <button
+                  onClick={() => {
+                    logout();
+                    navigate('/login');
+                  }}
+                  style={{
+                    backgroundColor: 'transparent',
+                    border: '1px solid var(--logout-button)',
+                    color: 'var(--logout-button)',
+                    padding: '0.25rem 0.75rem',
+                    borderRadius: '0.25rem',
+                    cursor: 'pointer',
+                    fontSize: '0.875rem'
+                  }}
+                >
+                  Logout
+                </button>
+              ) : (
+                <button
+                  onClick={() => navigate('/login')}
+                  style={{
+                    backgroundColor: 'white',
+                    border: 'none',
+                    color: 'var(--login-button)',
+                    padding: '0.25rem 0.75rem',
+                    borderRadius: '0.25rem',
+                    cursor: 'pointer',
+                    fontSize: '0.875rem',
+                    fontWeight: '500'
+                  }}
+                >
+                  Login
+                </button>
+              )}
+            </>
+          ) : (
+            // Desktop layout: Logo + MotoBooster title on left, Welcome + Logout on right
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    height: '1.875rem',
+                    cursor: 'pointer',
+                  }}
+                  onClick={() => navigate('/')}
+                >
+                  <img
+                    src={logo}
+                    alt="Business Logo"
+                    style={{
+                      height: '100%',
+                      width: 'auto',
+                      objectFit: 'contain',
+                    }}
+                  />
+                </div>
+                <h1 style={{
+                  fontSize: '1.875rem',
+                  fontWeight: 'bold',
+                  color: 'var(--header-title)',
+                  margin: 0,
+                }}>
+                  MotoBooster
+                </h1>
+              </div>
+              <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                height: '1.875rem',
-                cursor: 'pointer',
-              }}
-              onClick={() => navigate('/')}
-            >
-              <img
-                src={logo}
-                alt="Business Logo"
-                style={{
-                  height: '100%',
-                  width: 'auto',
-                  objectFit: 'contain',
-                }}
-              />
-            </div>
-            <h1 style={{
-              fontSize: '1.875rem',
-              fontWeight: 'bold',
-              color: 'var(--header-title)',
-              margin: 0,
-            }}>
-              MotoBooster
-            </h1>
-          </div>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '1rem'
-          }}>
-            <div style={{
-              color: 'var(--text)',
-              fontSize: '0.9rem'
-            }}>
-              Welcome, {user ? user.name : 'Guest'}
-            </div>
-            {user ? (
-              <button
-                onClick={() => {
-                  logout();
-                  navigate('/login');
-                }}
-                style={{
-                  backgroundColor: 'transparent',
-                  border: '1px solid var(--logout-button)',
-                  color: 'var(--logout-button)',
-                  padding: '0.25rem 0.75rem',
-                  borderRadius: '0.25rem',
-                  cursor: 'pointer',
-                  fontSize: '0.875rem'
-                }}
-              >
-                Logout
-              </button>
-            ) : (
-              <button
-                onClick={() => navigate('/login')}
-                style={{
-                  backgroundColor: 'white',
-                  border: 'none',
-                  color: 'var(--login-button)',
-                  padding: '0.25rem 0.75rem',
-                  borderRadius: '0.25rem',
-                  cursor: 'pointer',
-                  fontSize: '0.875rem',
-                  fontWeight: '500'
-                }}
-              >
-                Login
-              </button>
-            )}
-          </div>
+                gap: '1rem'
+              }}>
+                <div style={{
+                  color: 'var(--text)',
+                  fontSize: '0.9rem'
+                }}>
+                  Welcome, {user ? user.name : 'Guest'}
+                </div>
+                {user ? (
+                  <button
+                    onClick={() => {
+                      logout();
+                      navigate('/login');
+                    }}
+                    style={{
+                      backgroundColor: 'transparent',
+                      border: '1px solid var(--logout-button)',
+                      color: 'var(--logout-button)',
+                      padding: '0.25rem 0.75rem',
+                      borderRadius: '0.25rem',
+                      cursor: 'pointer',
+                      fontSize: '0.875rem'
+                    }}
+                  >
+                    Logout
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => navigate('/login')}
+                    style={{
+                      backgroundColor: 'white',
+                      border: 'none',
+                      color: 'var(--login-button)',
+                      padding: '0.25rem 0.75rem',
+                      borderRadius: '0.25rem',
+                      cursor: 'pointer',
+                      fontSize: '0.875rem',
+                      fontWeight: '500'
+                    }}
+                  >
+                    Login
+                  </button>
+                )}
+              </div>
+            </>
+          )}
         </header>
       </div>
 
@@ -194,7 +267,8 @@ export function Home() {
       <main style={{
         flex: 1,
         position: 'relative',
-        zIndex: 5
+        zIndex: 5,
+        marginBottom: isMobile ? '2rem' : '3rem'
       }}>
         <div style={{
           width: '100%',
@@ -215,22 +289,25 @@ export function Home() {
               maxWidth: '1400px',
               padding: '2.5rem'
             }}>
-              <h1 style={{
-                color: 'var(--header-title)',
-                fontSize: '2rem',
-                fontWeight: 'bold',
-                marginBottom: '2rem',
-                textAlign: 'center',
-                textShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
-              }}>
-                Dashboard
-              </h1>
+              {!isMobile && (
+                <h1 style={{
+                  color: 'var(--header-title)',
+                  fontSize: '2rem',
+                  fontWeight: 'bold',
+                  marginBottom: '2rem',
+                  textAlign: 'center',
+                  textShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+                }}>
+                  Dashboard
+                </h1>
+              )}
 
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: viewportWidth <= 479 ? '1fr' : viewportWidth <= 991 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)',
+                gridTemplateColumns: viewportWidth <= 767 ? '1fr' : viewportWidth <= 991 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)',
                 gap: '1.5rem',
-                width: '100%'
+                width: '100%',
+                marginTop: isMobile ? '1.5rem' : '0'
               }}>
                 {menuItems.map((item) => (
                   <button
@@ -296,12 +373,12 @@ export function Home() {
         color: 'rgba(255, 255, 255, 0.8)',
         padding: '1rem',
         textAlign: 'center',
-        fontSize: '0.875rem',
+        fontSize: viewportWidth <= 479 ? '0.75rem' : '0.875rem',
         backdropFilter: 'blur(8px)',
         borderTop: '1px solid rgba(255, 255, 255, 0.1)'
       }}>
         <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
-          © {new Date().getFullYear()} MotoBooster. All rights reserved.
+          &copy; {new Date().getFullYear()} MotoBooster. All rights reserved.
         </div>
       </footer>
     </div>

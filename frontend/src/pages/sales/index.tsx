@@ -1149,7 +1149,7 @@ export function Sales() {
                           userSelect: 'none'
                         }}
                       >
-                        ITEM {sortBy.startsWith('itemName-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                        {showItemCode ? 'ITEM NAME' : 'ITEM'} {sortBy.startsWith('itemName-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
                       </th>
                       {showQuantity && (
                         <th
@@ -1285,7 +1285,20 @@ export function Sales() {
                               whiteSpace: 'nowrap',
                             }}
                           >
-                            {sale.itemName}
+                            {showItemCode ? (
+                              sale.itemName
+                            ) : (
+                              <div>
+                                <div>{sale.itemId || sale.itemCode}</div>
+                                <div style={{
+                                  fontSize: '0.75rem',
+                                  color: 'var(--field-label-text)',
+                                  marginTop: '0.25rem'
+                                }}>
+                                  {sale.itemName}
+                                </div>
+                              </div>
+                            )}
                           </td>
                           {showQuantity && (
                             <td
@@ -1334,17 +1347,19 @@ export function Sales() {
                                       : `₱${(sale.totalAmount ?? 0).toFixed(2)}`
                                     }
                                   </div>
-                                  <div style={{
-                                    fontSize: '0.7rem',
-                                    color: 'var(--field-label-text)',
-                                    fontWeight: 400,
-                                    marginTop: '0.25rem'
-                                  }}>
-                                    {priceType === 'unit'
-                                      ? `Qty: ${sale.quantity ?? 0} • Total: ₱${(sale.totalAmount ?? 0).toFixed(2)}`
-                                      : `₱${(sale.unitPrice ?? 0).toFixed(2)} × ${sale.quantity ?? 0}`
-                                    }
-                                  </div>
+                                  {!showQuantity && (
+                                    <div style={{
+                                      fontSize: '0.7rem',
+                                      color: 'var(--field-label-text)',
+                                      fontWeight: 400,
+                                      marginTop: '0.25rem'
+                                    }}>
+                                      {priceType === 'unit'
+                                        ? `Qty: ${sale.quantity ?? 0} • Total: ₱${(sale.totalAmount ?? 0).toFixed(2)}`
+                                        : `₱${(sale.unitPrice ?? 0).toFixed(2)} × ${sale.quantity ?? 0}`
+                                      }
+                                    </div>
+                                  )}
                                 </div>
                               )}
                             </td>

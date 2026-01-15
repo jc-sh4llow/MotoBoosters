@@ -812,282 +812,679 @@ export function Services() {
           }}>
             {/* Action Bar */}
             <section style={{ marginBottom: '1rem' }}>
-              <div style={{ backgroundColor: 'var(--surface-elevated)', borderRadius: '0.5rem', padding: '1rem', border: '1px solid #e5e7eb' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: showFilters ? '1rem' : 0 }}>
-                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                    {canExportServices && (
-                      <button type="button" onClick={() => {
-                        const rows = filteredServices;
-                        if (!rows.length) return;
-                        const headers = ['Service ID', 'Name', 'Price', 'Status', 'Description', 'Vehicle Types', 'Archived'];
-                        const escapeCell = (v: unknown) => { const s = (v ?? '').toString(); return s.includes('"') || s.includes(',') || s.includes('\n') ? '"' + s.replace(/"/g, '""') + '"' : s; };
-                        const csv = [headers.join(','), ...rows.map(s => [s.serviceId, s.name, s.price, s.status, s.description, s.vehicleTypes.join('; '), s.archived ? 'Yes' : 'No'].map(escapeCell).join(','))].join('\r\n');
-                        const blob = new Blob([csv], { type: 'text/csv' });
-                        const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `services_${new Date().toISOString().split('T')[0]}.csv`; document.body.appendChild(link); link.click(); document.body.removeChild(link);
-                      }} style={{ backgroundColor: '#059669', color: 'white', padding: '0.5rem 1rem', borderRadius: '0.375rem', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 500, fontSize: '0.875rem', height: '40px' }}>
-                        Export to CSV <FaFileExcel />
-                      </button>
-                    )}
-                    {canArchiveServices && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (isSelectMode) {
-                            setIsSelectMode(false);
-                            setSelectedItems(new Set());
-                          } else {
-                            setIsSelectMode(true);
-                          }
-                        }}
+              {isMobile ? (
+                /* Mobile: Accordion layout */
+                <div
+                  ref={actionBarRef}
+                  style={{
+                    backgroundColor: 'var(--surface-elevated)',
+                    borderRadius: '0.5rem',
+                    border: '1px solid #e5e7eb',
+                    overflow: 'hidden'
+                  }}
+                >
+                                    {/* Accordion Header */}
+                  <div
+                    onClick={() => !isSelectMode && setIsActionBarExpanded(!isActionBarExpanded)}
+                    style={{
+                      padding: '1rem',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      cursor: isSelectMode ? 'default' : 'pointer',
+                      backgroundColor: 'var(--surface-elevated)'
+                    }}
+                  >
+                    <span style={{ fontWeight: 500, color: 'var(--text-primary)' }}>
+                      Actions
+                    </span>
+                    {!isSelectMode && (
+                      <FaChevronDown 
                         style={{
-                          backgroundColor: isSelectMode ? '#6b7280' : '#1d4ed8',
-                          color: 'white',
-                          padding: '0.5rem 1rem',
-                          borderRadius: '0.375rem',
-                          border: 'none',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.5rem',
-                          fontWeight: 500,
+                          transform: isActionBarExpanded ? 'rotate(180deg)' : 'rotate(0)',
+                          transition: 'transform 0.2s ease',
+                          color: '#6b7280'
+                        }}
+                      />
+                    )}
+                  </div>
+                  
+                  {/* Accordion Content */}
+                  {(isActionBarExpanded || isSelectMode) && (
+                    <div style={{ 
+                      padding: '1rem', 
+                      paddingTop: '0',
+                      borderTop: '1px solid #e5e7eb',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.5rem'
+                    }}>
+                                            {/* New Service Button - First */}
+                      {canEditServices && (
+                        <button
+                          onClick={() => {
+                            setSelectedService(null);
+                            setServiceForm({
+                              id: '',
+                              name: '',
+                              price: '',
+                              description: '',
+                              vehicleTypes: []
+                            });
+                            setSelectedTypes(new Set());
+                            setServiceHasUnsavedChanges(false);
+                            setShouldShowDetails(true);
+                            requestAnimationFrame(() => setIsDetailsVisible(true));
+                          }}
+                          style={{
+                            backgroundColor: '#10b981',
+                            color: 'white',
+                            padding: '0.75rem',
+                            borderRadius: '0.375rem',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontWeight: 500,
+                            fontSize: '0.875rem',
+                            width: '100%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '0.5rem'
+                          }}
+                        >
+                          New Service
+                        </button>
+                      )}
+
+                      {/* Bulk actions when select mode is active */}
+                      {isSelectMode && selectedItems.size > 0 && (
+                        <>
+                          <div style={{
+                            padding: '0.75rem 1rem',
+                            backgroundColor: '#f3f4f6',
+                            borderRadius: '0.375rem',
+                            textAlign: 'center',
+                            fontSize: '0.875rem',
+                            color: '#6b7280',
+                            marginBottom: '0.25rem'
+                          }}>
+                            {selectedItems.size} service{selectedItems.size !== 1 ? 's' : ''} selected
+                          </div>
+                          
+                          {/* Archive button */}
+                          {selectedUnarchivedCount > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const itemsToArchive = selectedServices.filter(s => !s.archived);
+                                if (!itemsToArchive.length) return;
+                                setModalState({
+                                  open: true,
+                                  title: 'Archive Services',
+                                  message: `Archive ${itemsToArchive.length} service(s)?`,
+                                  confirmLabel: 'Archive',
+                                  cancelLabel: 'Cancel',
+                                  tone: 'danger',
+                                  onConfirm: async () => {
+                                    try {
+                                      for (const item of itemsToArchive) {
+                                        await updateDoc(doc(db, 'services', item.id), { archived: true });
+                                      }
+                                      await loadServices();
+                                      setSelectedItems(new Set());
+                                      setIsSelectMode(false);
+                                    } catch (err) {
+                                      console.error('Error archiving services', err);
+                                      setModalState({
+                                        open: true,
+                                        title: 'Archive Failed',
+                                        message: 'Failed to archive selected services. Please try again.',
+                                        confirmLabel: 'Close',
+                                        cancelLabel: undefined,
+                                        tone: 'danger',
+                                        onConfirm: undefined,
+                                      });
+                                    }
+                                  },
+                                });
+                              }}
+                              style={{
+                                width: '100%',
+                                padding: '0.75rem',
+                                backgroundColor: '#dc2626',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '0.375rem',
+                                fontWeight: 500,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '0.5rem',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              <FaTrash /> Archive {selectedUnarchivedCount} service{selectedUnarchivedCount !== 1 ? 's' : ''}
+                            </button>
+                          )}
+                          
+                          {/* Unarchive button */}
+                          {selectedArchivedCount > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const itemsToUnarchive = selectedServices.filter(s => s.archived);
+                                if (!itemsToUnarchive.length) return;
+                                setModalState({
+                                  open: true,
+                                  title: 'Unarchive Services',
+                                  message: `Unarchive ${itemsToUnarchive.length} service(s)?`,
+                                  confirmLabel: 'Unarchive',
+                                  cancelLabel: 'Cancel',
+                                  tone: 'info',
+                                  onConfirm: async () => {
+                                    try {
+                                      for (const item of itemsToUnarchive) {
+                                        await updateDoc(doc(db, 'services', item.id), { archived: false });
+                                      }
+                                      await loadServices();
+                                      setSelectedItems(new Set());
+                                      setIsSelectMode(false);
+                                    } catch (err) {
+                                      console.error('Error unarchiving services', err);
+                                      setModalState({
+                                        open: true,
+                                        title: 'Unarchive Failed',
+                                        message: 'Failed to unarchive selected services. Please try again.',
+                                        confirmLabel: 'Close',
+                                        cancelLabel: undefined,
+                                        tone: 'danger',
+                                        onConfirm: undefined,
+                                      });
+                                    }
+                                  },
+                                });
+                              }}
+                              style={{
+                                width: '100%',
+                                padding: '0.75rem',
+                                backgroundColor: '#4b5563',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '0.375rem',
+                                fontWeight: 500,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '0.5rem',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              <FaUndoAlt /> Unarchive {selectedArchivedCount} service{selectedArchivedCount !== 1 ? 's' : ''}
+                            </button>
+                          )}
+                          
+                          {/* Delete button */}
+                          {canDeleteServices && selectedArchivedCount > 0 && selectedUnarchivedCount === 0 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const itemsToDelete = selectedServices.filter(s => s.archived);
+                                if (!itemsToDelete.length) return;
+                                setModalState({
+                                  open: true,
+                                  title: 'Delete Archived Services',
+                                  message: `Delete ${itemsToDelete.length} archived service(s)? This cannot be undone.`,
+                                  confirmLabel: 'Continue',
+                                  cancelLabel: 'Cancel',
+                                  tone: 'danger',
+                                  onConfirm: () => {
+                                    setModalState({
+                                      open: true,
+                                      title: 'Confirm Permanent Deletion',
+                                      message: 'Are you absolutely sure you want to permanently delete the selected archived services? This action cannot be undone.',
+                                      confirmLabel: 'Delete',
+                                      cancelLabel: 'Cancel',
+                                      tone: 'danger',
+                                      onConfirm: async () => {
+                                        try {
+                                          for (const item of itemsToDelete) {
+                                            await deleteDoc(doc(db, 'services', item.id));
+                                          }
+                                          await loadServices();
+                                          setSelectedItems(new Set());
+                                          setIsSelectMode(false);
+                                        } catch (err) {
+                                          console.error('Error deleting services', err);
+                                          setModalState({
+                                            open: true,
+                                            title: 'Delete Failed',
+                                            message: 'Failed to delete selected services. Please try again.',
+                                            confirmLabel: 'Close',
+                                            cancelLabel: undefined,
+                                            tone: 'danger',
+                                            onConfirm: undefined,
+                                          });
+                                        }
+                                      },
+                                    });
+                                  },
+                                });
+                              }}
+                              style={{
+                                width: '100%',
+                                padding: '0.75rem',
+                                backgroundColor: '#991b1b',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '0.375rem',
+                                fontWeight: 500,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '0.5rem',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              <FaTrash /> Delete {selectedArchivedCount} service{selectedArchivedCount !== 1 ? 's' : ''}
+                            </button>
+                          )}
+                        </>
+                      )}
+
+                      {/* Export Button */}
+                      {canExportServices && (
+                        <button 
+                          type="button" 
+                          onClick={() => {
+                            const rows = filteredServices;
+                            if (!rows.length) return;
+                            const headers = ['Service ID', 'Name', 'Price', 'Status', 'Description', 'Vehicle Types', 'Archived'];
+                            const escapeCell = (v: unknown) => { const s = (v ?? '').toString(); return s.includes('"') || s.includes(',') || s.includes('\n') ? '"' + s.replace(/"/g, '""') + '"' : s; };
+                            const csv = [headers.join(','), ...rows.map(s => [s.serviceId, s.name, s.price, s.status, s.description, s.vehicleTypes.join('; '), s.archived ? 'Yes' : 'No'].map(escapeCell).join(','))].join('\r\n');
+                            const blob = new Blob([csv], { type: 'text/csv' });
+                            const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `services_${new Date().toISOString().split('T')[0]}.csv`; document.body.appendChild(link); link.click(); document.body.removeChild(link);
+                          }} 
+                          style={{ 
+                            backgroundColor: '#059669', 
+                            color: 'white', 
+                            padding: '0.75rem', 
+                            borderRadius: '0.375rem', 
+                            border: 'none', 
+                            cursor: 'pointer', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center',
+                            gap: '0.5rem', 
+                            fontWeight: 500, 
+                            fontSize: '0.875rem',
+                            width: '100%'
+                          }}
+                        >
+                          Export to CSV <FaFileExcel />
+                        </button>
+                      )}
+
+                      {/* Select Button */}
+                      {canArchiveServices && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (isSelectMode) {
+                              setIsSelectMode(false);
+                              setSelectedItems(new Set());
+                            } else {
+                              setIsSelectMode(true);
+                            }
+                          }}
+                          style={{
+                            backgroundColor: isSelectMode ? '#6b7280' : '#1d4ed8',
+                            color: 'white',
+                            padding: '0.75rem',
+                            borderRadius: '0.375rem',
+                            border: 'none',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '0.5rem',
+                            fontWeight: 500,
+                            fontSize: '0.875rem',
+                            width: '100%'
+                          }}
+                        >
+                          {isSelectMode ? 'Cancel' : 'Select'}
+                        </button>
+                      )}
+
+                      {/* Filters Button */}
+                      <button 
+                        type="button" 
+                        onClick={() => setShowFilters(!showFilters)} 
+                        style={{ 
+                          backgroundColor: '#1e40af', 
+                          color: 'white', 
+                          padding: '0.75rem', 
+                          borderRadius: '0.375rem', 
+                          border: 'none', 
+                          cursor: 'pointer', 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center',
+                          gap: '0.5rem', 
+                          fontWeight: 500, 
                           fontSize: '0.875rem',
-                          height: '40px',
+                          width: '100%'
                         }}
                       >
-                        {isSelectMode ? 'Cancel' : 'Select'}
+                        Filters <FaFilter />
                       </button>
-                    )}
 
-                    {/* Bulk actions when select mode is active */}
-                    {isSelectMode && canArchiveServices && selectedItems.size > 0 && (
-                      <>
-                        {/* Scenario 1 & 3: at least one unarchived selected -> Archive button */}
-                        {selectedUnarchivedCount > 0 && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const itemsToArchive = selectedServices.filter(s => !s.archived);
-                              if (!itemsToArchive.length) return;
-                              setModalState({
-                                open: true,
-                                title: 'Archive Services',
-                                message: `Archive ${itemsToArchive.length} service(s)?`,
-                                confirmLabel: 'Archive',
-                                cancelLabel: 'Cancel',
-                                tone: 'danger',
-                                onConfirm: async () => {
-                                  try {
-                                    for (const item of itemsToArchive) {
-                                      await updateDoc(doc(db, 'services', item.id), { archived: true });
-                                    }
-                                    await loadServices();
-                                    setSelectedItems(new Set());
-                                    setIsSelectMode(false);
-                                  } catch (err) {
-                                    console.error('Error archiving services', err);
-                                    setModalState({
-                                      open: true,
-                                      title: 'Archive Failed',
-                                      message: 'Failed to archive selected services. Please try again.',
-                                      confirmLabel: 'Close',
-                                      cancelLabel: undefined,
-                                      tone: 'danger',
-                                      onConfirm: undefined,
-                                    });
-                                  }
-                                },
-                              });
-                            }}
-                            style={{
-                              backgroundColor: '#dc2626',
-                              color: 'white',
-                              padding: '0.5rem 0.9rem',
-                              borderRadius: '0.375rem',
-                              border: 'none',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '0.4rem',
-                              fontWeight: 500,
-                              fontSize: '0.875rem',
-                              height: '40px',
-                            }}
-                          >
-                            <FaTrash /> Archive
-                          </button>
-                        )}
+                      {/* Clear Filters Button */}
+                      <button 
+                        type="button" 
+                        onClick={() => { 
+                          setStatusFilter(''); 
+                          setMinPrice(''); 
+                          setMaxPrice(''); 
+                          setVehicleTypeFilter(''); 
+                          setShowArchivedFilter(false); 
+                          setSortBy('serviceId-asc'); 
+                        }} 
+                        style={{ 
+                          backgroundColor: '#6b7280', 
+                          color: 'white', 
+                          padding: '0.75rem', 
+                          borderRadius: '0.375rem', 
+                          border: 'none', 
+                          cursor: 'pointer', 
+                          fontWeight: 500, 
+                          fontSize: '0.875rem',
+                          width: '100%'
+                        }}
+                      >
+                        Clear Filters
+                      </button>
+                    </div>
+                  )}
+              ) : (
+                /* Desktop: Horizontal layout */
+                <div style={{ backgroundColor: 'var(--surface-elevated)', borderRadius: '0.5rem', padding: '1rem', border: '1px solid #e5e7eb' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: showFilters ? '1rem' : 0 }}>
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                      {canExportServices && (
+                        <button type="button" onClick={() => {
+                          const rows = filteredServices;
+                          if (!rows.length) return;
+                          const headers = ['Service ID', 'Name', 'Price', 'Status', 'Description', 'Vehicle Types', 'Archived'];
+                          const escapeCell = (v: unknown) => { const s = (v ?? '').toString(); return s.includes('"') || s.includes(',') || s.includes('\n') ? '"' + s.replace(/"/g, '""') + '"' : s; };
+                          const csv = [headers.join(','), ...rows.map(s => [s.serviceId, s.name, s.price, s.status, s.description, s.vehicleTypes.join('; '), s.archived ? 'Yes' : 'No'].map(escapeCell).join(','))].join('\r\n');
+                          const blob = new Blob([csv], { type: 'text/csv' });
+                          const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `services_${new Date().toISOString().split('T')[0]}.csv`; document.body.appendChild(link); link.click(); document.body.removeChild(link);
+                        }} style={{ backgroundColor: '#059669', color: 'white', padding: '0.5rem 1rem', borderRadius: '0.375rem', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 500, fontSize: '0.875rem', height: '40px' }}>
+                          Export to CSV <FaFileExcel />
+                        </button>
+                      )}
+                      {canArchiveServices && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (isSelectMode) {
+                              setIsSelectMode(false);
+                              setSelectedItems(new Set());
+                            } else {
+                              setIsSelectMode(true);
+                            }
+                          }}
+                          style={{
+                            backgroundColor: isSelectMode ? '#6b7280' : '#1d4ed8',
+                            color: 'white',
+                            padding: '0.5rem 1rem',
+                            borderRadius: '0.375rem',
+                            border: 'none',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            fontWeight: 500,
+                            fontSize: '0.875rem',
+                            height: '40px',
+                          }}
+                        >
+                          {isSelectMode ? 'Cancel' : 'Select'}
+                        </button>
+                      )}
 
-                        {/* Scenario 2 & 3: at least one archived selected -> Unarchive button */}
-                        {selectedArchivedCount > 0 && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const itemsToUnarchive = selectedServices.filter(s => s.archived);
-                              if (!itemsToUnarchive.length) return;
-                              setModalState({
-                                open: true,
-                                title: 'Unarchive Services',
-                                message: `Unarchive ${itemsToUnarchive.length} service(s)?`,
-                                confirmLabel: 'Unarchive',
-                                cancelLabel: 'Cancel',
-                                tone: 'info',
-                                onConfirm: async () => {
-                                  try {
-                                    for (const item of itemsToUnarchive) {
-                                      await updateDoc(doc(db, 'services', item.id), { archived: false });
-                                    }
-                                    await loadServices();
-                                    setSelectedItems(new Set());
-                                    setIsSelectMode(false);
-                                  } catch (err) {
-                                    console.error('Error unarchiving services', err);
-                                    setModalState({
-                                      open: true,
-                                      title: 'Unarchive Failed',
-                                      message: 'Failed to unarchive selected services. Please try again.',
-                                      confirmLabel: 'Close',
-                                      cancelLabel: undefined,
-                                      tone: 'danger',
-                                      onConfirm: undefined,
-                                    });
-                                  }
-                                },
-                              });
-                            }}
-                            style={{
-                              backgroundColor: '#4b5563',
-                              color: 'white',
-                              padding: '0.5rem 0.9rem',
-                              borderRadius: '0.375rem',
-                              border: 'none',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '0.4rem',
-                              fontWeight: 500,
-                              fontSize: '0.875rem',
-                              height: '40px',
-                            }}
-                          >
-                            <FaUndoAlt /> Unarchive
-                          </button>
-                        )}
-
-                        {/* Scenario 2: only archived selected -> Delete button with double confirmation */}
-                        {canDeleteServices && selectedArchivedCount > 0 && selectedUnarchivedCount === 0 && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const itemsToDelete = selectedServices.filter(s => s.archived);
-                              if (!itemsToDelete.length) return;
-                              // First confirmation
-                              setModalState({
-                                open: true,
-                                title: 'Delete Archived Services',
-                                message: `Delete ${itemsToDelete.length} archived service(s)? This cannot be undone.`,
-                                confirmLabel: 'Continue',
-                                cancelLabel: 'Cancel',
-                                tone: 'danger',
-                                onConfirm: () => {
-                                  // Second, stronger confirmation
-                                  setModalState({
-                                    open: true,
-                                    title: 'Confirm Permanent Deletion',
-                                    message: 'Are you absolutely sure you want to permanently delete the selected archived services? This action cannot be undone.',
-                                    confirmLabel: 'Delete',
-                                    cancelLabel: 'Cancel',
-                                    tone: 'danger',
-                                    onConfirm: async () => {
-                                      try {
-                                        for (const item of itemsToDelete) {
-                                          await deleteDoc(doc(db, 'services', item.id));
-                                        }
-                                        await loadServices();
-                                        setSelectedItems(new Set());
-                                        setIsSelectMode(false);
-                                      } catch (err) {
-                                        console.error('Error deleting services', err);
-                                        setModalState({
-                                          open: true,
-                                          title: 'Delete Failed',
-                                          message: 'Failed to delete selected services. Please try again.',
-                                          confirmLabel: 'Close',
-                                          cancelLabel: undefined,
-                                          tone: 'danger',
-                                          onConfirm: undefined,
-                                        });
+                      {/* Bulk actions when select mode is active */}
+                      {isSelectMode && canArchiveServices && selectedItems.size > 0 && (
+                        <>
+                          {/* Scenario 1 & 3: at least one unarchived selected -> Archive button */}
+                          {selectedUnarchivedCount > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const itemsToArchive = selectedServices.filter(s => !s.archived);
+                                if (!itemsToArchive.length) return;
+                                setModalState({
+                                  open: true,
+                                  title: 'Archive Services',
+                                  message: `Archive ${itemsToArchive.length} service(s)?`,
+                                  confirmLabel: 'Archive',
+                                  cancelLabel: 'Cancel',
+                                  tone: 'danger',
+                                  onConfirm: async () => {
+                                    try {
+                                      for (const item of itemsToArchive) {
+                                        await updateDoc(doc(db, 'services', item.id), { archived: true });
                                       }
-                                    },
-                                  });
-                                },
-                              });
-                            }}
-                            style={{
-                              backgroundColor: '#b91c1c',
-                              color: 'white',
-                              padding: '0.5rem 0.9rem',
-                              borderRadius: '0.375rem',
-                              border: 'none',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '0.4rem',
-                              fontWeight: 500,
-                              fontSize: '0.875rem',
-                              height: '40px',
-                            }}
-                          >
-                            <FaTrash /> Delete
-                          </button>
-                        )}
-                      </>
-                    )}
-                  </div>
-                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                    <button type="button" onClick={() => setShowFilters(!showFilters)} style={{ backgroundColor: '#1e40af', color: 'white', padding: '0.5rem 1rem', borderRadius: '0.375rem', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 500, fontSize: '0.875rem', height: '40px' }}>
-                      Filters <FaFilter />
-                    </button>
-                    <button type="button" onClick={() => { setStatusFilter(''); setMinPrice(''); setMaxPrice(''); setVehicleTypeFilter(''); setShowArchivedFilter(false); setSortBy('serviceId-asc'); }} style={{ backgroundColor: '#6b7280', color: 'white', padding: '0.5rem 1rem', borderRadius: '0.375rem', border: 'none', cursor: 'pointer', fontWeight: 500, fontSize: '0.875rem', height: '40px' }}>
-                      Clear Filters
-                    </button>
-                  </div>
-                </div>
-                {showFilters && (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1rem', paddingTop: '1rem', borderTop: '1px solid #e5e7eb' }}>
-                    <div>
-                      <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#4b5563' }}>Status</label>
-                      <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ width: '100%', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #d1d5db', backgroundColor: 'white', color: '#111827' }}>
-                        <option value="">All Status</option>
-                        <option value="Active">Active</option>
-                        <option value="Inactive">Inactive</option>
-                      </select>
+                                      await loadServices();
+                                      setSelectedItems(new Set());
+                                      setIsSelectMode(false);
+                                    } catch (err) {
+                                      console.error('Error archiving services', err);
+                                      setModalState({
+                                        open: true,
+                                        title: 'Archive Failed',
+                                        message: 'Failed to archive selected services. Please try again.',
+                                        confirmLabel: 'Close',
+                                        cancelLabel: undefined,
+                                        tone: 'danger',
+                                        onConfirm: undefined,
+                                      });
+                                    }
+                                  },
+                                });
+                              }}
+                              style={{
+                                backgroundColor: '#dc2626',
+                                color: 'white',
+                                padding: '0.5rem 0.9rem',
+                                borderRadius: '0.375rem',
+                                border: 'none',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.4rem',
+                                fontWeight: 500,
+                                fontSize: '0.875rem',
+                                height: '40px',
+                              }}
+                            >
+                              <FaTrash /> Archive
+                            </button>
+                          )}
+
+                          {/* Scenario 2 & 3: at least one archived selected -> Unarchive button */}
+                          {selectedArchivedCount > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const itemsToUnarchive = selectedServices.filter(s => s.archived);
+                                if (!itemsToUnarchive.length) return;
+                                setModalState({
+                                  open: true,
+                                  title: 'Unarchive Services',
+                                  message: `Unarchive ${itemsToUnarchive.length} service(s)?`,
+                                  confirmLabel: 'Unarchive',
+                                  cancelLabel: 'Cancel',
+                                  tone: 'info',
+                                  onConfirm: async () => {
+                                    try {
+                                      for (const item of itemsToUnarchive) {
+                                        await updateDoc(doc(db, 'services', item.id), { archived: false });
+                                      }
+                                      await loadServices();
+                                      setSelectedItems(new Set());
+                                      setIsSelectMode(false);
+                                    } catch (err) {
+                                      console.error('Error unarchiving services', err);
+                                      setModalState({
+                                        open: true,
+                                        title: 'Unarchive Failed',
+                                        message: 'Failed to unarchive selected services. Please try again.',
+                                        confirmLabel: 'Close',
+                                        cancelLabel: undefined,
+                                        tone: 'danger',
+                                        onConfirm: undefined,
+                                      });
+                                    }
+                                  },
+                                });
+                              }}
+                              style={{
+                                backgroundColor: '#4b5563',
+                                color: 'white',
+                                padding: '0.5rem 0.9rem',
+                                borderRadius: '0.375rem',
+                                border: 'none',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.4rem',
+                                fontWeight: 500,
+                                fontSize: '0.875rem',
+                                height: '40px',
+                              }}
+                            >
+                              <FaUndoAlt /> Unarchive
+                            </button>
+                          )}
+
+                          {/* Scenario 2: only archived selected -> Delete button with double confirmation */}
+                          {canDeleteServices && selectedArchivedCount > 0 && selectedUnarchivedCount === 0 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const itemsToDelete = selectedServices.filter(s => s.archived);
+                                if (!itemsToDelete.length) return;
+                                // First confirmation
+                                setModalState({
+                                  open: true,
+                                  title: 'Delete Archived Services',
+                                  message: `Delete ${itemsToDelete.length} archived service(s)? This cannot be undone.`,
+                                  confirmLabel: 'Continue',
+                                  cancelLabel: 'Cancel',
+                                  tone: 'danger',
+                                  onConfirm: () => {
+                                    // Second, stronger confirmation
+                                    setModalState({
+                                      open: true,
+                                      title: 'Confirm Permanent Deletion',
+                                      message: 'Are you absolutely sure you want to permanently delete the selected archived services? This action cannot be undone.',
+                                      confirmLabel: 'Delete',
+                                      cancelLabel: 'Cancel',
+                                      tone: 'danger',
+                                      onConfirm: async () => {
+                                        try {
+                                          for (const item of itemsToDelete) {
+                                            await deleteDoc(doc(db, 'services', item.id));
+                                          }
+                                          await loadServices();
+                                          setSelectedItems(new Set());
+                                          setIsSelectMode(false);
+                                        } catch (err) {
+                                          console.error('Error deleting services', err);
+                                          setModalState({
+                                            open: true,
+                                            title: 'Delete Failed',
+                                            message: 'Failed to delete selected services. Please try again.',
+                                            confirmLabel: 'Close',
+                                            cancelLabel: undefined,
+                                            tone: 'danger',
+                                            onConfirm: undefined,
+                                          });
+                                        }
+                                      },
+                                    });
+                                  },
+                                });
+                              }}
+                              style={{
+                                backgroundColor: '#b91c1c',
+                                color: 'white',
+                                padding: '0.5rem 0.9rem',
+                                borderRadius: '0.375rem',
+                                border: 'none',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.4rem',
+                                fontWeight: 500,
+                                fontSize: '0.875rem',
+                                height: '40px',
+                              }}
+                            >
+                              <FaTrash /> Delete
+                            </button>
+                          )}
+                        </>
+                      )}
                     </div>
-                    <div>
-                      <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#4b5563' }}>Price Range</label>
-                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                        <input type="number" placeholder="Min" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} style={{ width: '70px', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #d1d5db', fontSize: '0.875rem', backgroundColor: 'white', color: '#111827' }} />
-                        <span>-</span>
-                        <input type="number" placeholder="Max" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} style={{ width: '70px', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #d1d5db', fontSize: '0.875rem', backgroundColor: 'white', color: '#111827' }} />
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                      <button type="button" onClick={() => setShowFilters(!showFilters)} style={{ backgroundColor: '#1e40af', color: 'white', padding: '0.5rem 1rem', borderRadius: '0.375rem', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 500, fontSize: '0.875rem', height: '40px' }}>
+                        Filters <FaFilter />
+                      </button>
+                      <button type="button" onClick={() => { setStatusFilter(''); setMinPrice(''); setMaxPrice(''); setVehicleTypeFilter(''); setShowArchivedFilter(false); setSortBy('serviceId-asc'); }} style={{ backgroundColor: '#6b7280', color: 'white', padding: '0.5rem 1rem', borderRadius: '0.375rem', border: 'none', cursor: 'pointer', fontWeight: 500, fontSize: '0.875rem', height: '40px' }}>
+                        Clear Filters
+                      </button>
+                    </div>
+                  </div>
+                  {showFilters && (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1rem', paddingTop: '1rem', borderTop: '1px solid #e5e7eb' }}>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#4b5563' }}>Status</label>
+                        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ width: '100%', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #d1d5db', backgroundColor: 'white', color: '#111827' }}>
+                          <option value="">All Status</option>
+                          <option value="Active">Active</option>
+                          <option value="Inactive">Inactive</option>
+                        </select>
                       </div>
-                    </div>
-                    <div>
-                      <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#4b5563' }}>Vehicle Type</label>
-                      <select value={vehicleTypeFilter} onChange={(e) => setVehicleTypeFilter(e.target.value)} style={{ width: '100%', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #d1d5db', backgroundColor: 'white', color: '#111827' }}>
-                        <option value="">All Types</option>
-                        {vehicleTypeOptions.filter(t => t !== 'All Types').map(type => (<option key={type} value={type}>{type}</option>))}
-                      </select>
-                    </div>
-                    {canViewArchived && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', paddingTop: '1.5rem' }}>
-                        <div style={{ fontSize: '0.875rem', color: '#4b5563', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <Switch checked={showArchivedFilter} onChange={(checked) => setShowArchivedFilter(checked)} size="sm" />
-                          Show Archived
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#4b5563' }}>Price Range</label>
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                          <input type="number" placeholder="Min" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} style={{ width: '70px', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #d1d5db', fontSize: '0.875rem', backgroundColor: 'white', color: '#111827' }} />
+                          <span>-</span>
+                          <input type="number" placeholder="Max" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} style={{ width: '70px', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #d1d5db', fontSize: '0.875rem', backgroundColor: 'white', color: '#111827' }} />
                         </div>
                       </div>
-                    )}
-                  </div>
-                )}
-              </div>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#4b5563' }}>Vehicle Type</label>
+                        <select value={vehicleTypeFilter} onChange={(e) => setVehicleTypeFilter(e.target.value)} style={{ width: '100%', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #d1d5db', backgroundColor: 'white', color: '#111827' }}>
+                          <option value="">All Types</option>
+                          {vehicleTypeOptions.filter(t => t !== 'All Types').map(type => (<option key={type} value={type}>{type}</option>))}
+                        </select>
+                      </div>
+                      {canViewArchived && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', paddingTop: '1.5rem' }}>
+                          <div style={{ fontSize: '0.875rem', color: '#4b5563', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <Switch checked={showArchivedFilter} onChange={(checked) => setShowArchivedFilter(checked)} size="sm" />
+                            Show Archived
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </section>
 
             <div style={{
@@ -1881,7 +2278,7 @@ export function Services() {
                         </span>
                       )}
                     </div>
-                    {canEditServices && (
+                                        {!isMobile && canEditServices && (
                       <button
                         type="button"
                         onClick={() => {
@@ -1901,8 +2298,8 @@ export function Services() {
                         style={{
                           padding: '0.35rem 0.9rem',
                           borderRadius: '9999px',
-                          border: '1px solid white',
-                          backgroundColor: 'var(--surface-elevated)',
+                          border: '1px solid #10b981',
+                          backgroundColor: '#10b981',
                           color: 'white',
                           fontSize: '0.8rem',
                           fontWeight: 500,
@@ -2014,9 +2411,9 @@ export function Services() {
                                 </div>
                                 {!showVehicleTypes && (
                                   <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
-                                    {service.vehicleTypes.length > 0 
-                                      ? service.vehicleTypes.slice(0, 2).join(', ') + 
-                                        (service.vehicleTypes.length > 2 ? '...' : '')
+                                    {service.vehicleTypes.length > 0
+                                      ? service.vehicleTypes.slice(0, 2).join(', ') +
+                                      (service.vehicleTypes.length > 2 ? '...' : '')
                                       : 'N/A'
                                     }
                                   </div>

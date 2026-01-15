@@ -4,6 +4,7 @@ import {
   FaFileExcel,
   FaSearch,
   FaTimes,
+  FaChevronDown,
 } from 'react-icons/fa';
 
 import { useNavigate } from 'react-router-dom';
@@ -17,6 +18,7 @@ import { HeaderDropdown } from '../../components/HeaderDropdown';
 type SaleItem = {
   id: string;
   date: string;
+  itemId?: string;
   itemCode?: string;
   itemName?: string;
   quantity?: number;
@@ -41,11 +43,11 @@ export function Sales() {
   let closeMenuTimeout: number | undefined;
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
-  const [priceType, setPriceType] = useState('unit');
+  const [priceType, setPriceType] = useState('total');
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
-  const [activeTab, setActiveTab] = useState<'all' | 'parts' | 'service' | 'partsAndService'>('all');
-  const [timeframe, setTimeframe] = useState<'today' | 'week' | 'month' | 'year' | 'custom'>('today');
+  const [activeTab, setActiveTab] = useState<'all' | 'parts'>('all');
+  const [timeframe, setTimeframe] = useState<'today' | 'week' | 'month' | 'year' | 'custom'>('year');
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
   const [showCalendarPicker, setShowCalendarPicker] = useState(false);
@@ -62,7 +64,7 @@ export function Sales() {
   const [showItemModal, setShowItemModal] = useState(false);
   const [itemSearchTerm, setItemSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('date-desc');
-  const [isActionBarExpanded, setIsActionBarExpanded] = useState(true);
+  const [isActionBarExpanded, setIsActionBarExpanded] = useState(false);
   const [firestoreSales, setFirestoreSales] = useState<SaleItem[]>([]);
 
   // Responsive column visibility helpers
@@ -73,8 +75,8 @@ export function Sales() {
   const showTransactionId = viewportWidth >= 768; // Hide on mobile
   const showDate = viewportWidth >= 640; // Hide on small mobile
   const showQuantity = viewportWidth >= 576; // Hide on extra small mobile
-  const showTotalAmount = viewportWidth >= 520; // Hide on extra extra small mobile
-  const showItemName = viewportWidth >= 480; // Hide on tiny mobile
+  const showTotalAmount = true; // Always show Total Amount (highest priority with Item Name)
+  const showItemName = true; // Always show Item Name (highest priority)
 
   // Sample data - used as fallback if Firestore has no data
   const salesData: SaleItem[] = [
@@ -82,6 +84,7 @@ export function Sales() {
     {
       id: 'SALE-001',
       date: '2023-11-15',
+      itemId: 'OIL-4T-1L',
       itemCode: 'OIL-4T-1L',
       itemName: '4T Engine Oil (1L)',
       quantity: 2,
@@ -106,7 +109,7 @@ export function Sales() {
   const itemOptions = Array.from(
     new Set(
       sourceForLov
-        .map(s => (s.itemCode ?? '').toString())
+        .map(s => (s.itemId ?? '').toString())
         .filter(code => code)
     )
   ).sort();
@@ -114,10 +117,9 @@ export function Sales() {
   const getFilteredByTab = () => {
     const source = (firestoreSales.length ? firestoreSales : salesData);
 
-    if (activeTab === 'all') return source;
+    if (activeTab === 'all') return source.filter(s => s.transactionType === 'Parts Only' || s.transactionType === 'Parts + Service');
     if (activeTab === 'parts') return source.filter(s => s.transactionType === 'Parts Only');
-    if (activeTab === 'service') return source.filter(s => s.transactionType === 'Service Only');
-    return source.filter(s => s.transactionType === 'Parts + Service');
+    return source;
   };
 
   const isWithinTimeframe = (dateStr: string) => {
@@ -153,7 +155,7 @@ export function Sales() {
 
   const filteredByCustomerItem = filteredByTimeframe.filter(sale => {
     if (customerFilter && sale.customer !== customerFilter) return false;
-    if (itemFilter && sale.itemCode !== itemFilter) return false;
+    if (itemFilter && sale.itemId !== itemFilter) return false;
     return true;
   });
 
@@ -186,9 +188,9 @@ export function Sales() {
           const db = new Date(b.date || 0).getTime();
           return desc ? db - da : da - db;
         }
-        case 'itemCode': {
-          const aCode = (a.itemCode ?? '').toString().toLowerCase();
-          const bCode = (b.itemCode ?? '').toString().toLowerCase();
+        case 'itemId': {
+          const aCode = (a.itemId ?? '').toString().toLowerCase();
+          const bCode = (b.itemId ?? '').toString().toLowerCase();
           return desc ? bCode.localeCompare(aCode) : aCode.localeCompare(bCode);
         }
         case 'itemName': {
@@ -296,8 +298,6 @@ export function Sales() {
     return rows;
   })();
 
-
-
   useEffect(() => {
     const handleResize = () => {
       const width = window.innerWidth;
@@ -352,6 +352,7 @@ export function Sales() {
             id: `${docSnap.id}-${idx}`,
             transactionCode,
             date: dateStr,
+            itemId: (item.itemId ?? '').toString(),
             itemCode: (item.itemCode ?? item.code ?? '').toString(),
             itemName: (item.name ?? '').toString(),
             quantity,
@@ -644,61 +645,90 @@ export function Sales() {
                 backgroundColor: 'var(--surface-elevated)',
                 borderRadius: '0.5rem',
                 padding: '1rem',
-                border: '1px solid var(--border)'
+                border: 'var(--border)'
               }}>
-                {/* Accordion Header */}
-                <button
-                  onClick={() => setIsActionBarExpanded(!isActionBarExpanded)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    width: '100%',
-                    background: 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                    padding: 0,
-                    marginBottom: isActionBarExpanded ? '1rem' : 0,
-                    fontSize: '1.125rem',
-                    fontWeight: 600,
-                    color: '#1e40af',
-                    textAlign: 'left'
-                  }}
-                >
-                  <span>Action Bar</span>
-                  <span
+                {/* Mobile: Accordion Header */}
+                {isMobile && (
+                  <button
+                    onClick={() => setIsActionBarExpanded(!isActionBarExpanded)}
                     style={{
-                      display: 'inline-flex',
+                      display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'center',
-                      transition: 'transform 0.2s ease',
-                      transform: isActionBarExpanded ? 'rotate(180deg)' : 'rotate(0)'
+                      justifyContent: 'space-between',
+                      width: '100%',
+                      background: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: 0,
+                      marginBottom: isActionBarExpanded ? '1rem' : 0,
+                      fontSize: '1.125rem',
+                      fontWeight: 600,
+                      color: '#1e40af',
+                      textAlign: 'left'
                     }}
                   >
-                    ▼
-                  </span>
-                </button>
+                    <span>Action Bar</span>
+                    <FaChevronDown
+                      style={{
+                        transition: 'transform 0.2s ease',
+                        transform: isActionBarExpanded ? 'rotate(180deg)' : 'rotate(0)'
+                      }}
+                    />
+                  </button>
+                )}
 
-                {isActionBarExpanded && (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', marginBottom: showFilters ? '1rem' : 0 }}>
-                    {/* Transaction Type Pills */}
+                {/* Desktop: Horizontal Layout | Mobile: Collapsible Content */}
+                {(!isMobile || isActionBarExpanded) && (
+                  <div style={{ 
+                    display: 'flex', 
+                    flexDirection: isMobile ? 'column' : 'row',
+                    alignItems: isMobile ? 'center' : 'center',
+                    justifyContent: isMobile ? 'center' : 'space-between',
+                    gap: '0.5rem',
+                    flexWrap: 'wrap',
+                    marginBottom: showFilters ? '1rem' : 0
+                  }}>
+                    {/* Left side: Export Button (desktop only) */}
+                    {!isMobile && (
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button
+                          onClick={handleExportToExcel}
+                          style={{
+                            backgroundColor: '#059669',
+                            color: 'white',
+                            padding: '0.5rem 1rem',
+                            borderRadius: '0.375rem',
+                            border: 'none',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            fontWeight: 500,
+                            fontSize: '0.875rem',
+                            height: '40px'
+                          }}
+                        >
+                          Export to CSV <FaFileExcel />
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Center: Transaction Type Pills */}
                     <div style={{
                       display: 'flex',
                       gap: '0.5rem',
-                      width: '100%',
-                      maxWidth: '600px',
+                      width: isMobile ? '100%' : 'auto',
+                      maxWidth: isMobile ? '600px' : 'none',
                       justifyContent: 'center',
                       flexWrap: 'wrap'
                     }}>
                       {[
-                        { key: 'all', label: 'All' },
-                        { key: 'parts', label: 'Parts' },
-                        { key: 'service', label: 'Service' },
-                        { key: 'partsAndService', label: 'Parts & Service' }
+                        { key: 'all', label: 'All Items' },
+                        { key: 'parts', label: 'Parts Only' }
                       ].map(tab => (
                         <button
                           key={tab.key}
-                          onClick={() => setActiveTab(tab.key as 'all' | 'parts' | 'service' | 'partsAndService')}
+                          onClick={() => setActiveTab(tab.key as 'all' | 'parts')}
                           style={{
                             padding: '0.5rem 1rem',
                             borderRadius: '9999px',
@@ -718,87 +748,93 @@ export function Sales() {
                         </button>
                       ))}
                     </div>
-                    {/* Export Button */}
-                    <button
-                      onClick={handleExportToExcel}
-                      style={{
-                        backgroundColor: '#059669',
-                        color: 'white',
-                        padding: '0.5rem 1rem',
-                        borderRadius: '0.375rem',
-                        border: 'none',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.5rem',
-                        fontWeight: 500,
-                        fontSize: '0.875rem',
-                        height: '40px',
-                        width: '100%',
-                        maxWidth: '300px',
-                        justifyContent: 'center'
-                      }}
-                    >
-                      Export to CSV <FaFileExcel />
-                    </button>
 
-                    {/* Filters Button */}
-                    <button
-                      onClick={() => setShowFilters(!showFilters)}
-                      style={{
-                        backgroundColor: '#1e40af',
-                        color: 'white',
-                        padding: '0.5rem 1rem',
-                        borderRadius: '0.375rem',
-                        border: 'none',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.5rem',
-                        fontWeight: 500,
-                        fontSize: '0.875rem',
-                        height: '40px',
-                        width: '100%',
-                        maxWidth: '300px',
-                        justifyContent: 'center'
-                      }}
-                    >
-                      Filters <FaFilter />
-                    </button>
+                    {/* Right side: Filters + Clear Filters (desktop) | All buttons stacked (mobile) */}
+                    <div style={{ display: 'flex', gap: '0.5rem', flexDirection: isMobile ? 'column' : 'row', width: isMobile ? '100%' : 'auto' }}>
+                      {/* Export Button (mobile only) */}
+                      {isMobile && (
+                        <button
+                          onClick={handleExportToExcel}
+                          style={{
+                            backgroundColor: '#059669',
+                            color: 'white',
+                            padding: '0.5rem 1rem',
+                            borderRadius: '0.375rem',
+                            border: 'none',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            fontWeight: 500,
+                            fontSize: '0.875rem',
+                            height: '40px',
+                            width: '100%',
+                            maxWidth: '300px',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          Export to CSV <FaFileExcel />
+                        </button>
+                      )}
 
-                    {/* Clear Filters Button */}
-                    <button
-                      onClick={() => {
-                        setTimeframe('today');
-                        setCustomStart('');
-                        setCustomEnd('');
-                        setPriceType('unit');
-                        setMinPrice('');
-                        setMaxPrice('');
-                        setCustomerFilter('');
-                        setItemFilter('');
-                        setSortBy('date-desc');
-                      }}
-                      style={{
-                        backgroundColor: '#6b7280',
-                        color: 'white',
-                        padding: '0.5rem 1rem',
-                        borderRadius: '0.375rem',
-                        border: 'none',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.5rem',
-                        fontWeight: 500,
-                        fontSize: '0.875rem',
-                        height: '40px',
-                        width: '100%',
-                        maxWidth: '300px',
-                        justifyContent: 'center'
-                      }}
-                    >
-                      Clear Filters
-                    </button>
+                      {/* Filters Button */}
+                      <button
+                        onClick={() => setShowFilters(!showFilters)}
+                        style={{
+                          backgroundColor: '#1e40af',
+                          color: 'white',
+                          padding: '0.5rem 1rem',
+                          borderRadius: '0.375rem',
+                          border: 'none',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          fontWeight: 500,
+                          fontSize: '0.875rem',
+                          height: '40px',
+                          width: isMobile ? '100%' : 'auto',
+                          maxWidth: isMobile ? '300px' : 'none',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        Filters <FaFilter />
+                      </button>
+
+                      {/* Clear Filters Button */}
+                      <button
+                        onClick={() => {
+                          setTimeframe('year');
+                          setCustomStart('');
+                          setCustomEnd('');
+                          setPriceType('total');
+                          setMinPrice('');
+                          setMaxPrice('');
+                          setCustomerFilter('');
+                          setItemFilter('');
+                          setSortBy('date-desc');
+                        }}
+                        style={{
+                          backgroundColor: '#6b7280',
+                          color: 'white',
+                          padding: '0.5rem 1rem',
+                          borderRadius: '0.375rem',
+                          border: 'none',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          fontWeight: 500,
+                          fontSize: '0.875rem',
+                          height: '40px',
+                          width: isMobile ? '100%' : 'auto',
+                          maxWidth: isMobile ? '300px' : 'none',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        Clear Filters
+                      </button>
+                    </div>
                   </div>
                 )}
 
@@ -976,10 +1012,8 @@ export function Sales() {
                 marginBottom: '1rem',
                 color: 'var(--text-primary)'
               }}>
-                {activeTab === 'all' && 'Overall Sales Summary'}
+                {activeTab === 'all' && 'Overall Item Sales Summary'}
                 {activeTab === 'parts' && 'Parts Only Sales Summary'}
-                {activeTab === 'service' && 'Service Only Sales Summary'}
-                {activeTab === 'partsAndService' && 'Parts & Service Sales Summary'}
               </h2>
               <div style={{
                 display: 'grid',
@@ -1040,7 +1074,7 @@ export function Sales() {
                 <table style={{
                   width: '100%',
                   borderCollapse: 'collapse',
-                  minWidth: '800px'
+                  minWidth: isMobile ? '400px' : '800px'
                 }}>
                   <thead>
                     <tr style={{
@@ -1085,7 +1119,7 @@ export function Sales() {
                       )}
                       {showItemCode && (
                         <th
-                          onClick={() => handleHeaderSort('itemCode')}
+                          onClick={() => handleHeaderSort('itemId')}
                           style={{
                             padding: '0.75rem 1rem',
                             textAlign: 'left',
@@ -1098,7 +1132,7 @@ export function Sales() {
                             userSelect: 'none'
                           }}
                         >
-                          ITEM ID {sortBy.startsWith('itemCode-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                          ITEM ID {sortBy.startsWith('itemId-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
                         </th>
                       )}
                       <th
@@ -1115,7 +1149,7 @@ export function Sales() {
                           userSelect: 'none'
                         }}
                       >
-                        {showItemCode ? 'ITEM NAME' : 'ITEM'} {sortBy.startsWith('itemName-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                        ITEM {sortBy.startsWith('itemName-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
                       </th>
                       {showQuantity && (
                         <th
@@ -1168,7 +1202,7 @@ export function Sales() {
                             userSelect: 'none'
                           }}
                         >
-                          {(showQuantity && showUnitPrice) ? 'TOTAL AMOUNT' : (priceType === 'unit' ? 'UNIT PRICE' : 'TOTAL')} {sortBy.startsWith('totalAmount-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                          TOTAL AMOUNT {sortBy.startsWith('totalAmount-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
                         </th>
                       )}
                       {showCustomer && (
@@ -1240,7 +1274,7 @@ export function Sales() {
                                 whiteSpace: 'nowrap',
                               }}
                             >
-                              {sale.itemCode}
+                              {sale.itemId}
                             </td>
                           )}
                           <td
@@ -1251,20 +1285,7 @@ export function Sales() {
                               whiteSpace: 'nowrap',
                             }}
                           >
-                            {showItemCode ? (
-                              sale.itemName
-                            ) : (
-                              <div>
-                                <div>{sale.itemName}</div>
-                                <div style={{
-                                  fontSize: '0.75rem',
-                                  color: 'var(--field-label-text)',
-                                  marginTop: '0.25rem'
-                                }}>
-                                  ID: {sale.itemCode}
-                                </div>
-                              </div>
-                            )}
+                            {sale.itemName}
                           </td>
                           {showQuantity && (
                             <td

@@ -278,7 +278,7 @@ export function Transactions() {
     };
   }, [showFilters, isActionBarExpanded, isMobile, isSelectMode, isModalOpen]);
 
-  // Calculate summary data
+  // Calculate summary data - filtered by active tab
   const getSummaryData = () => {
     const filtered = transactions.filter(tx => {
       const matchesSearch = searchTerm === '' ||
@@ -294,14 +294,24 @@ export function Transactions() {
       return matchesSearch && matchesDate && matchesType && matchesPrice && matchesStatus;
     });
 
-    const partsOnly = filtered.filter(tx => tx.type === 'Parts Only').length;
-    const serviceOnly = filtered.filter(tx => tx.type === 'Service Only').length;
-    const partsAndService = filtered.filter(tx => tx.type === 'Parts + Service').length;
+    // Filter based on active tab
+    let tabFiltered = filtered;
+    if (activeTab === 'parts') {
+      tabFiltered = filtered.filter(tx => tx.type === 'Parts Only');
+    } else if (activeTab === 'service') {
+      tabFiltered = filtered.filter(tx => tx.type === 'Service Only');
+    } else if (activeTab === 'partsAndService') {
+      tabFiltered = filtered.filter(tx => tx.type === 'Parts + Service');
+    }
 
-    const totalRevenue = filtered.reduce((sum: number, tx: TransactionRow) => sum + tx.grandTotal, 0);
+    const partsOnly = tabFiltered.filter(tx => tx.type === 'Parts Only').length;
+    const serviceOnly = tabFiltered.filter(tx => tx.type === 'Service Only').length;
+    const partsAndService = tabFiltered.filter(tx => tx.type === 'Parts + Service').length;
+
+    const totalRevenue = tabFiltered.reduce((sum: number, tx: TransactionRow) => sum + tx.grandTotal, 0);
 
     return {
-      totalTransactions: filtered.length,
+      totalTransactions: tabFiltered.length,
       partsOnly,
       serviceOnly,
       partsAndService,
@@ -1518,6 +1528,7 @@ export function Transactions() {
                 maxWidth: '1200px',
                 width: '100%'
               }}>
+                {/* Total Transactions - always visible */}
                 <div style={{
                   backgroundColor: 'var(--surface-elevated)',
                   borderRadius: '0.5rem',
@@ -1528,36 +1539,50 @@ export function Transactions() {
                   <p style={{ color: 'var(--field-label-text)', fontSize: '0.875rem', marginBottom: '0.5rem' }}>Total Transactions</p>
                   <p style={{ fontSize: '1.5rem', fontWeight: '600', color: 'var(--text-primary)' }}>{summary.totalTransactions}</p>
                 </div>
-                <div style={{
-                  backgroundColor: 'var(--surface-elevated)',
-                  borderRadius: '0.5rem',
-                  padding: '1.25rem',
-                  boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-                  borderLeft: '4px solid #10b981'
-                }}>
-                  <p style={{ color: 'var(--field-label-text)', fontSize: '0.875rem', marginBottom: '0.5rem' }}>Parts Only</p>
-                  <p style={{ fontSize: '1.5rem', fontWeight: '600', color: 'var(--text-primary)' }}>{summary.partsOnly}</p>
-                </div>
-                <div style={{
-                  backgroundColor: 'var(--surface-elevated)',
-                  borderRadius: '0.5rem',
-                  padding: '1.25rem',
-                  boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-                  borderLeft: '4px solid #f59e0b'
-                }}>
-                  <p style={{ color: 'var(--field-label-text)', fontSize: '0.875rem', marginBottom: '0.5rem' }}>Service Only</p>
-                  <p style={{ fontSize: '1.5rem', fontWeight: '600', color: 'var(--text-primary)' }}>{summary.serviceOnly}</p>
-                </div>
-                <div style={{
-                  backgroundColor: 'var(--surface-elevated)',
-                  borderRadius: '0.5rem',
-                  padding: '1.25rem',
-                  boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-                  borderLeft: '4px solid #8b5cf6'
-                }}>
-                  <p style={{ color: 'var(--field-label-text)', fontSize: '0.875rem', marginBottom: '0.5rem' }}>Parts + Service</p>
-                  <p style={{ fontSize: '1.5rem', fontWeight: '600', color: 'var(--text-primary)' }}>{summary.partsAndService}</p>
-                </div>
+
+                {/* Parts Only - visible only on 'all' and 'parts' tabs */}
+                {(activeTab === 'all' || activeTab === 'parts') && (
+                  <div style={{
+                    backgroundColor: 'var(--surface-elevated)',
+                    borderRadius: '0.5rem',
+                    padding: '1.25rem',
+                    boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+                    borderLeft: '4px solid #10b981'
+                  }}>
+                    <p style={{ color: 'var(--field-label-text)', fontSize: '0.875rem', marginBottom: '0.5rem' }}>Parts Only</p>
+                    <p style={{ fontSize: '1.5rem', fontWeight: '600', color: 'var(--text-primary)' }}>{summary.partsOnly}</p>
+                  </div>
+                )}
+
+                {/* Service Only - visible only on 'all' and 'service' tabs */}
+                {(activeTab === 'all' || activeTab === 'service') && (
+                  <div style={{
+                    backgroundColor: 'var(--surface-elevated)',
+                    borderRadius: '0.5rem',
+                    padding: '1.25rem',
+                    boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+                    borderLeft: '4px solid #f59e0b'
+                  }}>
+                    <p style={{ color: 'var(--field-label-text)', fontSize: '0.875rem', marginBottom: '0.5rem' }}>Service Only</p>
+                    <p style={{ fontSize: '1.5rem', fontWeight: '600', color: 'var(--text-primary)' }}>{summary.serviceOnly}</p>
+                  </div>
+                )}
+
+                {/* Parts + Service - visible only on 'all' and 'partsAndService' tabs */}
+                {(activeTab === 'all' || activeTab === 'partsAndService') && (
+                  <div style={{
+                    backgroundColor: 'var(--surface-elevated)',
+                    borderRadius: '0.5rem',
+                    padding: '1.25rem',
+                    boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+                    borderLeft: '4px solid #8b5cf6'
+                  }}>
+                    <p style={{ color: 'var(--field-label-text)', fontSize: '0.875rem', marginBottom: '0.5rem' }}>Parts + Service</p>
+                    <p style={{ fontSize: '1.5rem', fontWeight: '600', color: 'var(--text-primary)' }}>{summary.partsAndService}</p>
+                  </div>
+                )}
+
+                {/* Total Revenue - always visible, label changes based on tab */}
                 <div style={{
                   backgroundColor: 'var(--surface-elevated)',
                   borderRadius: '0.5rem',
@@ -1565,7 +1590,12 @@ export function Transactions() {
                   boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
                   borderLeft: '4px solid #ec4899'
                 }}>
-                  <p style={{ color: 'var(--field-label-text)', fontSize: '0.875rem', marginBottom: '0.5rem' }}>Total Revenue</p>
+                  <p style={{ color: 'var(--field-label-text)', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
+                    {activeTab === 'all' && 'Total Revenue'}
+                    {activeTab === 'parts' && 'Total Parts Revenue'}
+                    {activeTab === 'service' && 'Total Services Revenue'}
+                    {activeTab === 'partsAndService' && 'Total Parts & Services Revenue'}
+                  </p>
                   <p style={{ fontSize: '1.5rem', fontWeight: '600', color: 'var(--text-primary)' }}>₱{summary.totalRevenue.toLocaleString()}</p>
                 </div>
               </div>

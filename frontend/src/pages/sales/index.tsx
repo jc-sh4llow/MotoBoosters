@@ -1789,13 +1789,16 @@ export function Sales() {
               </div>
 
               <div style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
+                display: 'flex',
+                flexDirection: 'column',
                 gap: '1rem'
               }}>
-                {/* Column 1 */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  {/* Transaction ID */}
+                {/* Row 1: Transaction ID | Date */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: '1rem'
+                }}>
                   <div>
                     <div style={{
                       fontSize: '0.75rem',
@@ -1813,68 +1816,6 @@ export function Sales() {
                       {selectedSale.transactionCode || selectedSale.id}
                     </div>
                   </div>
-
-                  {/* Item ID */}
-                  <div>
-                    <div style={{
-                      fontSize: '0.75rem',
-                      color: 'var(--field-label-text)',
-                      marginBottom: '0.25rem',
-                      textTransform: 'uppercase',
-                      fontWeight: 600
-                    }}>
-                      Item ID
-                    </div>
-                    <div style={{
-                      fontSize: '0.875rem',
-                      color: 'var(--text-primary)'
-                    }}>
-                      {selectedSale.itemId || selectedSale.itemCode}
-                    </div>
-                  </div>
-
-                  {/* Unit Price */}
-                  <div>
-                    <div style={{
-                      fontSize: '0.75rem',
-                      color: 'var(--field-label-text)',
-                      marginBottom: '0.25rem',
-                      textTransform: 'uppercase',
-                      fontWeight: 600
-                    }}>
-                      Unit Price
-                    </div>
-                    <div style={{
-                      fontSize: '0.875rem',
-                      color: 'var(--text-primary)'
-                    }}>
-                      ₱{(selectedSale.unitPrice ?? 0).toFixed(2)}
-                    </div>
-                  </div>
-
-                  {/* Customer */}
-                  <div>
-                    <div style={{
-                      fontSize: '0.75rem',
-                      color: 'var(--field-label-text)',
-                      marginBottom: '0.25rem',
-                      textTransform: 'uppercase',
-                      fontWeight: 600
-                    }}>
-                      Customer
-                    </div>
-                    <div style={{
-                      fontSize: '0.875rem',
-                      color: 'var(--text-primary)'
-                    }}>
-                      {selectedSale.customer || 'N/A'}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Column 2 */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  {/* Date */}
                   <div>
                     <div style={{
                       fontSize: '0.75rem',
@@ -1892,8 +1833,31 @@ export function Sales() {
                       {new Date(selectedSale.date).toLocaleDateString()}
                     </div>
                   </div>
+                </div>
 
-                  {/* Item Name */}
+                {/* Row 2: Item ID | Item Name */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: '1rem'
+                }}>
+                  <div>
+                    <div style={{
+                      fontSize: '0.75rem',
+                      color: 'var(--field-label-text)',
+                      marginBottom: '0.25rem',
+                      textTransform: 'uppercase',
+                      fontWeight: 600
+                    }}>
+                      Item ID
+                    </div>
+                    <div style={{
+                      fontSize: '0.875rem',
+                      color: 'var(--text-primary)'
+                    }}>
+                      {selectedSale.itemId || selectedSale.itemCode}
+                    </div>
+                  </div>
                   <div>
                     <div style={{
                       fontSize: '0.75rem',
@@ -1911,8 +1875,31 @@ export function Sales() {
                       {selectedSale.itemName}
                     </div>
                   </div>
+                </div>
 
-                  {/* Quantity */}
+                {/* Row 3: Unit Price | Quantity */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: '1rem'
+                }}>
+                  <div>
+                    <div style={{
+                      fontSize: '0.75rem',
+                      color: 'var(--field-label-text)',
+                      marginBottom: '0.25rem',
+                      textTransform: 'uppercase',
+                      fontWeight: 600
+                    }}>
+                      Unit Price
+                    </div>
+                    <div style={{
+                      fontSize: '0.875rem',
+                      color: 'var(--text-primary)'
+                    }}>
+                      ₱{(selectedSale.unitPrice ?? 0).toFixed(2)}
+                    </div>
+                  </div>
                   <div>
                     <div style={{
                       fontSize: '0.75rem',
@@ -1930,8 +1917,31 @@ export function Sales() {
                       {selectedSale.quantity ?? 0}
                     </div>
                   </div>
+                </div>
 
-                  {/* Total Amount */}
+                {/* Row 4: Customer | Total Amount */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: '1rem'
+                }}>
+                  <div>
+                    <div style={{
+                      fontSize: '0.75rem',
+                      color: 'var(--field-label-text)',
+                      marginBottom: '0.25rem',
+                      textTransform: 'uppercase',
+                      fontWeight: 600
+                    }}>
+                      Customer
+                    </div>
+                    <div style={{
+                      fontSize: '0.875rem',
+                      color: 'var(--text-primary)'
+                    }}>
+                      {selectedSale.customer || 'N/A'}
+                    </div>
+                  </div>
                   <div>
                     <div style={{
                       fontSize: '0.75rem',

@@ -1736,6 +1736,246 @@ export function Sales() {
             </div>
           </div>
         )}
+
+        {/* Sale Details Modal (Mobile Only) */}
+        {isDetailsModalOpen && selectedSale && (
+          <div style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 2000,
+            padding: '1rem'
+          }}>
+            <div style={{
+              backgroundColor: 'var(--surface-elevated)',
+              borderRadius: '0.75rem',
+              padding: '1.5rem',
+              width: '100%',
+              maxWidth: '500px',
+              maxHeight: '80vh',
+              overflowY: 'auto',
+              boxShadow: '0 10px 25px rgba(0,0,0,0.2)'
+            }}>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '1.5rem'
+              }}>
+                <h3 style={{
+                  fontSize: '1.25rem',
+                  fontWeight: 600,
+                  margin: 0,
+                  color: 'var(--text-primary)'
+                }}>
+                  Sale Details
+                </h3>
+                <button
+                  onClick={() => setIsDetailsModalOpen(false)}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    fontSize: '1.5rem',
+                    cursor: 'pointer',
+                    color: 'var(--text-primary)',
+                    padding: '0.25rem'
+                  }}
+                >
+                  <FaTimes />
+                </button>
+              </div>
+
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: '1rem'
+              }}>
+                {/* Column 1 */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {/* Transaction ID */}
+                  <div>
+                    <div style={{
+                      fontSize: '0.75rem',
+                      color: 'var(--field-label-text)',
+                      marginBottom: '0.25rem',
+                      textTransform: 'uppercase',
+                      fontWeight: 600
+                    }}>
+                      Transaction ID
+                    </div>
+                    <div style={{
+                      fontSize: '0.875rem',
+                      color: 'var(--text-primary)'
+                    }}>
+                      {selectedSale.transactionCode || selectedSale.id}
+                    </div>
+                  </div>
+
+                  {/* Item ID */}
+                  <div>
+                    <div style={{
+                      fontSize: '0.75rem',
+                      color: 'var(--field-label-text)',
+                      marginBottom: '0.25rem',
+                      textTransform: 'uppercase',
+                      fontWeight: 600
+                    }}>
+                      Item ID
+                    </div>
+                    <div style={{
+                      fontSize: '0.875rem',
+                      color: 'var(--text-primary)'
+                    }}>
+                      {selectedSale.itemId || selectedSale.itemCode}
+                    </div>
+                  </div>
+
+                  {/* Unit Price */}
+                  <div>
+                    <div style={{
+                      fontSize: '0.75rem',
+                      color: 'var(--field-label-text)',
+                      marginBottom: '0.25rem',
+                      textTransform: 'uppercase',
+                      fontWeight: 600
+                    }}>
+                      Unit Price
+                    </div>
+                    <div style={{
+                      fontSize: '0.875rem',
+                      color: 'var(--text-primary)'
+                    }}>
+                      ₱{(selectedSale.unitPrice ?? 0).toFixed(2)}
+                    </div>
+                  </div>
+
+                  {/* Customer */}
+                  <div>
+                    <div style={{
+                      fontSize: '0.75rem',
+                      color: 'var(--field-label-text)',
+                      marginBottom: '0.25rem',
+                      textTransform: 'uppercase',
+                      fontWeight: 600
+                    }}>
+                      Customer
+                    </div>
+                    <div style={{
+                      fontSize: '0.875rem',
+                      color: 'var(--text-primary)'
+                    }}>
+                      {selectedSale.customer || 'N/A'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Column 2 */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {/* Date */}
+                  <div>
+                    <div style={{
+                      fontSize: '0.75rem',
+                      color: 'var(--field-label-text)',
+                      marginBottom: '0.25rem',
+                      textTransform: 'uppercase',
+                      fontWeight: 600
+                    }}>
+                      Date
+                    </div>
+                    <div style={{
+                      fontSize: '0.875rem',
+                      color: 'var(--text-primary)'
+                    }}>
+                      {new Date(selectedSale.date).toLocaleDateString()}
+                    </div>
+                  </div>
+
+                  {/* Item Name */}
+                  <div>
+                    <div style={{
+                      fontSize: '0.75rem',
+                      color: 'var(--field-label-text)',
+                      marginBottom: '0.25rem',
+                      textTransform: 'uppercase',
+                      fontWeight: 600
+                    }}>
+                      Item Name
+                    </div>
+                    <div style={{
+                      fontSize: '0.875rem',
+                      color: 'var(--text-primary)'
+                    }}>
+                      {selectedSale.itemName}
+                    </div>
+                  </div>
+
+                  {/* Quantity */}
+                  <div>
+                    <div style={{
+                      fontSize: '0.75rem',
+                      color: 'var(--field-label-text)',
+                      marginBottom: '0.25rem',
+                      textTransform: 'uppercase',
+                      fontWeight: 600
+                    }}>
+                      Quantity
+                    </div>
+                    <div style={{
+                      fontSize: '0.875rem',
+                      color: 'var(--text-primary)'
+                    }}>
+                      {selectedSale.quantity ?? 0}
+                    </div>
+                  </div>
+
+                  {/* Total Amount */}
+                  <div>
+                    <div style={{
+                      fontSize: '0.75rem',
+                      color: 'var(--field-label-text)',
+                      marginBottom: '0.25rem',
+                      textTransform: 'uppercase',
+                      fontWeight: 600
+                    }}>
+                      Total Amount
+                    </div>
+                    <div style={{
+                      fontSize: '0.875rem',
+                      color: 'var(--text-primary)',
+                      fontWeight: 600
+                    }}>
+                      ₱{(selectedSale.totalAmount ?? 0).toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{
+                marginTop: '1.5rem',
+                display: 'flex',
+                justifyContent: 'flex-end'
+              }}>
+                <button
+                  onClick={() => setIsDetailsModalOpen(false)}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    borderRadius: '0.375rem',
+                    border: '1px solid #d1d5db',
+                    backgroundColor: 'var(--surface-elevated)',
+                    color: 'var(--text-primary)',
+                    cursor: 'pointer',
+                    fontSize: '0.875rem'
+                  }}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

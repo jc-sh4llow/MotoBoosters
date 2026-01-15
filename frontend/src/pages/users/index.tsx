@@ -202,7 +202,7 @@ export function Users() {
     selectedUserRow.id === formData.docId &&
     selectedUserRow.username !== currentUsername &&
     selectedUserRow.fullName !== currentUsername;
-  const showRowActions = true; // Everyone sees Actions column; buttons are filtered per row
+  const showRowActions = !isMobile; // Hide Actions column on mobile; buttons moved to details section
 
   const [confirmState, setConfirmState] = useState<{
     type: 'save' | 'delete' | null;
@@ -1451,6 +1451,66 @@ export function Users() {
                     )}
                   </div>
 
+                  {/* Mobile-only Action Buttons - Show Edit/Archive when not editing */}
+                  {isMobile && selectedUserRow && !isEditing && (
+                    <div style={{
+                      display: 'flex',
+                      gap: '0.75rem',
+                      marginTop: '1.5rem',
+                      paddingTop: '1rem',
+                      borderTop: '1px solid #e5e7eb'
+                    }}>
+                      {/* Edit button - for admins or self-editing users */}
+                      {(can(effectiveRoleIds, 'users.edit.any') || 
+                        (selectedUserRow.username === currentUsername || selectedUserRow.fullName === currentUsername)) && (
+                        <button
+                          type="button"
+                          onClick={() => setIsEditing(true)}
+                          style={{
+                            flex: 1,
+                            padding: '0.5rem 1.5rem',
+                            backgroundColor: '#dbeafe',
+                            color: '#1d4ed8',
+                            border: '1px solid #bfdbfe',
+                            borderRadius: '0.375rem',
+                            fontWeight: '500',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Edit
+                        </button>
+                      )}
+                      
+                      {/* Archive/Unarchive button - only for admins */}
+                      {can(effectiveRoleIds, 'users.archive') && (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const userRef = doc(db, 'users', selectedUserRow.id);
+                            if (selectedUserRow.archived) {
+                              await updateDoc(userRef, { archived: false, archivedAt: null });
+                            } else {
+                              await updateDoc(userRef, { archived: true, archivedAt: new Date().toISOString() });
+                            }
+                            await loadUsers();
+                          }}
+                          style={{
+                            flex: 1,
+                            padding: '0.5rem 1.5rem',
+                            backgroundColor: selectedUserRow.archived ? '#dcfce7' : '#fee2e2',
+                            color: selectedUserRow.archived ? '#15803d' : '#b91c1c',
+                            border: selectedUserRow.archived ? '1px solid #bbf7d0' : '1px solid #fecaca',
+                            borderRadius: '0.375rem',
+                            fontWeight: '500',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          {selectedUserRow.archived ? 'Unarchive' : 'Archive'}
+                        </button>
+                      )}
+                    </div>
+                  )}
+
                   {/* Action Buttons */}
                   {canEditUserDetails && (
                     <div style={{
@@ -1963,7 +2023,7 @@ export function Users() {
                 <table style={{
                   width: '100%',
                   borderCollapse: 'collapse',
-                  minWidth: '800px'
+                  minWidth: isMobile ? '290px' : '800px'
                 }}>
                   <thead>
                     <tr style={{

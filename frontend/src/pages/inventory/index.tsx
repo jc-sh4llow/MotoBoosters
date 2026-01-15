@@ -1,7 +1,7 @@
 import { FaHome, FaGripLinesVertical, FaBars, FaWarehouse, FaTag, FaWrench, FaFileInvoice, FaPlus, FaUser, FaSearch, FaTimes, FaChevronDown, FaFilter, FaUndoAlt, FaCog, FaFileExcel, FaTrash } from 'react-icons/fa';
 
 import { useNavigate } from 'react-router-dom';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Footer } from '../../components/Footer';
 import { collection, doc, addDoc, getDocs, updateDoc, deleteDoc, query, where, getDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
@@ -133,7 +133,7 @@ export function Inventory() {
   const [searchTerm, setSearchTerm] = useState('');
   const itemDetailsRef = useRef<HTMLDivElement | null>(null);
   const itemDetailsToggleRef = useRef<HTMLButtonElement | null>(null);
-
+  const [hoveredStatusDocId, setHoveredStatusDocId] = useState<string | null>(null);
 
   const showType = viewportWidth >= 992; // Hide on tablet and below (768-991px)
   const showPurchasePrice = canViewPurchasePrice && viewportWidth >= 992; // Hide on tablet and below
@@ -141,7 +141,12 @@ export function Inventory() {
   const showDiscountMarkup = viewportWidth >= 1200; // Hide on small desktop and below
   const showRemarks = viewportWidth >= 1200; // Hide on small desktop and below
 
-  const collapseItemDetails = () => {
+  // Mobile-specific column visibility
+  const showBrandColumn = !isMobile; // Hide Brand column on mobile (merged with Item Name)
+  const showItemNameColumn = true; // Always show (becomes "Item" column on mobile with brand subscript)
+  const showAvailableStockColumn = !isMobile; // Hide on mobile (shown in status tooltip/expand)
+
+  const collapseItemDetails = useCallback(() => {
     setSelectedInventoryItem(null);
     setFormItem({
       id: '',
@@ -171,7 +176,7 @@ export function Inventory() {
     setHasUnsavedChanges(false);
     setIsEditMode(false);
     setIsItemDetailsExpanded(false);
-  };
+  }, []);
 
   useEffect(() => {
     if (!isItemDetailsExpanded) return;
@@ -191,7 +196,8 @@ export function Inventory() {
 
     document.addEventListener('pointerdown', handlePointerDown);
     return () => document.removeEventListener('pointerdown', handlePointerDown);
-  }, [isItemDetailsExpanded]);
+  }, [isItemDetailsExpanded, collapseItemDetails]);
+
   useEffect(() => {
     const handleResize = () => {
       const width = window.innerWidth;
@@ -1887,6 +1893,7 @@ export function Inventory() {
                   backgroundColor: 'var(--panel-header-bg)'
                 }}>
                   <button
+                    ref={itemDetailsToggleRef}
                     onClick={() => {
                       const next = !isItemDetailsExpanded;
                       setIsItemDetailsExpanded(next);
@@ -3754,18 +3761,22 @@ export function Inventory() {
                                 />
                               </th>
                             )}
-                            <th
-                              style={{ padding: '0.75rem 1.5rem', cursor: 'pointer' }}
-                              onClick={() => handleHeaderSort('brand')}
-                            >
-                              BRAND
-                            </th>
-                            <th
-                              style={{ padding: '0.75rem 1.5rem', cursor: 'pointer' }}
-                              onClick={() => handleHeaderSort('itemName')}
-                            >
-                              ITEM NAME
-                            </th>
+                            {showBrandColumn && (
+                              <th
+                                style={{ padding: '0.75rem 1.5rem', cursor: 'pointer' }}
+                                onClick={() => handleHeaderSort('brand')}
+                              >
+                                BRAND
+                              </th>
+                            )}
+                            {showItemNameColumn && (
+                              <th
+                                style={{ padding: '0.75rem 1.5rem', cursor: 'pointer' }}
+                                onClick={() => handleHeaderSort('itemName')}
+                              >
+                                {isMobile ? 'ITEM' : 'ITEM NAME'}
+                              </th>
+                            )}
                             {showType && (
                               <th
                                 style={{ padding: '0.75rem 1.5rem', textAlign: 'center', cursor: 'pointer' }}
@@ -3786,14 +3797,16 @@ export function Inventory() {
                               style={{ padding: '0.75rem 1.5rem', textAlign: 'center', cursor: 'pointer' }}
                               onClick={() => handleHeaderSort('srp')}
                             >
-                              SRP
+                              {isMobile && canViewPurchasePrice ? 'PRICE' : 'SRP'}
                             </th>
-                            <th
-                              style={{ padding: '0.75rem 1.5rem', textAlign: 'center', cursor: 'pointer' }}
-                              onClick={() => handleHeaderSort('available')}
-                            >
-                              AVAILABLE STOCK
-                            </th>
+                            {showAvailableStockColumn && (
+                              <th
+                                style={{ padding: '0.75rem 1.5rem', textAlign: 'center', cursor: 'pointer' }}
+                                onClick={() => handleHeaderSort('available')}
+                              >
+                                AVAILABLE STOCK
+                              </th>
+                            )}
                             {showSold && (
                               <th
                                 style={{ padding: '0.75rem 1.5rem', textAlign: 'center', cursor: 'pointer' }}
@@ -3925,9 +3938,23 @@ export function Inventory() {
                                   </td>
                                 )}
                                 <>
-                                  {/* Full table view */}
-                                  <td style={{ padding: '1rem 1.5rem' }}>{item.brand}</td>
-                                  <td style={{ padding: '1rem 1.5rem' }}>{item.itemName}</td>
+                                  {/* Brand column - desktop only */}
+                                  {showBrandColumn && (
+                                    <td style={{ padding: '1rem 1.5rem' }}>{item.brand}</td>
+                                  )}
+                                  {/* Item Name column - with brand subscript on mobile */}
+                                  {showItemNameColumn && (
+                                    <td style={{ padding: '1rem 1.5rem' }}>
+                                      <div>
+                                        <div>{item.itemName}</div>
+                                        {isMobile && (
+                                          <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
+                                            {item.brand}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </td>
+                                  )}
                                   {showType && (
                                     <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>{item.type || item.itemType}</td>
                                   )}
@@ -3937,13 +3964,32 @@ export function Inventory() {
                                     </td>
                                   )}
                                   <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>
-                                    ₱{Number(item.sellingPrice ?? 0).toFixed(2)}
+                                    <div>
+                                      <div>₱{Number(item.sellingPrice ?? 0).toFixed(2)}</div>
+                                      {isMobile && canViewPurchasePrice && (
+                                        <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
+                                          ₱{Number(item.purchasePrice ?? 0).toFixed(2)}
+                                        </div>
+                                      )}
+                                    </div>
                                   </td>
-                                  <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>{available}</td>
+                                  {showAvailableStockColumn && !isMobile && (
+                                    <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>{available}</td>
+                                  )}
                                   {showSold && (
                                     <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>{item.soldCount ?? 0}</td>
                                   )}
-                                  <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>
+                                  <td 
+                                    style={{ padding: '1rem 1.5rem', textAlign: 'center', position: 'relative' }}
+                                    onMouseEnter={() => isMobile && setHoveredStatusDocId(item.docId)}
+                                    onMouseLeave={() => isMobile && setHoveredStatusDocId(null)}
+                                    onClick={(e) => {
+                                      if (isMobile) {
+                                        e.stopPropagation();
+                                        setHoveredStatusDocId(hoveredStatusDocId === item.docId ? null : item.docId);
+                                      }
+                                    }}
+                                  >
                                     <span style={{
                                       display: 'inline-block',
                                       padding: '0.25rem 0.75rem',
@@ -3952,9 +3998,40 @@ export function Inventory() {
                                       fontWeight: 600,
                                       backgroundColor: statusStyles.bg,
                                       color: statusStyles.color,
+                                      cursor: isMobile ? 'pointer' : 'default',
                                     }}>
                                       {status}
                                     </span>
+                                    {isMobile && hoveredStatusDocId === item.docId && (
+                                      <div style={{
+                                        position: 'absolute',
+                                        top: '100%',
+                                        left: '50%',
+                                        transform: 'translateX(-50%)',
+                                        marginTop: '0.25rem',
+                                        backgroundColor: '#1f2937',
+                                        color: 'white',
+                                        padding: '0.375rem 0.625rem',
+                                        borderRadius: '0.375rem',
+                                        fontSize: '0.75rem',
+                                        whiteSpace: 'nowrap',
+                                        zIndex: 10,
+                                        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                                      }}>
+                                        Stock: {available}
+                                        <div style={{
+                                          position: 'absolute',
+                                          top: '-4px',
+                                          left: '50%',
+                                          transform: 'translateX(-50%)',
+                                          width: 0,
+                                          height: 0,
+                                          borderLeft: '4px solid transparent',
+                                          borderRight: '4px solid transparent',
+                                          borderBottom: '4px solid #1f2937',
+                                        }} />
+                                      </div>
+                                    )}
                                   </td>
                                   {showDiscountMarkup && (
                                     <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>

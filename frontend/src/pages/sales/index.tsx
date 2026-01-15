@@ -465,16 +465,27 @@ export function Sales() {
                   }}
                 />
               </div>
-              <h1 style={{
-                fontSize: '1.875rem',
-                fontWeight: 'bold',
-                color: 'var(--text-primary)',
-                margin: 0,
+              {/* Container for title + welcome message (mobile: stacked, desktop: inline) */}
+              <div style={{
+                display: 'flex',
+                flexDirection: isMobile ? 'column' : 'row',
+                alignItems: isMobile ? 'flex-start' : 'baseline',
+                gap: isMobile ? '0.25rem' : '0.75rem'
               }}>
-                Item Sales
-              </h1>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginLeft: '1rem' }}>
-                <span style={{ color: '#374151', fontSize: '0.9rem' }}>
+                <h1 style={{
+                  fontSize: isMobile ? '1.5rem' : '1.875rem',
+                  fontWeight: 'bold',
+                  color: 'var(--header-title)',
+                  margin: 0,
+                  lineHeight: isMobile ? '1.75rem' : 'normal',
+                }}>
+                  Item Sales
+                </h1>
+                <span style={{
+                  color: 'var(--text)',
+                  fontSize: isMobile ? '0.75rem' : '0.9rem',
+                  marginLeft: isMobile ? '0' : '1rem',
+                }}>
                   Welcome, {user?.name || 'Guest'}
                 </span>
               </div>
@@ -482,58 +493,61 @@ export function Sales() {
 
             {/* Right: search bar, Logout, navbar toggle */}
             <div style={{ display: 'flex', alignItems: 'center', marginLeft: 'auto' }}>
-              <div style={{
-                position: 'relative',
-                display: 'flex',
-                alignItems: 'center',
-                marginRight: '1rem'
-              }}>
-                <FaSearch style={{
-                  position: 'absolute',
-                  left: '12px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  color: '#9ca3af'
-                }} />
-                <input
-                  type="text"
-                  placeholder="Search sales..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  style={{
-                    padding: '0.5rem 2.5rem 0.5rem 2.5rem',
-                    borderRadius: '0.5rem',
-                    border: '1px solid #d1d5db',
-                    backgroundColor: 'rgba(255, 255, 255)',
-                    color: '#1f2937',
-                    width: '320px',
-                    outline: 'none'
-                  }}
-                />
-                {searchTerm && (
-                  <button
-                    onClick={() => setSearchTerm('')}
+              {/* Search bar - desktop only, hidden on mobile */}
+              {!isMobile && (
+                <div style={{
+                  position: 'relative',
+                  display: 'flex',
+                  alignItems: 'center',
+                  marginRight: '1rem'
+                }}>
+                  <FaSearch style={{
+                    position: 'absolute',
+                    left: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    color: '#9ca3af'
+                  }} />
+                  <input
+                    type="text"
+                    placeholder="Search sales..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
                     style={{
-                      position: 'absolute',
-                      right: '8px',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      background: 'transparent',
-                      border: 'none',
-                      color: '#9ca3af',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      padding: '4px'
+                      padding: '0.5rem 2.5rem 0.5rem 2.5rem',
+                      borderRadius: '0.5rem',
+                      border: '1px solid #d1d5db',
+                      backgroundColor: 'rgba(255, 255, 255)',
+                      color: '#1f2937',
+                      width: '320px',
+                      outline: 'none'
                     }}
-                  >
-                    <FaTimes size={14} />
-                  </button>
-                )}
-              </div>
+                  />
+                  {searchTerm && (
+                    <button
+                      onClick={() => setSearchTerm('')}
+                      style={{
+                        position: 'absolute',
+                        right: '8px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#9ca3af',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '4px'
+                      }}
+                    >
+                      <FaTimes size={14} />
+                    </button>
+                  )}
+                </div>
+              )}
 
-              {user && (
+              {user && !isMobile && (
                 <button
                   onClick={() => {
                     logout();
@@ -592,6 +606,14 @@ export function Sales() {
                 isNavExpanded={isNavExpanded}
                 setIsNavExpanded={setIsNavExpanded}
                 isMobile={isMobile}
+                currentPage="sales"
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+                onLogout={() => {
+                  logout();
+                  navigate('/login');
+                }}
+                userName={user?.name}
                 onMouseEnter={() => {
                   if (!isMobile && closeMenuTimeout) {
                     clearTimeout(closeMenuTimeout);
@@ -663,8 +685,15 @@ export function Sales() {
                     </button>
                   </div>
 
-                  {/* Center: Type toggle buttons */}
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  {/* Center: Type toggle buttons - horizontally scrollable on small devices */}
+                  <div style={{
+                    display: 'flex',
+                    gap: '0.5rem',
+                    overflowX: 'auto',
+                    flex: isMobile ? '1' : 'initial',
+                    WebkitOverflowScrolling: 'touch',
+                    scrollbarWidth: 'thin',
+                  }}>
                     {[
                       { key: 'all', label: 'All' },
                       { key: 'parts', label: 'Parts Only' },
@@ -685,6 +714,8 @@ export function Sales() {
                           cursor: 'pointer',
                           height: '40px',
                           transition: 'all 0.2s',
+                          whiteSpace: 'nowrap',
+                          flexShrink: 0,
                         }}
                       >
                         {tab.label}
@@ -802,34 +833,34 @@ export function Sales() {
                         const month = calendarViewDate.getMonth();
                         const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
                         const dayNames = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-                        
+
                         const firstDayOfMonth = new Date(year, month, 1).getDay();
                         const daysInMonth = new Date(year, month + 1, 0).getDate();
                         const days: (number | null)[] = [];
-                        
+
                         for (let i = 0; i < firstDayOfMonth; i++) days.push(null);
                         for (let i = 1; i <= daysInMonth; i++) days.push(i);
-                        
+
                         const isDateDisabled = (day: number) => {
                           const date = new Date(year, month, day);
                           return date < minDate || date > maxDate;
                         };
-                        
+
                         const isDateSelected = (day: number) => {
                           const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                           return dateStr === customStart || dateStr === customEnd;
                         };
-                        
+
                         const isDateInRange = (day: number) => {
                           if (!customStart || !customEnd) return false;
                           const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                           return dateStr > customStart && dateStr < customEnd;
                         };
-                        
+
                         const handleDayClick = (day: number) => {
                           if (isDateDisabled(day)) return;
                           const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                          
+
                           if (selectingDate === 'start') {
                             setCustomStart(dateStr);
                             setSelectingDate('end');
@@ -843,10 +874,10 @@ export function Sales() {
                             setSelectingDate('start');
                           }
                         };
-                        
+
                         const canGoPrev = new Date(year, month - 1, 1) >= new Date(minDate.getFullYear(), minDate.getMonth(), 1);
                         const canGoNext = new Date(year, month + 1, 1) <= new Date(maxDate.getFullYear(), maxDate.getMonth(), 1);
-                        
+
                         return (
                           <div style={{
                             position: 'absolute',
@@ -904,7 +935,7 @@ export function Sales() {
                                 />
                               </div>
                             </div>
-                            
+
                             {/* Calendar header */}
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', position: 'relative' }}>
                               <button
@@ -955,7 +986,7 @@ export function Sales() {
                               >
                                 {'>'}
                               </button>
-                              
+
                               {/* Month Picker Dropdown */}
                               {showMonthPicker && (
                                 <div style={{
@@ -976,8 +1007,8 @@ export function Sales() {
                                   minWidth: '180px'
                                 }}>
                                   {monthNames.map((m, idx) => {
-                                    const isDisabled = (year === minDate.getFullYear() && idx < minDate.getMonth()) || 
-                                                       (year === maxDate.getFullYear() && idx > maxDate.getMonth());
+                                    const isDisabled = (year === minDate.getFullYear() && idx < minDate.getMonth()) ||
+                                      (year === maxDate.getFullYear() && idx > maxDate.getMonth());
                                     return (
                                       <div
                                         key={m}
@@ -1007,14 +1038,14 @@ export function Sales() {
                                   })}
                                 </div>
                               )}
-                              
+
                               {/* Year Picker Dropdown */}
                               {showYearPicker && (() => {
                                 const minYear = minDate.getFullYear();
                                 const maxYear = maxDate.getFullYear();
                                 const years: number[] = [];
                                 for (let y = minYear; y <= maxYear; y++) years.push(y);
-                                
+
                                 return (
                                   <div style={{
                                     position: 'absolute',
@@ -1063,7 +1094,7 @@ export function Sales() {
                                 );
                               })()}
                             </div>
-                            
+
                             {/* Day names */}
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px', marginBottom: '0.25rem' }}>
                               {dayNames.map(d => (
@@ -1072,7 +1103,7 @@ export function Sales() {
                                 </div>
                               ))}
                             </div>
-                            
+
                             {/* Calendar days */}
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px' }}>
                               {days.map((day, idx) => (
@@ -1105,7 +1136,7 @@ export function Sales() {
                                 </div>
                               ))}
                             </div>
-                            
+
                             {/* Action buttons */}
                             <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid #e5e7eb' }}>
                               <button

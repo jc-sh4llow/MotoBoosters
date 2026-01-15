@@ -823,14 +823,41 @@ export function Transactions() {
                     </div>
 
                     {/* Row 2: Export, Select, Filters, Clear Filters */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
-                      {/* Left side buttons */}
-                      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                        {canExportTransactions && (
+                    <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: isMobile ? 'center' : 'space-between', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      {/* Desktop: Left side buttons | Mobile: All buttons stacked */}
+                      {!isMobile && (
+                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                          {canExportTransactions && (
+                            <button
+                              onClick={handleExportCsv}
+                              style={{
+                                backgroundColor: '#059669',
+                                color: 'white',
+                                padding: '0.5rem 1rem',
+                                borderRadius: '0.375rem',
+                                border: 'none',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                                fontWeight: 500,
+                                fontSize: '0.875rem',
+                                height: '40px',
+                                transition: 'background-color 0.2s',
+                              }}
+                              onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#047857'}
+                              onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#059669'}
+                            >
+                              Export to CSV <FaFileExcel />
+                            </button>
+                          )}
                           <button
-                            onClick={handleExportCsv}
+                            onClick={() => {
+                              setIsSelectMode(!isSelectMode);
+                              if (isSelectMode) setSelectedItems(new Set());
+                            }}
                             style={{
-                              backgroundColor: '#059669',
+                              backgroundColor: isSelectMode ? '#dc2626' : '#3b82f6',
                               color: 'white',
                               padding: '0.5rem 1rem',
                               borderRadius: '0.375rem',
@@ -844,45 +871,20 @@ export function Transactions() {
                               height: '40px',
                               transition: 'background-color 0.2s',
                             }}
-                            onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#047857'}
-                            onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#059669'}
+                            onMouseOver={(e) => e.currentTarget.style.backgroundColor = isSelectMode ? '#b91c1c' : '#2563eb'}
+                            onMouseOut={(e) => e.currentTarget.style.backgroundColor = isSelectMode ? '#dc2626' : '#3b82f6'}
                           >
-                            Export to CSV <FaFileExcel />
+                            {isSelectMode ? 'Cancel' : 'Select'}
                           </button>
-                        )}
-                        <button
-                          onClick={() => {
-                            setIsSelectMode(!isSelectMode);
-                            if (isSelectMode) setSelectedItems(new Set());
-                          }}
-                          style={{
-                            backgroundColor: isSelectMode ? '#dc2626' : '#3b82f6',
-                            color: 'white',
-                            padding: '0.5rem 1rem',
-                            borderRadius: '0.375rem',
-                            border: 'none',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.5rem',
-                            fontWeight: 500,
-                            fontSize: '0.875rem',
-                            height: '40px',
-                            transition: 'background-color 0.2s',
-                          }}
-                          onMouseOver={(e) => e.currentTarget.style.backgroundColor = isSelectMode ? '#b91c1c' : '#2563eb'}
-                          onMouseOut={(e) => e.currentTarget.style.backgroundColor = isSelectMode ? '#dc2626' : '#3b82f6'}
-                        >
-                          {isSelectMode ? 'Cancel' : 'Select'}
-                        </button>
-                      </div>
+                        </div>
+                      )}
 
-                      {/* Right side buttons */}
-                      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      {/* Mobile: Export Button (full width) */}
+                      {isMobile && canExportTransactions && (
                         <button
-                          onClick={() => setShowFilters(!showFilters)}
+                          onClick={handleExportCsv}
                           style={{
-                            backgroundColor: '#1e40af',
+                            backgroundColor: '#059669',
                             color: 'white',
                             padding: '0.5rem 1rem',
                             borderRadius: '0.375rem',
@@ -894,44 +896,152 @@ export function Transactions() {
                             fontWeight: 500,
                             fontSize: '0.875rem',
                             height: '40px',
-                            transition: 'background-color 0.2s',
+                            width: '100%',
+                            maxWidth: '300px',
+                            justifyContent: 'center'
                           }}
-                          onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#1e3a8a'}
-                          onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#1e40af'}
                         >
-                          Filters <FaFilter />
+                          Export to CSV <FaFileExcel />
                         </button>
-                        <button
-                          onClick={() => {
-                            setStartDate('');
-                            setEndDate('');
-                            setTransactionType('');
-                            setMinPrice('');
-                            setMaxPrice('');
-                            setStatusFilter('');
-                            setSortBy('date-desc');
-                          }}
-                          style={{
-                            backgroundColor: '#6b7280',
-                            color: 'white',
-                            padding: '0.5rem 1rem',
-                            borderRadius: '0.375rem',
-                            border: 'none',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.5rem',
-                            fontWeight: 500,
-                            fontSize: '0.875rem',
-                            height: '40px',
-                            transition: 'background-color 0.2s',
-                          }}
-                          onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#4b5563'}
-                          onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#6b7280'}
-                        >
-                          Clear Filters
-                        </button>
-                      </div>
+                      )}
+
+                      {/* Desktop: Right side buttons | Mobile: Filters button (full width) */}
+                      {!isMobile ? (
+                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                          <button
+                            onClick={() => setShowFilters(!showFilters)}
+                            style={{
+                              backgroundColor: '#1e40af',
+                              color: 'white',
+                              padding: '0.5rem 1rem',
+                              borderRadius: '0.375rem',
+                              border: 'none',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.5rem',
+                              fontWeight: 500,
+                              fontSize: '0.875rem',
+                              height: '40px',
+                              transition: 'background-color 0.2s',
+                            }}
+                            onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#1e3a8a'}
+                            onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#1e40af'}
+                          >
+                            Filters <FaFilter />
+                          </button>
+                          <button
+                            onClick={() => {
+                              setStartDate('');
+                              setEndDate('');
+                              setTransactionType('');
+                              setMinPrice('');
+                              setMaxPrice('');
+                              setStatusFilter('');
+                              setSortBy('date-desc');
+                            }}
+                            style={{
+                              backgroundColor: '#6b7280',
+                              color: 'white',
+                              padding: '0.5rem 1rem',
+                              borderRadius: '0.375rem',
+                              border: 'none',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.5rem',
+                              fontWeight: 500,
+                              fontSize: '0.875rem',
+                              height: '40px',
+                              transition: 'background-color 0.2s',
+                            }}
+                            onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#4b5563'}
+                            onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#6b7280'}
+                          >
+                            Clear Filters
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => setShowFilters(!showFilters)}
+                            style={{
+                              backgroundColor: '#1e40af',
+                              color: 'white',
+                              padding: '0.5rem 1rem',
+                              borderRadius: '0.375rem',
+                              border: 'none',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.5rem',
+                              fontWeight: 500,
+                              fontSize: '0.875rem',
+                              height: '40px',
+                              width: '100%',
+                              maxWidth: '300px',
+                              justifyContent: 'center'
+                            }}
+                          >
+                            Filters <FaFilter />
+                          </button>
+                          <button
+                            onClick={() => {
+                              setStartDate('');
+                              setEndDate('');
+                              setTransactionType('');
+                              setMinPrice('');
+                              setMaxPrice('');
+                              setStatusFilter('');
+                              setSortBy('date-desc');
+                            }}
+                            style={{
+                              backgroundColor: '#6b7280',
+                              color: 'white',
+                              padding: '0.5rem 1rem',
+                              borderRadius: '0.375rem',
+                              border: 'none',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.5rem',
+                              fontWeight: 500,
+                              fontSize: '0.875rem',
+                              height: '40px',
+                              width: '100%',
+                              maxWidth: '300px',
+                              justifyContent: 'center'
+                            }}
+                          >
+                            Clear Filters
+                          </button>
+                          <button
+                            onClick={() => {
+                              setIsSelectMode(!isSelectMode);
+                              if (isSelectMode) setSelectedItems(new Set());
+                            }}
+                            style={{
+                              backgroundColor: isSelectMode ? '#dc2626' : '#3b82f6',
+                              color: 'white',
+                              padding: '0.5rem 1rem',
+                              borderRadius: '0.375rem',
+                              border: 'none',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.5rem',
+                              fontWeight: 500,
+                              fontSize: '0.875rem',
+                              height: '40px',
+                              width: '100%',
+                              maxWidth: '300px',
+                              justifyContent: 'center'
+                            }}
+                          >
+                            {isSelectMode ? 'Cancel' : 'Select'}
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 )}

@@ -2054,9 +2054,9 @@ export function Services() {
                       style={{
                         position: 'relative',
                         width: '100%',
-                        maxWidth: '900px',
+                        maxWidth: isMobile ? '100%' : '900px',
                         margin: '0 auto',
-                        padding: '0 1rem'
+                        padding: isMobile ? '0 0.5rem' : '0 1rem'
                       }}
                     >
                       <div

@@ -2183,6 +2183,130 @@ export function Transactions() {
                           </div>
                         )}
                       </div>
+
+                      {/* Action Buttons - Mobile Only */}
+                      {isMobile && (
+                        <div style={{ 
+                          marginTop: '1.5rem', 
+                          paddingTop: '1rem', 
+                          borderTop: '1px solid #e5e7eb',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '0.75rem'
+                        }}>
+                          {/* Mark as Complete Button */}
+                          {selectedTransaction.status === 'Pending' && !selectedTransaction.archived && (
+                            <button
+                              style={{
+                                padding: '0.75rem 1rem',
+                                fontSize: '0.875rem',
+                                borderRadius: '0.5rem',
+                                border: 'none',
+                                cursor: 'pointer',
+                                backgroundColor: '#10b981',
+                                color: 'white',
+                                fontWeight: 500,
+                                width: '100%'
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setIsModalOpen(false);
+                                openPaymentReview(selectedTransaction);
+                              }}
+                            >
+                              Mark as Complete
+                            </button>
+                          )}
+
+                          {/* Archive Button */}
+                          {canArchiveTransactions && !selectedTransaction.archived && (
+                            <button
+                              style={{
+                                padding: '0.75rem 1rem',
+                                fontSize: '0.875rem',
+                                borderRadius: '0.5rem',
+                                border: 'none',
+                                cursor: 'pointer',
+                                backgroundColor: '#f59e0b',
+                                color: 'white',
+                                fontWeight: 500,
+                                width: '100%'
+                              }}
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                const txRef = doc(db, 'transactions', selectedTransaction.id);
+                                await updateDoc(txRef, { archived: true });
+                                setIsModalOpen(false);
+                              }}
+                            >
+                              Archive
+                            </button>
+                          )}
+
+                          {/* Archived Status and Actions */}
+                          {selectedTransaction.archived && (
+                            <>
+                              <div style={{
+                                fontSize: '0.875rem',
+                                color: '#9ca3af',
+                                textAlign: 'center',
+                                fontWeight: 500
+                              }}>
+                                This transaction is archived
+                              </div>
+
+                              {/* Unarchive Button */}
+                              {canUnarchiveTransactions && (
+                                <button
+                                  style={{
+                                    padding: '0.75rem 1rem',
+                                    fontSize: '0.875rem',
+                                    borderRadius: '0.5rem',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    backgroundColor: '#3b82f6',
+                                    color: 'white',
+                                    fontWeight: 500,
+                                    width: '100%'
+                                  }}
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    const txRef = doc(db, 'transactions', selectedTransaction.id);
+                                    await updateDoc(txRef, { archived: false });
+                                    setIsModalOpen(false);
+                                  }}
+                                >
+                                  Unarchive
+                                </button>
+                              )}
+
+                              {/* Delete Button */}
+                              {canDeleteTransactions && (
+                                <button
+                                  style={{
+                                    padding: '0.75rem 1rem',
+                                    fontSize: '0.875rem',
+                                    borderRadius: '0.5rem',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    backgroundColor: '#ef4444',
+                                    color: 'white',
+                                    fontWeight: 500,
+                                    width: '100%'
+                                  }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setIsModalOpen(false);
+                                    setActionConfirm({ mode: 'delete', transaction: selectedTransaction });
+                                  }}
+                                >
+                                  Delete
+                                </button>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}

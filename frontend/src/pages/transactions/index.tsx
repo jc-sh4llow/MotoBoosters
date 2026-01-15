@@ -1223,7 +1223,8 @@ export function Transactions() {
                           type="button"
                           onClick={() => { setSelectingDate('start'); setShowCalendarPicker(!showCalendarPicker); setShowMonthPicker(false); setShowYearPicker(false); }}
                           style={{
-                            flex: 1,
+                            width: isMobile ? '100%' : 'auto',
+                            flex: isMobile ? 'none' : 1,
                             padding: '0.5rem',
                             borderRadius: '0.375rem',
                             border: '1px solid #d1d5db',
@@ -1241,7 +1242,8 @@ export function Transactions() {
                           type="button"
                           onClick={() => { setSelectingDate('end'); setShowCalendarPicker(!showCalendarPicker); setShowMonthPicker(false); setShowYearPicker(false); }}
                           style={{
-                            flex: 1,
+                            width: isMobile ? '100%' : 'auto',
+                            flex: isMobile ? 'none' : 1,
                             padding: '0.5rem',
                             borderRadius: '0.375rem',
                             border: '1px solid #d1d5db',

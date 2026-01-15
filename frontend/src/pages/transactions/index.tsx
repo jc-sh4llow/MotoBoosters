@@ -1986,21 +1986,23 @@ export function Transactions() {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    zIndex: 2000
+                    zIndex: 2000,
+                    padding: isMobile ? '1rem' : '0'
                   }}>
                     <div style={{
                       backgroundColor: 'var(--surface-elevated)',
                       borderRadius: '0.75rem',
-                      padding: '1.5rem 2rem',
-                      maxWidth: '600px',
+                      padding: isMobile ? '1rem' : '1.5rem 2rem',
+                      maxWidth: isMobile ? '100%' : '600px',
                       width: '100%',
-                      maxHeight: '80vh',
+                      maxHeight: '90vh',
                       overflowY: 'auto',
                       boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
-                      color: 'var(--text-primary)'
+                      color: 'var(--text-primary)',
+                      margin: isMobile ? '0' : 'auto'
                     }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                        <h3 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0 }}>
+                        <h3 style={{ fontSize: isMobile ? '1rem' : '1.25rem', fontWeight: 600, margin: 0, lineHeight: 1.2 }}>
                           Transaction Details – {selectedTransaction.transactionCode || selectedTransaction.id}
                         </h3>
                         <button
@@ -2008,9 +2010,13 @@ export function Transactions() {
                           style={{
                             background: 'transparent',
                             border: 'none',
-                            fontSize: '1.25rem',
+                            fontSize: '1.5rem',
                             cursor: 'pointer',
-                            color: '#6b7280'
+                            color: '#6b7280',
+                            padding: '0.25rem',
+                            lineHeight: 1,
+                            minWidth: '32px',
+                            minHeight: '32px'
                           }}
                         >
                           ×
@@ -2018,37 +2024,42 @@ export function Transactions() {
                       </div>
 
                       {/* Basic info */}
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '0.75rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>
+                      <div style={{ 
+                        display: 'grid', 
+                        gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, minmax(0, 1fr))', 
+                        gap: isMobile ? '0.5rem' : '0.75rem', 
+                        marginBottom: '1rem', 
+                        color: 'var(--text-primary)' 
+                      }}>
                         <div>
                           <div style={{ fontSize: '0.75rem', color: 'var(--field-label-text)' }}>Date</div>
-                          <div style={{ fontSize: '0.9rem', fontWeight: 500 }}>
+                          <div style={{ fontSize: '0.875rem', fontWeight: 500 }}>
                             {new Date(selectedTransaction.date).toLocaleDateString()}
                           </div>
                         </div>
                         <div>
                           <div style={{ fontSize: '0.75rem', color: 'var(--field-label-text)' }}>Customer</div>
-                          <div style={{ fontSize: '0.9rem', fontWeight: 500 }}>{selectedTransaction.customer}</div>
+                          <div style={{ fontSize: '0.875rem', fontWeight: 500 }}>{selectedTransaction.customer}</div>
                         </div>
                         <div>
                           <div style={{ fontSize: '0.75rem', color: 'var(--field-label-text)' }}>Type</div>
-                          <div style={{ fontSize: '0.9rem', fontWeight: 500 }}>{selectedTransaction.type}</div>
+                          <div style={{ fontSize: '0.875rem', fontWeight: 500 }}>{selectedTransaction.type}</div>
                         </div>
                         <div>
                           <div style={{ fontSize: '0.75rem', color: 'var(--field-label-text)' }}>Status</div>
-                          <div style={{ fontSize: '0.9rem', fontWeight: 500 }}>{selectedTransaction.status}</div>
+                          <div style={{ fontSize: '0.875rem', fontWeight: 500 }}>{selectedTransaction.status}</div>
                         </div>
                         <div>
                           <div style={{ fontSize: '0.75rem', color: 'var(--field-label-text)' }}>Items</div>
-                          <div style={{ fontSize: '0.9rem', fontWeight: 500 }}>{selectedTransaction.itemCount}</div>
+                          <div style={{ fontSize: '0.875rem', fontWeight: 500 }}>{selectedTransaction.itemCount}</div>
                         </div>
-
                         <div>
                           <div style={{ fontSize: '0.75rem', color: 'var(--field-label-text)' }}>Payment Type</div>
-                          <div style={{ fontSize: '0.9rem', fontWeight: 500 }}>{selectedTransaction.paymentType}</div>
+                          <div style={{ fontSize: '0.875rem', fontWeight: 500 }}>{selectedTransaction.paymentType}</div>
                         </div>
-                        <div>
+                        <div style={{ gridColumn: isMobile ? '1' : 'span 2' }}>
                           <div style={{ fontSize: '0.75rem', color: 'var(--field-label-text)' }}>Grand Total</div>
-                          <div style={{ fontSize: '1rem', fontWeight: 600 }}>
+                          <div style={{ fontSize: '1.125rem', fontWeight: 600, color: '#059669' }}>
                             ₱{selectedTransaction.grandTotal.toLocaleString()}
                           </div>
                         </div>

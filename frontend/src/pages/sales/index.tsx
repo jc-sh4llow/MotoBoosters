@@ -72,6 +72,8 @@ export function Sales() {
   const filtersRef = useRef<HTMLDivElement>(null);
   const actionBarRef = useRef<HTMLDivElement>(null);
   const [firestoreSales, setFirestoreSales] = useState<SaleItem[]>([]);
+  const [selectedSale, setSelectedSale] = useState<SaleItem | null>(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
   // Responsive column visibility helpers
   // Priority: Item Name > Quantity > Total Amount > Date > Transaction ID > Item Code > Customer > Unit Price

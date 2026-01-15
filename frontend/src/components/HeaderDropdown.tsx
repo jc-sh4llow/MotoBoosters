@@ -133,8 +133,8 @@ export function HeaderDropdown({
             backgroundColor: '#f9fafb',
             borderBottom: '1px solid #e5e7eb',
           }}>
-            {/* Search Icon Button - Only show for Inventory page */}
-            {currentPage === 'inventory' && onSearchChange && (
+            {/* Search Icon Button - Show for pages with search functionality */}
+            {(currentPage === 'inventory' || currentPage === 'users') && onSearchChange && (
               <button
                 onClick={() => setIsSearchExpanded(!isSearchExpanded)}
                 style={{
@@ -183,8 +183,8 @@ export function HeaderDropdown({
             )}
           </div>
 
-          {/* Expandable Search Bar - Only for Inventory page */}
-          {currentPage === 'inventory' && onSearchChange && isSearchExpanded && (
+          {/* Expandable Search Bar - For pages with search functionality */}
+          {(currentPage === 'inventory' || currentPage === 'users') && onSearchChange && isSearchExpanded && (
             <div style={{
               padding: '0.75rem 1.25rem',
               backgroundColor: '#f9fafb',
@@ -204,7 +204,7 @@ export function HeaderDropdown({
                 />
                 <input
                   type="text"
-                  placeholder="Search by Brand or Item Name..."
+                  placeholder={currentPage === 'users' ? 'Search by Name or Username...' : 'Search by Brand or Item Name...'}
                   value={searchTerm || ''}
                   onChange={(e) => onSearchChange(e.target.value)}
                   style={{

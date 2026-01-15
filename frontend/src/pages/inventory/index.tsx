@@ -210,6 +210,7 @@ export function Inventory() {
 
   const [showFilters, setShowFilters] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
+  const [isActionBarExpanded, setIsActionBarExpanded] = useState(false);
   const [filters, setFilters] = useState({
     minPrice: '',
     maxPrice: '',
@@ -2009,9 +2010,9 @@ export function Inventory() {
                   padding: isItemDetailsExpanded ? '1.5rem' : '0 1.5rem',
                   backgroundColor: 'var(--panel-bg)'
                 }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
-                    {/* Left Column - Keep all your existing input fields here */}
-                    <div>
+                  <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: '1rem', order: isMobile ? 'initial' : 'unset' }}>
+                    {/* Left Column */}
+                    <div style={{ order: isMobile ? 0 : 'unset' }}>
                       {/* Item ID */}
                       <div style={{ marginBottom: '1rem' }}>
                         <label style={{
@@ -2177,8 +2178,8 @@ export function Inventory() {
                       </div>
                     </div>
 
-                    {/* Right Column - Keep all your existing input fields here */}
-                    <div>
+                    {/* Right Column */}
+                    <div style={{ order: isMobile ? 0 : 'unset' }}>
                       {/* Purchase Price */}
                       <div style={{ marginBottom: '1rem' }}>
                         <label style={{
@@ -2399,8 +2400,8 @@ export function Inventory() {
                         </div>
                       </div>
 
-                      {/* Remarks - Show in details section when column is hidden */}
-                      {!showRemarks && (
+                      {/* Remarks - Always show in details section on mobile, or when column is hidden on desktop */}
+                      {(isMobile || !showRemarks) && (
                         <div style={{ marginBottom: '1rem' }}>
                           <label style={{
                             display: 'block',
@@ -2733,23 +2734,367 @@ export function Inventory() {
                   marginBottom: '1rem',
                   border: '1px solid #e5e7eb'
                 }}>
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    width: '100%',
-                    marginBottom: showFilters ? '1rem' : 0
-                  }}>
-                    {/* Left side: Export + Select/Cancel + conditional Add Stock/Delete */}
-                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                      {/* Export to CSV Button - only show if user has export permission */}
-                      {canExportInventory && (
+                  {/* Desktop: Horizontal layout */}
+                  {viewportWidth >= 768 ? (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: showFilters ? '1rem' : 0 }}>
+                      {/* Left side buttons */}
+                      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        {/* Export to CSV Button - only show if user has export permission */}
+                        {canExportInventory && (
+                          <button
+                            type="button"
+                            onClick={handleExportInventoryCsv}
+                            style={{
+                              backgroundColor: '#059669',
+                              color: 'white',
+                              padding: '0.5rem 1rem',
+                              borderRadius: '0.375rem',
+                              border: 'none',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.5rem',
+                              fontWeight: 500,
+                              fontSize: '0.875rem',
+                              height: '40px',
+                              transition: 'background-color 0.2s',
+                            }}
+                            onMouseOver={(e) => {
+                              e.currentTarget.style.backgroundColor = '#047857';
+                            }}
+                            onMouseOut={(e) => {
+                              e.currentTarget.style.backgroundColor = '#059669';
+                            }}
+                          >
+                            Export to CSV <FaFileExcel />
+                          </button>
+                        )}
+
+                        {/* Select / Cancel Button - only show if user can add stock multiple OR archive */}
+                        {(canAddStockMultiple || canArchiveInventory) && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (isSelectMode) {
+                                exitSelectMode();
+                              } else {
+                                setIsSelectMode(true);
+                              }
+                            }}
+                            style={{
+                              backgroundColor: isSelectMode ? '#6b7280' : '#1d4ed8',
+                              color: 'white',
+                              padding: '0.5rem 1rem',
+                              borderRadius: '0.375rem',
+                              border: 'none',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.4rem',
+                              fontWeight: 500,
+                              fontSize: '0.875rem',
+                              height: '40px',
+                              transition: 'background-color 0.2s',
+                            }}
+                            onMouseOver={(e) => {
+                              e.currentTarget.style.backgroundColor = isSelectMode ? '#4b5563' : '#1e40af';
+                            }}
+                            onMouseOut={(e) => {
+                              e.currentTarget.style.backgroundColor = isSelectMode ? '#6b7280' : '#1d4ed8';
+                            }}
+                          >
+                            {isSelectMode ? 'Cancel' : 'Select'}
+                          </button>
+                        )}
+
+                        {/* Add Stock Button - only visible when Select mode is active */}
+                        {isSelectMode && canAddStockMultiple && (
+                          <button
+                            type="button"
+                            onClick={openBulkAddStock}
+                            style={{
+                              backgroundColor: '#1d4ed8',
+                              color: 'white',
+                              padding: '0.5rem 0.9rem',
+                              borderRadius: '0.375rem',
+                              border: 'none',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.4rem',
+                              fontWeight: 500,
+                              fontSize: '0.875rem',
+                              height: '40px',
+                              transition: 'background-color 0.2s',
+                            }}
+                            onMouseOver={(e) => {
+                              e.currentTarget.style.backgroundColor = '#1e40af';
+                            }}
+                            onMouseOut={(e) => {
+                              e.currentTarget.style.backgroundColor = '#1d4ed8';
+                            }}
+                          >
+                            <FaPlus /> Add Stock
+                          </button>
+                        )}
+
+                        {/* Bulk action buttons - visible when Select mode is active */}
+                        {isSelectMode && (() => {
+                          // Determine selection state
+                          const selectedItemsList = Array.from(selectedItems).map(docId =>
+                            firestoreItems.find(item => item.docId === docId)
+                          ).filter(Boolean);
+                          const archivedCount = selectedItemsList.filter(item => item?.archived).length;
+                          const unarchivedCount = selectedItemsList.length - archivedCount;
+                          const hasOnlyArchived = archivedCount > 0 && unarchivedCount === 0;
+                          const hasOnlyUnarchived = unarchivedCount > 0 && archivedCount === 0;
+                          const hasMixed = archivedCount > 0 && unarchivedCount > 0;
+
+                          return (
+                            <>
+                              {/* Archive Button - show for unarchived only OR mixed selection */}
+                              {canArchiveInventory && (hasOnlyUnarchived || hasMixed) && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (selectedItems.size === 0) {
+                                      setModalState({
+                                        open: true,
+                                        title: 'No Items Selected',
+                                        message: 'Please select at least one item to archive.',
+                                        variant: 'info',
+                                      });
+                                      return;
+                                    }
+                                    const itemsToArchive = selectedItemsList.filter(item => !item?.archived);
+                                    setModalState({
+                                      open: true,
+                                      title: 'Confirm Archive',
+                                      message: `Are you sure you want to archive ${itemsToArchive.length} item(s)?`,
+                                      variant: 'confirm',
+                                      onConfirm: async () => {
+                                        try {
+                                          for (const item of itemsToArchive) {
+                                            if (!item) continue;
+                                            const ref = doc(inventoryCollection, item.docId);
+                                            await updateDoc(ref, {
+                                              archived: true,
+                                              updatedAt: new Date().toISOString(),
+                                            });
+                                          }
+                                          await loadInventory();
+                                          exitSelectMode();
+                                          setModalState({
+                                            open: true,
+                                            title: 'Items Archived',
+                                            message: `${itemsToArchive.length} item(s) have been archived successfully.`,
+                                            variant: 'info',
+                                          });
+                                        } catch (err) {
+                                          console.error('Error archiving items', err);
+                                          setModalState({
+                                            open: true,
+                                            title: 'Archive Failed',
+                                            message: 'There was an error archiving the items. Please try again.',
+                                            variant: 'error',
+                                          });
+                                        }
+                                      },
+                                    });
+                                  }}
+                                  style={{
+                                    backgroundColor: '#dc2626',
+                                    color: 'white',
+                                    padding: '0.5rem 0.9rem',
+                                    borderRadius: '0.375rem',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.4rem',
+                                    fontWeight: 500,
+                                    fontSize: '0.875rem',
+                                    height: '40px',
+                                    transition: 'background-color 0.2s',
+                                  }}
+                                  onMouseOver={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#b91c1c';
+                                  }}
+                                  onMouseOut={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#dc2626';
+                                  }}
+                                >
+                                  <FaTrash /> Archive
+                                </button>
+                              )}
+
+                              {/* Unarchive Button - show for archived only OR mixed selection */}
+                              {canArchiveInventory && (hasOnlyArchived || hasMixed) && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (selectedItems.size === 0) {
+                                      setModalState({
+                                        open: true,
+                                        title: 'No Items Selected',
+                                        message: 'Please select at least one item to unarchive.',
+                                        variant: 'info',
+                                      });
+                                      return;
+                                    }
+                                    const itemsToUnarchive = selectedItemsList.filter(item => item?.archived);
+                                    setModalState({
+                                      open: true,
+                                      title: 'Confirm Unarchive',
+                                      message: `Are you sure you want to unarchive ${itemsToUnarchive.length} item(s)?`,
+                                      variant: 'confirm',
+                                      onConfirm: async () => {
+                                        try {
+                                          for (const item of itemsToUnarchive) {
+                                            if (!item) continue;
+                                            const ref = doc(inventoryCollection, item.docId);
+                                            await updateDoc(ref, {
+                                              archived: false,
+                                              updatedAt: new Date().toISOString(),
+                                            });
+                                          }
+                                          await loadInventory();
+                                          exitSelectMode();
+                                          setModalState({
+                                            open: true,
+                                            title: 'Items Unarchived',
+                                            message: `${itemsToUnarchive.length} item(s) have been restored.`,
+                                            variant: 'info',
+                                          });
+                                        } catch (err) {
+                                          console.error('Error unarchiving items', err);
+                                          setModalState({
+                                            open: true,
+                                            title: 'Unarchive Failed',
+                                            message: 'There was an error unarchiving the items. Please try again.',
+                                            variant: 'error',
+                                          });
+                                        }
+                                      },
+                                    });
+                                  }}
+                                  style={{
+                                    backgroundColor: '#059669',
+                                    color: 'white',
+                                    padding: '0.5rem 0.9rem',
+                                    borderRadius: '0.375rem',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.4rem',
+                                    fontWeight: 500,
+                                    fontSize: '0.875rem',
+                                    height: '40px',
+                                    transition: 'background-color 0.2s',
+                                  }}
+                                  onMouseOver={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#047857';
+                                  }}
+                                  onMouseOut={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#059669';
+                                  }}
+                                >
+                                  <FaUndoAlt /> Unarchive
+                                </button>
+                              )}
+
+                              {/* Delete Button - show ONLY for archived items (not mixed) */}
+                              {canDeleteInventory && hasOnlyArchived && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (selectedItems.size === 0) {
+                                      setModalState({
+                                        open: true,
+                                        title: 'No Items Selected',
+                                        message: 'Please select at least one item to delete.',
+                                        variant: 'info',
+                                      });
+                                      return;
+                                    }
+                                    setModalState({
+                                      open: true,
+                                      title: 'Permanently Delete Items',
+                                      message: `Are you sure you want to permanently delete ${selectedItems.size} item(s)? This action cannot be undone.`,
+                                      variant: 'confirm',
+                                      onConfirm: () => {
+                                        setModalState({
+                                          open: true,
+                                          title: 'Final Confirmation',
+                                          message: `This will permanently delete ${selectedItems.size} item(s) from the database. Are you absolutely sure?`,
+                                          variant: 'confirm',
+                                          onConfirm: async () => {
+                                            try {
+                                              for (const docId of selectedItems) {
+                                                const ref = doc(inventoryCollection, docId);
+                                                await deleteDoc(ref);
+                                              }
+                                              await loadInventory();
+                                              exitSelectMode();
+                                              setModalState({
+                                                open: true,
+                                                title: 'Items Deleted',
+                                                message: `${selectedItems.size} item(s) have been permanently deleted.`,
+                                                variant: 'info',
+                                              });
+                                            } catch (err) {
+                                              console.error('Error deleting items', err);
+                                              setModalState({
+                                                open: true,
+                                                title: 'Delete Failed',
+                                                message: 'There was an error deleting the items. Please try again.',
+                                                variant: 'error',
+                                              });
+                                            }
+                                          },
+                                        });
+                                      },
+                                    });
+                                  }}
+                                  style={{
+                                    backgroundColor: '#7f1d1d',
+                                    color: 'white',
+                                    padding: '0.5rem 0.9rem',
+                                    borderRadius: '0.375rem',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.4rem',
+                                    fontWeight: 500,
+                                    fontSize: '0.875rem',
+                                    height: '40px',
+                                    transition: 'background-color 0.2s',
+                                  }}
+                                  onMouseOver={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#450a0a';
+                                  }}
+                                  onMouseOut={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#7f1d1d';
+                                  }}
+                                >
+                                  <FaTrash /> Delete
+                                </button>
+                              )}
+                            </>
+                          );
+                        })()}
+                      </div>
+
+                      {/* Right side buttons */}
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        {/* Filters Button */}
                         <button
                           type="button"
-                          onClick={handleExportInventoryCsv}
+                          onClick={() => setShowFilters(!showFilters)}
                           style={{
-                            backgroundColor: '#059669',
+                            backgroundColor: '#1e40af',
                             color: 'white',
                             padding: '0.5rem 1rem',
                             borderRadius: '0.375rem',
@@ -2764,287 +3109,373 @@ export function Inventory() {
                             transition: 'background-color 0.2s',
                           }}
                           onMouseOver={(e) => {
-                            e.currentTarget.style.backgroundColor = '#047857';
+                            e.currentTarget.style.backgroundColor = '#1e3a8a';
                           }}
                           onMouseOut={(e) => {
-                            e.currentTarget.style.backgroundColor = '#059669';
+                            e.currentTarget.style.backgroundColor = '#1e40af';
                           }}
                         >
-                          Export to CSV <FaFileExcel />
+                          Filters <FaFilter />
                         </button>
-                      )}
 
-                      {/* Select / Cancel Button - only show if user can add stock multiple OR archive */}
-                      {(canAddStockMultiple || canArchiveInventory) && (
+                        {/* Clear Filters Button */}
                         <button
                           type="button"
                           onClick={() => {
-                            if (isSelectMode) {
-                              exitSelectMode();
-                            } else {
-                              setIsSelectMode(true);
-                            }
+                            setFilters({
+                              minPrice: '',
+                              maxPrice: '',
+                              sortBy: 'name-asc',
+                              brand: '',
+                              type: '',
+                              status: ''
+                            });
                           }}
+                          disabled={!isAnyFilterActive()}
                           style={{
-                            backgroundColor: isSelectMode ? '#6b7280' : '#1d4ed8',
-                            color: 'white',
+                            backgroundColor: isAnyFilterActive() ? '#6b7280' : '#e5e7eb',
+                            color: isAnyFilterActive() ? 'white' : '#9ca3af',
                             padding: '0.5rem 1rem',
                             borderRadius: '0.375rem',
                             border: 'none',
-                            cursor: 'pointer',
+                            cursor: isAnyFilterActive() ? 'pointer' : 'not-allowed',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '0.4rem',
+                            gap: '0.5rem',
                             fontWeight: 500,
                             fontSize: '0.875rem',
                             height: '40px',
                             transition: 'background-color 0.2s',
+                            opacity: isAnyFilterActive() ? 1 : 0.7,
                           }}
                           onMouseOver={(e) => {
-                            e.currentTarget.style.backgroundColor = isSelectMode ? '#4b5563' : '#1e40af';
+                            if (isAnyFilterActive()) {
+                              e.currentTarget.style.backgroundColor = '#4b5563';
+                            }
                           }}
                           onMouseOut={(e) => {
-                            e.currentTarget.style.backgroundColor = isSelectMode ? '#6b7280' : '#1d4ed8';
+                            if (isAnyFilterActive()) {
+                              e.currentTarget.style.backgroundColor = '#6b7280';
+                            }
                           }}
                         >
-                          {isSelectMode ? 'Cancel' : 'Select'}
+                          Clear Filters
                         </button>
-                      )}
-
-                      {/* Add Stock Button - only visible when Select mode is active */}
-                      {isSelectMode && canAddStockMultiple && (
-                        <button
-                          type="button"
-                          onClick={openBulkAddStock}
+                      </div>
+                    </div>
+                  ) : (
+                    /* Mobile: Accordion layout */
+                    <div>
+                      <button
+                        onClick={() => setIsActionBarExpanded(!isActionBarExpanded)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          width: '100%',
+                          background: 'transparent',
+                          border: 'none',
+                          cursor: 'pointer',
+                          padding: 0,
+                          marginBottom: isActionBarExpanded ? '1rem' : 0,
+                          fontSize: '1.125rem',
+                          fontWeight: 600,
+                          color: '#1e40af',
+                          textAlign: 'left'
+                        }}
+                      >
+                        <span>Action Bar</span>
+                        <span
                           style={{
-                            backgroundColor: '#1d4ed8',
-                            color: 'white',
-                            padding: '0.5rem 0.9rem',
-                            borderRadius: '0.375rem',
-                            border: 'none',
-                            cursor: 'pointer',
-                            display: 'flex',
+                            display: 'inline-flex',
                             alignItems: 'center',
-                            gap: '0.4rem',
-                            fontWeight: 500,
-                            fontSize: '0.875rem',
-                            height: '40px',
-                            transition: 'background-color 0.2s',
-                          }}
-                          onMouseOver={(e) => {
-                            e.currentTarget.style.backgroundColor = '#1e40af';
-                          }}
-                          onMouseOut={(e) => {
-                            e.currentTarget.style.backgroundColor = '#1d4ed8';
+                            justifyContent: 'center',
+                            transition: 'transform 0.2s ease',
+                            transform: isActionBarExpanded ? 'rotate(180deg)' : 'rotate(0)'
                           }}
                         >
-                          <FaPlus /> Add Stock
-                        </button>
-                      )}
+                          <FaChevronDown style={{ fontSize: '0.9em' }} />
+                        </span>
+                      </button>
 
-                      {/* Bulk action buttons - visible when Select mode is active */}
-                      {isSelectMode && (() => {
-                        // Determine selection state
-                        const selectedItemsList = Array.from(selectedItems).map(docId =>
-                          firestoreItems.find(item => item.docId === docId)
-                        ).filter(Boolean);
-                        const archivedCount = selectedItemsList.filter(item => item?.archived).length;
-                        const unarchivedCount = selectedItemsList.length - archivedCount;
-                        const hasOnlyArchived = archivedCount > 0 && unarchivedCount === 0;
-                        const hasOnlyUnarchived = unarchivedCount > 0 && archivedCount === 0;
-                        const hasMixed = archivedCount > 0 && unarchivedCount > 0;
+                      {isActionBarExpanded && (
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', marginBottom: showFilters ? '1rem' : 0 }}>
+                          {/* Export Button */}
+                          {canExportInventory && (
+                            <button
+                              type="button"
+                              onClick={handleExportInventoryCsv}
+                              style={{
+                                backgroundColor: '#059669',
+                                color: 'white',
+                                padding: '0.5rem 1rem',
+                                borderRadius: '0.375rem',
+                                border: 'none',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                                fontWeight: 500,
+                                fontSize: '0.875rem',
+                                height: '40px',
+                                width: '100%',
+                                maxWidth: '300px',
+                                justifyContent: 'center'
+                              }}
+                            >
+                              Export to CSV <FaFileExcel />
+                            </button>
+                          )}
 
-                        return (
-                          <>
-                            {/* Archive Button - show for unarchived only OR mixed selection */}
-                            {canArchiveInventory && (hasOnlyUnarchived || hasMixed) && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (selectedItems.size === 0) {
-                                    setModalState({
-                                      open: true,
-                                      title: 'No Items Selected',
-                                      message: 'Please select at least one item to archive.',
-                                      variant: 'info',
-                                    });
-                                    return;
-                                  }
-                                  const itemsToArchive = selectedItemsList.filter(item => !item?.archived);
-                                  setModalState({
-                                    open: true,
-                                    title: 'Confirm Archive',
-                                    message: `Are you sure you want to archive ${itemsToArchive.length} item(s)?`,
-                                    variant: 'confirm',
-                                    onConfirm: async () => {
-                                      try {
-                                        for (const item of itemsToArchive) {
-                                          if (!item) continue;
-                                          const ref = doc(inventoryCollection, item.docId);
-                                          await updateDoc(ref, {
-                                            archived: true,
-                                            updatedAt: new Date().toISOString(),
-                                          });
-                                        }
-                                        await loadInventory();
-                                        exitSelectMode();
+                          {/* Select/Cancel Button */}
+                          {(canAddStockMultiple || canArchiveInventory) && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (isSelectMode) {
+                                  exitSelectMode();
+                                } else {
+                                  setIsSelectMode(true);
+                                }
+                              }}
+                              style={{
+                                backgroundColor: isSelectMode ? '#dc2626' : '#3b82f6',
+                                color: 'white',
+                                padding: '0.5rem 1rem',
+                                borderRadius: '0.375rem',
+                                border: 'none',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                                fontWeight: 500,
+                                fontSize: '0.875rem',
+                                height: '40px',
+                                width: '100%',
+                                maxWidth: '300px',
+                                justifyContent: 'center'
+                              }}
+                            >
+                              {isSelectMode ? 'Cancel' : 'Select'}
+                            </button>
+                          )}
+
+                          {/* Add Stock Button - only visible in select mode */}
+                          {isSelectMode && canAddStockMultiple && (
+                            <button
+                              type="button"
+                              onClick={openBulkAddStock}
+                              style={{
+                                backgroundColor: '#1d4ed8',
+                                color: 'white',
+                                padding: '0.5rem 1rem',
+                                borderRadius: '0.375rem',
+                                border: 'none',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                                fontWeight: 500,
+                                fontSize: '0.875rem',
+                                height: '40px',
+                                width: '100%',
+                                maxWidth: '300px',
+                                justifyContent: 'center'
+                              }}
+                            >
+                              <FaPlus /> Add Stock
+                            </button>
+                          )}
+
+                          {/* Bulk action buttons - visible when Select mode is active */}
+                          {isSelectMode && (() => {
+                            const selectedItemsList = Array.from(selectedItems).map(docId =>
+                              firestoreItems.find(item => item.docId === docId)
+                            ).filter(Boolean);
+                            const archivedCount = selectedItemsList.filter(item => item?.archived).length;
+                            const unarchivedCount = selectedItemsList.length - archivedCount;
+                            const hasOnlyArchived = archivedCount > 0 && unarchivedCount === 0;
+                            const hasOnlyUnarchived = unarchivedCount > 0 && archivedCount === 0;
+                            const hasMixed = archivedCount > 0 && unarchivedCount > 0;
+
+                            return (
+                              <>
+                                {/* Archive Button */}
+                                {canArchiveInventory && (hasOnlyUnarchived || hasMixed) && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (selectedItems.size === 0) {
                                         setModalState({
                                           open: true,
-                                          title: 'Items Archived',
-                                          message: `${itemsToArchive.length} item(s) have been archived successfully.`,
+                                          title: 'No Items Selected',
+                                          message: 'Please select at least one item to archive.',
                                           variant: 'info',
                                         });
-                                      } catch (err) {
-                                        console.error('Error archiving items', err);
-                                        setModalState({
-                                          open: true,
-                                          title: 'Archive Failed',
-                                          message: 'There was an error archiving the items. Please try again.',
-                                          variant: 'error',
-                                        });
+                                        return;
                                       }
-                                    },
-                                  });
-                                }}
-                                style={{
-                                  backgroundColor: '#dc2626',
-                                  color: 'white',
-                                  padding: '0.5rem 0.9rem',
-                                  borderRadius: '0.375rem',
-                                  border: 'none',
-                                  cursor: 'pointer',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '0.4rem',
-                                  fontWeight: 500,
-                                  fontSize: '0.875rem',
-                                  height: '40px',
-                                  transition: 'background-color 0.2s',
-                                }}
-                                onMouseOver={(e) => {
-                                  e.currentTarget.style.backgroundColor = '#b91c1c';
-                                }}
-                                onMouseOut={(e) => {
-                                  e.currentTarget.style.backgroundColor = '#dc2626';
-                                }}
-                              >
-                                <FaTrash /> Archive
-                              </button>
-                            )}
-
-                            {/* Unarchive Button - show for archived only OR mixed selection */}
-                            {canArchiveInventory && (hasOnlyArchived || hasMixed) && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (selectedItems.size === 0) {
-                                    setModalState({
-                                      open: true,
-                                      title: 'No Items Selected',
-                                      message: 'Please select at least one item to unarchive.',
-                                      variant: 'info',
-                                    });
-                                    return;
-                                  }
-                                  const itemsToUnarchive = selectedItemsList.filter(item => item?.archived);
-                                  setModalState({
-                                    open: true,
-                                    title: 'Confirm Unarchive',
-                                    message: `Are you sure you want to unarchive ${itemsToUnarchive.length} item(s)?`,
-                                    variant: 'confirm',
-                                    onConfirm: async () => {
-                                      try {
-                                        for (const item of itemsToUnarchive) {
-                                          if (!item) continue;
-                                          const ref = doc(inventoryCollection, item.docId);
-                                          await updateDoc(ref, {
-                                            archived: false,
-                                            updatedAt: new Date().toISOString(),
-                                          });
-                                        }
-                                        await loadInventory();
-                                        exitSelectMode();
-                                        setModalState({
-                                          open: true,
-                                          title: 'Items Unarchived',
-                                          message: `${itemsToUnarchive.length} item(s) have been restored.`,
-                                          variant: 'info',
-                                        });
-                                      } catch (err) {
-                                        console.error('Error unarchiving items', err);
-                                        setModalState({
-                                          open: true,
-                                          title: 'Unarchive Failed',
-                                          message: 'There was an error unarchiving the items. Please try again.',
-                                          variant: 'error',
-                                        });
-                                      }
-                                    },
-                                  });
-                                }}
-                                style={{
-                                  backgroundColor: '#059669',
-                                  color: 'white',
-                                  padding: '0.5rem 0.9rem',
-                                  borderRadius: '0.375rem',
-                                  border: 'none',
-                                  cursor: 'pointer',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '0.4rem',
-                                  fontWeight: 500,
-                                  fontSize: '0.875rem',
-                                  height: '40px',
-                                  transition: 'background-color 0.2s',
-                                }}
-                                onMouseOver={(e) => {
-                                  e.currentTarget.style.backgroundColor = '#047857';
-                                }}
-                                onMouseOut={(e) => {
-                                  e.currentTarget.style.backgroundColor = '#059669';
-                                }}
-                              >
-                                <FaUndoAlt /> Unarchive
-                              </button>
-                            )}
-
-                            {/* Delete Button - show ONLY for archived items (not mixed) */}
-                            {canDeleteInventory && hasOnlyArchived && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (selectedItems.size === 0) {
-                                    setModalState({
-                                      open: true,
-                                      title: 'No Items Selected',
-                                      message: 'Please select at least one item to delete.',
-                                      variant: 'info',
-                                    });
-                                    return;
-                                  }
-                                  setModalState({
-                                    open: true,
-                                    title: 'Permanently Delete Items',
-                                    message: `Are you sure you want to permanently delete ${selectedItems.size} item(s)? This action cannot be undone.`,
-                                    variant: 'confirm',
-                                    onConfirm: () => {
+                                      const itemsToArchive = selectedItemsList.filter(item => !item?.archived);
                                       setModalState({
                                         open: true,
-                                        title: 'Final Confirmation',
-                                        message: `This will permanently delete ${selectedItems.size} item(s) from the database. Are you absolutely sure?`,
+                                        title: 'Confirm Archive',
+                                        message: `Are you sure you want to archive ${itemsToArchive.length} item(s)?`,
                                         variant: 'confirm',
                                         onConfirm: async () => {
                                           try {
-                                            for (const docId of selectedItems) {
-                                              const ref = doc(inventoryCollection, docId);
-                                              await deleteDoc(ref);
+                                            for (const item of itemsToArchive) {
+                                              if (!item) continue;
+                                              const ref = doc(inventoryCollection, item.docId);
+                                              await updateDoc(ref, {
+                                                archived: true,
+                                                updatedAt: new Date().toISOString(),
+                                              });
+                                            }
+                                            await loadInventory();
+                                            exitSelectMode();
+                                            setModalState({
+                                              open: true,
+                                              title: 'Items Archived',
+                                              message: `${itemsToArchive.length} item(s) have been archived successfully.`,
+                                              variant: 'info',
+                                            });
+                                          } catch (err) {
+                                            console.error('Error archiving items', err);
+                                            setModalState({
+                                              open: true,
+                                              title: 'Archive Failed',
+                                              message: 'There was an error archiving the items. Please try again.',
+                                              variant: 'error',
+                                            });
+                                          }
+                                        },
+                                      });
+                                    }}
+                                    style={{
+                                      backgroundColor: '#dc2626',
+                                      color: 'white',
+                                      padding: '0.5rem 1rem',
+                                      borderRadius: '0.375rem',
+                                      border: 'none',
+                                      cursor: 'pointer',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '0.5rem',
+                                      fontWeight: 500,
+                                      fontSize: '0.875rem',
+                                      height: '40px',
+                                      width: '100%',
+                                      maxWidth: '300px',
+                                      justifyContent: 'center'
+                                    }}
+                                  >
+                                    <FaTrash /> Archive
+                                  </button>
+                                )}
+
+                                {/* Unarchive Button */}
+                                {canArchiveInventory && (hasOnlyArchived || hasMixed) && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (selectedItems.size === 0) {
+                                        setModalState({
+                                          open: true,
+                                          title: 'No Items Selected',
+                                          message: 'Please select at least one item to unarchive.',
+                                          variant: 'info',
+                                        });
+                                        return;
+                                      }
+                                      const itemsToUnarchive = selectedItemsList.filter(item => item?.archived);
+                                      setModalState({
+                                        open: true,
+                                        title: 'Confirm Unarchive',
+                                        message: `Are you sure you want to unarchive ${itemsToUnarchive.length} item(s)?`,
+                                        variant: 'confirm',
+                                        onConfirm: async () => {
+                                          try {
+                                            for (const item of itemsToUnarchive) {
+                                              if (!item) continue;
+                                              const ref = doc(inventoryCollection, item.docId);
+                                              await updateDoc(ref, {
+                                                archived: false,
+                                                updatedAt: new Date().toISOString(),
+                                              });
+                                            }
+                                            await loadInventory();
+                                            exitSelectMode();
+                                            setModalState({
+                                              open: true,
+                                              title: 'Items Unarchived',
+                                              message: `${itemsToUnarchive.length} item(s) have been restored.`,
+                                              variant: 'info',
+                                            });
+                                          } catch (err) {
+                                            console.error('Error unarchiving items', err);
+                                            setModalState({
+                                              open: true,
+                                              title: 'Unarchive Failed',
+                                              message: 'There was an error unarchiving the items. Please try again.',
+                                              variant: 'error',
+                                            });
+                                          }
+                                        },
+                                      });
+                                    }}
+                                    style={{
+                                      backgroundColor: '#3b82f6',
+                                      color: 'white',
+                                      padding: '0.5rem 1rem',
+                                      borderRadius: '0.375rem',
+                                      border: 'none',
+                                      cursor: 'pointer',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '0.5rem',
+                                      fontWeight: 500,
+                                      fontSize: '0.875rem',
+                                      height: '40px',
+                                      width: '100%',
+                                      maxWidth: '300px',
+                                      justifyContent: 'center'
+                                    }}
+                                  >
+                                    Unarchive
+                                  </button>
+                                )}
+
+                                {/* Delete Button */}
+                                {canDeleteInventory && hasOnlyArchived && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (selectedItems.size === 0) {
+                                        setModalState({
+                                          open: true,
+                                          title: 'No Items Selected',
+                                          message: 'Please select at least one item to delete.',
+                                          variant: 'info',
+                                        });
+                                        return;
+                                      }
+                                      const itemsToDelete = selectedItemsList.filter(item => item?.archived);
+                                      setModalState({
+                                        open: true,
+                                        title: 'Confirm Permanent Delete',
+                                        message: `Are you sure you want to permanently delete ${itemsToDelete.length} item(s)? This action cannot be undone.`,
+                                        variant: 'confirm',
+                                        onConfirm: async () => {
+                                          try {
+                                            for (const item of itemsToDelete) {
+                                              if (!item) continue;
+                                              await deleteDoc(doc(inventoryCollection, item.docId));
                                             }
                                             await loadInventory();
                                             exitSelectMode();
                                             setModalState({
                                               open: true,
                                               title: 'Items Deleted',
-                                              message: `${selectedItems.size} item(s) have been permanently deleted.`,
+                                              message: `${itemsToDelete.length} item(s) have been permanently deleted.`,
                                               variant: 'info',
                                             });
                                           } catch (err) {
@@ -3058,115 +3489,92 @@ export function Inventory() {
                                           }
                                         },
                                       });
-                                    },
-                                  });
-                                }}
-                                style={{
-                                  backgroundColor: '#7f1d1d',
-                                  color: 'white',
-                                  padding: '0.5rem 0.9rem',
-                                  borderRadius: '0.375rem',
-                                  border: 'none',
-                                  cursor: 'pointer',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '0.4rem',
-                                  fontWeight: 500,
-                                  fontSize: '0.875rem',
-                                  height: '40px',
-                                  transition: 'background-color 0.2s',
-                                }}
-                                onMouseOver={(e) => {
-                                  e.currentTarget.style.backgroundColor = '#450a0a';
-                                }}
-                                onMouseOut={(e) => {
-                                  e.currentTarget.style.backgroundColor = '#7f1d1d';
-                                }}
-                              >
-                                <FaTrash /> Delete
-                              </button>
-                            )}
-                          </>
-                        );
-                      })()}
-                    </div>
+                                    }}
+                                    style={{
+                                      backgroundColor: '#ef4444',
+                                      color: 'white',
+                                      padding: '0.5rem 1rem',
+                                      borderRadius: '0.375rem',
+                                      border: 'none',
+                                      cursor: 'pointer',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '0.5rem',
+                                      fontWeight: 500,
+                                      fontSize: '0.875rem',
+                                      height: '40px',
+                                      width: '100%',
+                                      maxWidth: '300px',
+                                      justifyContent: 'center'
+                                    }}
+                                  >
+                                    <FaTrash /> Delete
+                                  </button>
+                                )}
+                              </>
+                            );
+                          })()}
 
-                    {/* Right side: Filters + Clear Filters */}
-                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                      {/* Filters Button */}
-                      <button
-                        type="button"
-                        onClick={() => setShowFilters(!showFilters)}
-                        style={{
-                          backgroundColor: '#1e40af',
-                          color: 'white',
-                          padding: '0.5rem 1rem',
-                          borderRadius: '0.375rem',
-                          border: 'none',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.5rem',
-                          fontWeight: 500,
-                          fontSize: '0.875rem',
-                          height: '40px',
-                          transition: 'background-color 0.2s',
-                        }}
-                        onMouseOver={(e) => {
-                          e.currentTarget.style.backgroundColor = '#1e3a8a';
-                        }}
-                        onMouseOut={(e) => {
-                          e.currentTarget.style.backgroundColor = '#1e40af';
-                        }}
-                      >
-                        Filters <FaFilter />
-                      </button>
+                          {/* Filters Button */}
+                          <button
+                            onClick={() => setShowFilters(!showFilters)}
+                            style={{
+                              backgroundColor: '#1e40af',
+                              color: 'white',
+                              padding: '0.5rem 1rem',
+                              borderRadius: '0.375rem',
+                              border: 'none',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.5rem',
+                              fontWeight: 500,
+                              fontSize: '0.875rem',
+                              height: '40px',
+                              width: '100%',
+                              maxWidth: '300px',
+                              justifyContent: 'center'
+                            }}
+                          >
+                            Filters <FaFilter />
+                          </button>
 
-                      {/* Clear Filters Button */}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setFilters({
-                            minPrice: '',
-                            maxPrice: '',
-                            sortBy: 'name-asc',
-                            brand: '',
-                            type: '',
-                            status: ''
-                          });
-                        }}
-                        disabled={!isAnyFilterActive()}
-                        style={{
-                          backgroundColor: isAnyFilterActive() ? '#6b7280' : '#e5e7eb',
-                          color: isAnyFilterActive() ? 'white' : '#9ca3af',
-                          padding: '0.5rem 1rem',
-                          borderRadius: '0.375rem',
-                          border: 'none',
-                          cursor: isAnyFilterActive() ? 'pointer' : 'not-allowed',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.5rem',
-                          fontWeight: 500,
-                          fontSize: '0.875rem',
-                          height: '40px',
-                          transition: 'background-color 0.2s',
-                          opacity: isAnyFilterActive() ? 1 : 0.7,
-                        }}
-                        onMouseOver={(e) => {
-                          if (isAnyFilterActive()) {
-                            e.currentTarget.style.backgroundColor = '#4b5563';
-                          }
-                        }}
-                        onMouseOut={(e) => {
-                          if (isAnyFilterActive()) {
-                            e.currentTarget.style.backgroundColor = '#6b7280';
-                          }
-                        }}
-                      >
-                        Clear Filters
-                      </button>
+                          {/* Clear Filters Button */}
+                          <button
+                            onClick={() => {
+                              setFilters({
+                                minPrice: '',
+                                maxPrice: '',
+                                sortBy: 'name-asc',
+                                brand: '',
+                                type: '',
+                                status: ''
+                              });
+                            }}
+                            style={{
+                              backgroundColor: '#6b7280',
+                              color: 'white',
+                              padding: '0.5rem 1rem',
+                              borderRadius: '0.375rem',
+                              border: 'none',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.5rem',
+                              fontWeight: 500,
+                              fontSize: '0.875rem',
+                              height: '40px',
+                              width: '100%',
+                              maxWidth: '300px',
+                              justifyContent: 'center'
+                            }}
+                          >
+                            Clear Filters
+                          </button>
+                        </div>
+                      )}
                     </div>
-                  </div>
+                  )}
 
                   {showFilters && (
                     <div style={{

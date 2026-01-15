@@ -1055,9 +1055,10 @@ export function Transactions() {
                 )}
 
                 {showFilters && (
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                  <div ref={filtersRef} style={{
+                    display: 'flex',
+                    flexDirection: isMobile ? 'column' : 'row',
+                    flexWrap: isMobile ? 'nowrap' : 'wrap',
                     gap: '1rem',
                     paddingTop: '1rem',
                     borderTop: '1px solid #e5e7eb',
@@ -1065,11 +1066,11 @@ export function Transactions() {
                     textAlign: 'center'
                   }}>
                     {/* Timeframe with Calendar Picker */}
-                    <div style={{ position: 'relative', gridColumn: 'span 2' }}>
-                      <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'rgb(75, 85, 99)' }}>
+                    <div style={{ position: 'relative', width: isMobile ? '100%' : 'calc(50% - 0.5rem)' }}>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'rgb(75, 85, 99)', textAlign: 'left' }}>
                         Timeframe
                       </label>
-                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexDirection: isMobile ? 'column' : 'row' }}>
                         <button
                           type="button"
                           onClick={() => { setSelectingDate('start'); setShowCalendarPicker(!showCalendarPicker); setShowMonthPicker(false); setShowYearPicker(false); }}
@@ -1228,8 +1229,8 @@ export function Transactions() {
                     </div>
 
                     {/* Transaction Type */}
-                    <div>
-                      <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'rgb(75, 85, 99)' }}>
+                    <div style={{ width: isMobile ? '100%' : 'calc(50% - 0.5rem)' }}>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'rgb(75, 85, 99)', textAlign: 'left' }}>
                         Transaction Type
                       </label>
                       <select
@@ -1252,8 +1253,8 @@ export function Transactions() {
                     </div>
 
                     {/* Price Range */}
-                    <div>
-                      <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'rgb(75, 85, 99)' }}>
+                    <div style={{ width: isMobile ? '100%' : 'calc(50% - 0.5rem)' }}>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'rgb(75, 85, 99)', textAlign: 'left' }}>
                         Price Range
                       </label>
                       <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
@@ -1263,7 +1264,7 @@ export function Transactions() {
                           value={minPrice}
                           onChange={(e) => setMinPrice(e.target.value)}
                           style={{
-                            width: '80px',
+                            flex: 1,
                             padding: '0.5rem',
                             borderRadius: '0.375rem',
                             border: '1px solid #d1d5db',
@@ -1278,7 +1279,7 @@ export function Transactions() {
                           value={maxPrice}
                           onChange={(e) => setMaxPrice(e.target.value)}
                           style={{
-                            width: '80px',
+                            flex: 1,
                             padding: '0.5rem',
                             borderRadius: '0.375rem',
                             border: '1px solid #d1d5db',
@@ -1289,8 +1290,9 @@ export function Transactions() {
                       </div>
                     </div>
 
-                    <div>
-                      <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'rgb(75, 85, 99)' }}>
+                    {/* Status */}
+                    <div style={{ width: isMobile ? '100%' : 'calc(50% - 0.5rem)' }}>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'rgb(75, 85, 99)', textAlign: 'left' }}>
                         Status
                       </label>
                       <select
@@ -1315,7 +1317,7 @@ export function Transactions() {
 
                     {/* Show Archived Toggle - only visible if user has permission */}
                     {canViewArchived && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <div style={{ width: isMobile ? '100%' : 'calc(50% - 0.5rem)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <div style={{ fontSize: '0.875rem', color: 'rgb(75, 85, 99)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                           <Switch
                             checked={showArchivedFilter}
@@ -1575,7 +1577,7 @@ export function Transactions() {
                 <table style={{
                   width: '100%',
                   borderCollapse: 'collapse',
-                  minWidth: isMobile ? '400px' : '800px'
+                  minWidth: isMobile ? '200px' : '800px'
                 }}>
                   <thead>
                     <tr style={{

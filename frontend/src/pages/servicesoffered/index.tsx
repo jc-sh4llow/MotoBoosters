@@ -2567,11 +2567,6 @@ export function Services() {
                     }}>
                       <span>Total: {filteredServices.length}</span>
                       <span>| Active: {filteredServices.filter(s => s.status === 'Active').length}</span>
-                      {selectedItems.size > 0 && (
-                        <span style={{ color: '#059669', fontWeight: 500 }}>
-                          | Selected: {selectedItems.size}
-                        </span>
-                      )}
                     </div>
                     {!isMobile && canEditServices && (
                       <button

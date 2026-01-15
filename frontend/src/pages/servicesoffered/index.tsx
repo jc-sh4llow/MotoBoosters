@@ -120,6 +120,7 @@ export function Services() {
   const serviceDetailsRef = useRef<HTMLDivElement | null>(null);
   const servicesTableRef = useRef<HTMLDivElement | null>(null);
   const actionBarRef = useRef<HTMLDivElement | null>(null);
+  const filtersRef = useRef<HTMLDivElement | null>(null);
 
   const handleTypeChange = (type: string) => {
     if (!canEditServices) return;
@@ -308,6 +309,29 @@ export function Services() {
       document.removeEventListener('touchstart', handleClickOutside);
     };
   }, [isMobile, isActionBarExpanded, isSelectMode]);
+
+  // Click-outside listener for Filters
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      if (
+        filtersRef.current &&
+        !filtersRef.current.contains(event.target as Node) &&
+        showFilters
+      ) {
+        setShowFilters(false);
+      }
+    };
+
+    if (showFilters) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [showFilters]);
 
   const handleSaveService = async () => {
     if (!canEditServices) return;

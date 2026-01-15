@@ -8,7 +8,7 @@ import {
 } from 'react-icons/fa';
 
 import { useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '../../contexts/AuthContext';
 import logo from '../../assets/logo.png';
@@ -27,6 +27,10 @@ type SaleItem = {
   customer?: string;
   transactionType?: 'Parts Only' | 'Service Only' | 'Parts + Service' | 'N/A';
   transactionCode?: string;
+  discount?: number;
+  markup?: number;
+  overallDiscount?: number;
+  overallMarkup?: number;
 };
 
 export function Sales() {
@@ -43,11 +47,11 @@ export function Sales() {
   let closeMenuTimeout: number | undefined;
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
-  const [priceType, setPriceType] = useState('total');
+  const [priceType, setPriceType] = useState('total'); //default price type
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
-  const [activeTab, setActiveTab] = useState<'all' | 'parts'>('all');
-  const [timeframe, setTimeframe] = useState<'today' | 'week' | 'month' | 'year' | 'custom'>('year');
+  const [activeTab, setActiveTab] = useState<'all' | 'parts'>('all'); //default tab
+  const [timeframe, setTimeframe] = useState<'today' | 'week' | 'month' | 'year' | 'custom'>('year'); //default timeframe
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
   const [showCalendarPicker, setShowCalendarPicker] = useState(false);
@@ -65,6 +69,8 @@ export function Sales() {
   const [itemSearchTerm, setItemSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('date-desc');
   const [isActionBarExpanded, setIsActionBarExpanded] = useState(false);
+  const filtersRef = useRef<HTMLDivElement>(null);
+  const actionBarRef = useRef<HTMLDivElement>(null);
   const [firestoreSales, setFirestoreSales] = useState<SaleItem[]>([]);
 
   // Responsive column visibility helpers
@@ -360,6 +366,10 @@ export function Sales() {
             totalAmount,
             customer: customerName,
             transactionType: normalizedType,
+            discount: Number(item.discount ?? 0) || undefined,
+            markup: Number(item.markup ?? 0) || undefined,
+            overallDiscount: Number(data.overallDiscount ?? 0) || undefined,
+            overallMarkup: Number(data.overallMarkup ?? 0) || undefined,
           });
         });
       });
@@ -375,6 +385,30 @@ export function Sales() {
       unsubscribe();
     };
   }, []);
+
+  // Click outside listeners for filters and action bar
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      // Close filters if clicking outside
+      if (filtersRef.current && !filtersRef.current.contains(event.target as Node)) {
+        if (showFilters) {
+          setShowFilters(false);
+        }
+      }
+
+      // Close action bar accordion on mobile if clicking outside
+      if (isMobile && actionBarRef.current && !actionBarRef.current.contains(event.target as Node)) {
+        if (isActionBarExpanded) {
+          setIsActionBarExpanded(false);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showFilters, isActionBarExpanded, isMobile]);
 
   const handleApplyFilter = () => {
     // Handle filter logic here
@@ -641,7 +675,7 @@ export function Sales() {
           }}>
             {/* Action Bar - matching inventory page style */}
             <section style={{ marginBottom: '2rem' }}>
-              <div style={{
+              <div ref={actionBarRef} style={{
                 backgroundColor: 'var(--surface-elevated)',
                 borderRadius: '0.5rem',
                 padding: '1rem',
@@ -679,8 +713,8 @@ export function Sales() {
 
                 {/* Desktop: Horizontal Layout | Mobile: Collapsible Content */}
                 {(!isMobile || isActionBarExpanded) && (
-                  <div style={{ 
-                    display: 'flex', 
+                  <div style={{
+                    display: 'flex',
                     flexDirection: isMobile ? 'column' : 'row',
                     alignItems: isMobile ? 'center' : 'center',
                     justifyContent: isMobile ? 'center' : 'space-between',
@@ -801,7 +835,7 @@ export function Sales() {
                         Filters <FaFilter />
                       </button>
 
-                      {/* Clear Filters Button */}
+                      {/* Clear Filters Button - default filters*/}
                       <button
                         onClick={() => {
                           setTimeframe('year');
@@ -839,7 +873,7 @@ export function Sales() {
                 )}
 
                 {showFilters && (
-                  <div style={{
+                  <div ref={filtersRef} style={{
                     display: 'grid',
                     gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
                     gap: '1rem',
@@ -1338,14 +1372,24 @@ export function Sales() {
                               }}
                             >
                               {(showQuantity && showUnitPrice) ? (
-                                `₱${(sale.totalAmount ?? 0).toFixed(2)}`
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.25rem' }}>
+                                  <span>₱{(sale.totalAmount ?? 0).toFixed(2)}</span>
+                                  {(sale.discount || sale.markup || sale.overallDiscount || sale.overallMarkup) && (
+                                    <span style={{ fontSize: '0.75rem', color: '#f59e0b', fontWeight: 500 }} title="Discount/Markup Applied">*</span>
+                                  )}
+                                </div>
                               ) : (
                                 <div>
-                                  <div>
-                                    {priceType === 'unit'
-                                      ? `₱${(sale.unitPrice ?? 0).toFixed(2)}`
-                                      : `₱${(sale.totalAmount ?? 0).toFixed(2)}`
-                                    }
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.25rem' }}>
+                                    <span>
+                                      {priceType === 'unit'
+                                        ? `₱${(sale.unitPrice ?? 0).toFixed(2)}`
+                                        : `₱${(sale.totalAmount ?? 0).toFixed(2)}`
+                                      }
+                                    </span>
+                                    {(sale.discount || sale.markup || sale.overallDiscount || sale.overallMarkup) && (
+                                      <span style={{ fontSize: '0.75rem', color: '#f59e0b', fontWeight: 500 }} title="Discount/Markup Applied">*</span>
+                                    )}
                                   </div>
                                   {!showQuantity && (
                                     <div style={{

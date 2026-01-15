@@ -1,7 +1,7 @@
-import { FaSearch, FaFilter, FaFileExcel, FaBars, FaTimes } from 'react-icons/fa';
+import { FaSearch, FaFilter, FaFileExcel, FaBars, FaTimes, FaChevronDown } from 'react-icons/fa';
 
 import { useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { collection, onSnapshot, doc, updateDoc, getDocs } from 'firebase/firestore';
 import { HeaderDropdown } from '../../components/HeaderDropdown';
 import { db } from '../../lib/firebase';
@@ -87,6 +87,9 @@ export function Transactions() {
   const [showYearPicker, setShowYearPicker] = useState(false);
 
   const [sortBy, setSortBy] = useState('date-desc');
+  const [isActionBarExpanded, setIsActionBarExpanded] = useState(false);
+  const filtersRef = useRef<HTMLDivElement>(null);
+  const actionBarRef = useRef<HTMLDivElement>(null);
 
   // Responsive column visibility helpers
   // Priority: Customer > Type > Status > Grand Total > Date > Transaction ID > Payment Type > Item
@@ -242,6 +245,30 @@ export function Transactions() {
       unsubscribe();
     };
   }, [canViewArchived]);
+
+  // Click outside listeners for filters and action bar
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      // Close filters if clicking outside
+      if (filtersRef.current && !filtersRef.current.contains(event.target as Node)) {
+        if (showFilters) {
+          setShowFilters(false);
+        }
+      }
+
+      // Close action bar accordion on mobile if clicking outside
+      if (isMobile && actionBarRef.current && !actionBarRef.current.contains(event.target as Node)) {
+        if (isActionBarExpanded) {
+          setIsActionBarExpanded(false);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showFilters, isActionBarExpanded, isMobile]);
 
   // Calculate summary data
   const getSummaryData = () => {
@@ -726,53 +753,110 @@ export function Transactions() {
           }}>
             {/* Filter Section */}
             <section style={{ marginBottom: '2rem' }}>
-              <div style={{
+              <div ref={actionBarRef} style={{
                 backgroundColor: 'var(--surface-elevated)',
                 borderRadius: '0.5rem',
                 padding: '1rem',
                 marginBottom: '1rem',
                 border: '1px solid #e5e7eb'
               }}>
-                {/* Action Bar - Following Item Sales page pattern */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  {/* Row 1: Type pills (All/Parts/Service/Parts&Service) */}
-                  <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                    {[
-                      { key: 'all', label: 'All' },
-                      { key: 'parts', label: 'Parts' },
-                      { key: 'service', label: 'Service' },
-                      { key: 'partsAndService', label: 'Parts & Service' }
-                    ].map(tab => (
-                      <button
-                        key={tab.key}
-                        onClick={() => setActiveTab(tab.key as any)}
-                        style={{
-                          padding: '0.5rem 1rem',
-                          borderRadius: '9999px',
-                          border: activeTab === tab.key ? '1px solid #1e40af' : '1px solid #e5e7eb',
-                          backgroundColor: activeTab === tab.key ? '#1e40af' : 'white',
-                          color: activeTab === tab.key ? 'white' : '#374151',
-                          fontSize: '0.875rem',
-                          fontWeight: 500,
-                          cursor: 'pointer',
-                          height: '40px',
-                          transition: 'all 0.2s',
-                        }}
-                      >
-                        {tab.label}
-                      </button>
-                    ))}
-                  </div>
+                {/* Mobile: Accordion Header */}
+                {isMobile && (
+                  <button
+                    onClick={() => setIsActionBarExpanded(!isActionBarExpanded)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      width: '100%',
+                      background: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: 0,
+                      marginBottom: isActionBarExpanded ? '1rem' : 0,
+                      fontSize: '1.125rem',
+                      fontWeight: 600,
+                      color: '#1e40af',
+                      textAlign: 'left'
+                    }}
+                  >
+                    <span>Action Bar</span>
+                    <FaChevronDown
+                      style={{
+                        transition: 'transform 0.2s ease',
+                        transform: isActionBarExpanded ? 'rotate(180deg)' : 'rotate(0)'
+                      }}
+                    />
+                  </button>
+                )}
 
-                  {/* Row 2: Export, Select, Filters, Clear Filters */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
-                    {/* Left side buttons */}
-                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                      {canExportTransactions && (
+                {/* Desktop: Horizontal Layout | Mobile: Collapsible Content */}
+                {(!isMobile || isActionBarExpanded) && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    {/* Row 1: Type pills (All/Parts/Service/Parts&Service) */}
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      {[
+                        { key: 'all', label: 'All' },
+                        { key: 'parts', label: 'Parts' },
+                        { key: 'service', label: 'Service' },
+                        { key: 'partsAndService', label: 'Parts & Service' }
+                      ].map(tab => (
                         <button
-                          onClick={handleExportCsv}
+                          key={tab.key}
+                          onClick={() => setActiveTab(tab.key as any)}
                           style={{
-                            backgroundColor: '#059669',
+                            padding: '0.5rem 1rem',
+                            borderRadius: '9999px',
+                            border: activeTab === tab.key ? '1px solid #1e40af' : '1px solid #e5e7eb',
+                            backgroundColor: activeTab === tab.key ? '#1e40af' : 'white',
+                            color: activeTab === tab.key ? 'white' : '#374151',
+                            fontSize: '0.875rem',
+                            fontWeight: 500,
+                            cursor: 'pointer',
+                            height: '40px',
+                            transition: 'all 0.2s',
+                          }}
+                        >
+                          {tab.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Row 2: Export, Select, Filters, Clear Filters */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                      {/* Left side buttons */}
+                      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        {canExportTransactions && (
+                          <button
+                            onClick={handleExportCsv}
+                            style={{
+                              backgroundColor: '#059669',
+                              color: 'white',
+                              padding: '0.5rem 1rem',
+                              borderRadius: '0.375rem',
+                              border: 'none',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.5rem',
+                              fontWeight: 500,
+                              fontSize: '0.875rem',
+                              height: '40px',
+                              transition: 'background-color 0.2s',
+                            }}
+                            onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#047857'}
+                            onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#059669'}
+                          >
+                            Export to CSV <FaFileExcel />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => {
+                            setIsSelectMode(!isSelectMode);
+                            if (isSelectMode) setSelectedItems(new Set());
+                          }}
+                          style={{
+                            backgroundColor: isSelectMode ? '#dc2626' : '#3b82f6',
                             color: 'white',
                             padding: '0.5rem 1rem',
                             borderRadius: '0.375rem',
@@ -786,96 +870,71 @@ export function Transactions() {
                             height: '40px',
                             transition: 'background-color 0.2s',
                           }}
-                          onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#047857'}
-                          onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#059669'}
+                          onMouseOver={(e) => e.currentTarget.style.backgroundColor = isSelectMode ? '#b91c1c' : '#2563eb'}
+                          onMouseOut={(e) => e.currentTarget.style.backgroundColor = isSelectMode ? '#dc2626' : '#3b82f6'}
                         >
-                          Export to CSV <FaFileExcel />
+                          {isSelectMode ? 'Cancel' : 'Select'}
                         </button>
-                      )}
-                      <button
-                        onClick={() => {
-                          setIsSelectMode(!isSelectMode);
-                          if (isSelectMode) setSelectedItems(new Set());
-                        }}
-                        style={{
-                          backgroundColor: isSelectMode ? '#dc2626' : '#3b82f6',
-                          color: 'white',
-                          padding: '0.5rem 1rem',
-                          borderRadius: '0.375rem',
-                          border: 'none',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.5rem',
-                          fontWeight: 500,
-                          fontSize: '0.875rem',
-                          height: '40px',
-                          transition: 'background-color 0.2s',
-                        }}
-                        onMouseOver={(e) => e.currentTarget.style.backgroundColor = isSelectMode ? '#b91c1c' : '#2563eb'}
-                        onMouseOut={(e) => e.currentTarget.style.backgroundColor = isSelectMode ? '#dc2626' : '#3b82f6'}
-                      >
-                        {isSelectMode ? 'Cancel' : 'Select'}
-                      </button>
-                    </div>
+                      </div>
 
-                    {/* Right side buttons */}
-                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                      <button
-                        onClick={() => setShowFilters(!showFilters)}
-                        style={{
-                          backgroundColor: '#1e40af',
-                          color: 'white',
-                          padding: '0.5rem 1rem',
-                          borderRadius: '0.375rem',
-                          border: 'none',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.5rem',
-                          fontWeight: 500,
-                          fontSize: '0.875rem',
-                          height: '40px',
-                          transition: 'background-color 0.2s',
-                        }}
-                        onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#1e3a8a'}
-                        onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#1e40af'}
-                      >
-                        Filters <FaFilter />
-                      </button>
-                      <button
-                        onClick={() => {
-                          setStartDate('');
-                          setEndDate('');
-                          setTransactionType('');
-                          setMinPrice('');
-                          setMaxPrice('');
-                          setStatusFilter('');
-                          setSortBy('date-desc');
-                        }}
-                        style={{
-                          backgroundColor: '#6b7280',
-                          color: 'white',
-                          padding: '0.5rem 1rem',
-                          borderRadius: '0.375rem',
-                          border: 'none',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.5rem',
-                          fontWeight: 500,
-                          fontSize: '0.875rem',
-                          height: '40px',
-                          transition: 'background-color 0.2s',
-                        }}
-                        onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#4b5563'}
-                        onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#6b7280'}
-                      >
-                        Clear Filters
-                      </button>
+                      {/* Right side buttons */}
+                      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        <button
+                          onClick={() => setShowFilters(!showFilters)}
+                          style={{
+                            backgroundColor: '#1e40af',
+                            color: 'white',
+                            padding: '0.5rem 1rem',
+                            borderRadius: '0.375rem',
+                            border: 'none',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            fontWeight: 500,
+                            fontSize: '0.875rem',
+                            height: '40px',
+                            transition: 'background-color 0.2s',
+                          }}
+                          onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#1e3a8a'}
+                          onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#1e40af'}
+                        >
+                          Filters <FaFilter />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setStartDate('');
+                            setEndDate('');
+                            setTransactionType('');
+                            setMinPrice('');
+                            setMaxPrice('');
+                            setStatusFilter('');
+                            setSortBy('date-desc');
+                          }}
+                          style={{
+                            backgroundColor: '#6b7280',
+                            color: 'white',
+                            padding: '0.5rem 1rem',
+                            borderRadius: '0.375rem',
+                            border: 'none',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            fontWeight: 500,
+                            fontSize: '0.875rem',
+                            height: '40px',
+                            transition: 'background-color 0.2s',
+                          }}
+                          onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#4b5563'}
+                          onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#6b7280'}
+                        >
+                          Clear Filters
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
                 {showFilters && (
                   <div style={{

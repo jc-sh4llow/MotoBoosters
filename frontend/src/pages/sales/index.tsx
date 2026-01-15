@@ -50,7 +50,7 @@ export function Sales() {
   const [priceType, setPriceType] = useState('total'); //default price type
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
-  const [activeTab, setActiveTab] = useState<'all' | 'parts'>('all'); //default tab
+  // Removed activeTab - now showing all parts sales by default
   const [timeframe, setTimeframe] = useState<'today' | 'week' | 'month' | 'year' | 'custom'>('year'); //default timeframe
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
@@ -122,10 +122,8 @@ export function Sales() {
 
   const getFilteredByTab = () => {
     const source = (firestoreSales.length ? firestoreSales : salesData);
-
-    if (activeTab === 'all') return source.filter(s => s.transactionType === 'Parts Only' || s.transactionType === 'Parts + Service');
-    if (activeTab === 'parts') return source.filter(s => s.transactionType === 'Parts Only');
-    return source;
+    // Show all parts sales (including parts from Parts & Service transactions)
+    return source.filter(s => s.transactionType === 'Parts Only' || s.transactionType === 'Parts + Service');
   };
 
   const isWithinTimeframe = (dateStr: string) => {
@@ -747,41 +745,7 @@ export function Sales() {
                       </div>
                     )}
 
-                    {/* Center: Transaction Type Pills */}
-                    <div style={{
-                      display: 'flex',
-                      gap: '0.5rem',
-                      width: isMobile ? '100%' : 'auto',
-                      maxWidth: isMobile ? '600px' : 'none',
-                      justifyContent: 'center',
-                      flexWrap: 'wrap'
-                    }}>
-                      {[
-                        { key: 'all', label: 'All Items' },
-                        { key: 'parts', label: 'Parts Only' }
-                      ].map(tab => (
-                        <button
-                          key={tab.key}
-                          onClick={() => setActiveTab(tab.key as 'all' | 'parts')}
-                          style={{
-                            padding: '0.5rem 1rem',
-                            borderRadius: '9999px',
-                            border: activeTab === tab.key ? '1px solid #1e40af' : '1px solid #e5e7eb',
-                            backgroundColor: activeTab === tab.key ? '#1e40af' : 'white',
-                            color: activeTab === tab.key ? 'white' : '#374151',
-                            fontSize: '0.875rem',
-                            fontWeight: 500,
-                            cursor: 'pointer',
-                            height: '40px',
-                            transition: 'all 0.2s',
-                            whiteSpace: 'nowrap',
-                            flexShrink: 0,
-                          }}
-                        >
-                          {tab.label}
-                        </button>
-                      ))}
-                    </div>
+                    {/* Removed All/Parts Only tabs - now showing all parts sales by default */}
 
                     {/* Right side: Filters + Clear Filters (desktop) | All buttons stacked (mobile) */}
                     <div style={{ display: 'flex', gap: '0.5rem', flexDirection: isMobile ? 'column' : 'row', width: isMobile ? '100%' : 'auto' }}>
@@ -1046,8 +1010,7 @@ export function Sales() {
                 marginBottom: '1rem',
                 color: 'var(--text-primary)'
               }}>
-                {activeTab === 'all' && 'Overall Item Sales Summary'}
-                {activeTab === 'parts' && 'Parts Only Sales Summary'}
+                Parts Sales Summary
               </h2>
               <div style={{
                 display: 'grid',

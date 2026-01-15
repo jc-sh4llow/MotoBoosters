@@ -256,8 +256,8 @@ export function Transactions() {
         }
       }
 
-      // Close action bar accordion on mobile if clicking outside
-      if (isMobile && actionBarRef.current && !actionBarRef.current.contains(event.target as Node)) {
+      // Close action bar accordion on mobile if clicking outside (but not when select mode is active)
+      if (isMobile && !isSelectMode && actionBarRef.current && !actionBarRef.current.contains(event.target as Node)) {
         if (isActionBarExpanded) {
           setIsActionBarExpanded(false);
         }
@@ -268,7 +268,7 @@ export function Transactions() {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showFilters, isActionBarExpanded, isMobile]);
+  }, [showFilters, isActionBarExpanded, isMobile, isSelectMode]);
 
   // Calculate summary data
   const getSummaryData = () => {

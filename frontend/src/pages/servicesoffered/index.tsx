@@ -1206,6 +1206,118 @@ export function Services() {
                       </button>
                     </div>
                   )}
+                  
+                  {/* Mobile Filter Section */}
+                  {showFilters && (
+                    <div style={{ 
+                      padding: '1rem',
+                      borderTop: '1px solid #e5e7eb',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '1rem'
+                    }}>
+                      {/* Status - Full width on mobile */}
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#4b5563' }}>
+                          Status
+                        </label>
+                        <select 
+                          value={statusFilter} 
+                          onChange={(e) => setStatusFilter(e.target.value)} 
+                          style={{ 
+                            width: '100%', 
+                            padding: '0.5rem', 
+                            borderRadius: '0.375rem', 
+                            border: '1px solid #d1d5db', 
+                            backgroundColor: 'white', 
+                            color: '#111827' 
+                          }}
+                        >
+                          <option value="">All Status</option>
+                          <option value="Active">Active</option>
+                          <option value="Inactive">Inactive</option>
+                        </select>
+                      </div>
+                      
+                      {/* Price Range - Responsive */}
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#4b5563' }}>
+                          Price Range
+                        </label>
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                          <input 
+                            type="number" 
+                            placeholder="Min" 
+                            value={minPrice} 
+                            onChange={(e) => setMinPrice(e.target.value)} 
+                            style={{ 
+                              width: 'calc(50% - 1rem)', 
+                              padding: '0.5rem', 
+                              borderRadius: '0.375rem', 
+                              border: '1px solid #d1d5db', 
+                              fontSize: '0.875rem', 
+                              backgroundColor: 'white', 
+                              color: '#111827' 
+                            }} 
+                          />
+                          <span>-</span>
+                          <input 
+                            type="number" 
+                            placeholder="Max" 
+                            value={maxPrice} 
+                            onChange={(e) => setMaxPrice(e.target.value)} 
+                            style={{ 
+                              width: 'calc(50% - 1rem)', 
+                              padding: '0.5rem', 
+                              borderRadius: '0.375rem', 
+                              border: '1px solid #d1d5db', 
+                              fontSize: '0.875rem', 
+                              backgroundColor: 'white', 
+                              color: '#111827' 
+                            }} 
+                          />
+                        </div>
+                      </div>
+                      
+                      {/* Vehicle Type - Full width on mobile */}
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#4b5563' }}>
+                          Vehicle Type
+                        </label>
+                        <select 
+                          value={vehicleTypeFilter} 
+                          onChange={(e) => setVehicleTypeFilter(e.target.value)} 
+                          style={{ 
+                            width: '100%', 
+                            padding: '0.5rem', 
+                            borderRadius: '0.375rem', 
+                            border: '1px solid #d1d5db', 
+                            backgroundColor: 'white', 
+                            color: '#111827' 
+                          }}
+                        >
+                          <option value="">All Types</option>
+                          {vehicleTypeOptions.filter(t => t !== 'All Types').map(type => (
+                            <option key={type} value={type}>{type}</option>
+                          ))}
+                        </select>
+                      </div>
+                      
+                      {/* Show Archived - Full width on mobile */}
+                      {canViewArchived && (
+                        <div style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: '0.5rem'
+                        }}>
+                          <div style={{ fontSize: '0.875rem', color: '#4b5563', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <Switch checked={showArchivedFilter} onChange={(checked) => setShowArchivedFilter(checked)} size="sm" />
+                            Show Archived
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                   </div>
               ) : (
                 /* Desktop: Horizontal layout */

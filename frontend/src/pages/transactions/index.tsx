@@ -1048,6 +1048,144 @@ export function Transactions() {
                           >
                             {isSelectMode ? 'Cancel' : 'Select'}
                           </button>
+
+                          {/* Archive/Delete Selected buttons - only show when select mode is active and items are selected */}
+                          {isSelectMode && selectedItems.size > 0 && (() => {
+                            const selectedTxs = getFilteredTransactionsForTable().filter(tx => selectedItems.has(tx.id));
+                            const hasUnarchived = selectedTxs.some(tx => !tx.archived);
+                            const hasArchived = selectedTxs.some(tx => tx.archived);
+
+                            return (
+                              <>
+                                {/* Show Archive button if any unarchived items are selected */}
+                                {canArchiveTransactions && hasUnarchived && (
+                                  <button
+                                    onClick={async () => {
+                                      const toArchive = selectedTxs.filter(tx => !tx.archived);
+                                      await Promise.all(
+                                        toArchive.map((tx) => {
+                                          const txRef = doc(db, 'transactions', tx.id);
+                                          return updateDoc(txRef, { archived: true });
+                                        })
+                                      );
+                                      setTransactions((prev) =>
+                                        prev.map((row) =>
+                                          toArchive.some(t => t.id === row.id)
+                                            ? { ...row, archived: true }
+                                            : row,
+                                        ),
+                                      );
+                                      setSelectedItems(new Set());
+                                      setIsSelectMode(false);
+                                    }}
+                                    style={{
+                                      backgroundColor: '#f59e0b',
+                                      color: 'white',
+                                      padding: '0.5rem 1rem',
+                                      borderRadius: '0.375rem',
+                                      border: 'none',
+                                      cursor: 'pointer',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '0.5rem',
+                                      fontWeight: 500,
+                                      fontSize: '0.875rem',
+                                      height: '40px',
+                                      width: '100%',
+                                      maxWidth: '300px',
+                                      justifyContent: 'center'
+                                    }}
+                                  >
+                                    Archive Selected
+                                  </button>
+                                )}
+
+                                {/* Show Unarchive button if any archived items are selected */}
+                                {canUnarchiveTransactions && hasArchived && (
+                                  <button
+                                    onClick={async () => {
+                                      const toUnarchive = selectedTxs.filter(tx => tx.archived);
+                                      await Promise.all(
+                                        toUnarchive.map((tx) => {
+                                          const txRef = doc(db, 'transactions', tx.id);
+                                          return updateDoc(txRef, { archived: false });
+                                        })
+                                      );
+                                      setTransactions((prev) =>
+                                        prev.map((row) =>
+                                          toUnarchive.some(t => t.id === row.id)
+                                            ? { ...row, archived: false }
+                                            : row,
+                                        ),
+                                      );
+                                      setSelectedItems(new Set());
+                                      setIsSelectMode(false);
+                                    }}
+                                    style={{
+                                      backgroundColor: '#3b82f6',
+                                      color: 'white',
+                                      padding: '0.5rem 1rem',
+                                      borderRadius: '0.375rem',
+                                      border: 'none',
+                                      cursor: 'pointer',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '0.5rem',
+                                      fontWeight: 500,
+                                      fontSize: '0.875rem',
+                                      height: '40px',
+                                      width: '100%',
+                                      maxWidth: '300px',
+                                      justifyContent: 'center'
+                                    }}
+                                  >
+                                    Unarchive Selected
+                                  </button>
+                                )}
+
+                                {/* Show Delete button if only archived items are selected */}
+                                {canDeleteTransactions && hasArchived && !hasUnarchived && (
+                                  <button
+                                    onClick={async () => {
+                                      const toDelete = selectedTxs.filter(tx => tx.archived);
+                                      await Promise.all(
+                                        toDelete.map((tx) => {
+                                          const txRef = doc(db, 'transactions', tx.id);
+                                          return updateDoc(txRef, { deleted: true });
+                                        })
+                                      );
+                                      setTransactions((prev) =>
+                                        prev.filter((row) =>
+                                          !toDelete.some(t => t.id === row.id)
+                                        ),
+                                      );
+                                      setSelectedItems(new Set());
+                                      setIsSelectMode(false);
+                                    }}
+                                    style={{
+                                      backgroundColor: '#ef4444',
+                                      color: 'white',
+                                      padding: '0.5rem 1rem',
+                                      borderRadius: '0.375rem',
+                                      border: 'none',
+                                      cursor: 'pointer',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '0.5rem',
+                                      fontWeight: 500,
+                                      fontSize: '0.875rem',
+                                      height: '40px',
+                                      width: '100%',
+                                      maxWidth: '300px',
+                                      justifyContent: 'center'
+                                    }}
+                                  >
+                                    Delete Selected
+                                  </button>
+                                )}
+                              </>
+                            );
+                          })()}
                         </>
                       )}
                     </div>
@@ -1449,123 +1587,11 @@ export function Transactions() {
                 }}>
                   Transaction Records
                 </h2>
-                {isSelectMode && selectedItems.size > 0 && (() => {
-                  // Determine which selected items are archived vs unarchived
-                  const selectedTxs = getFilteredTransactionsForTable().filter(tx => selectedItems.has(tx.id));
-                  const hasUnarchived = selectedTxs.some(tx => !tx.archived);
-                  const hasArchived = selectedTxs.some(tx => tx.archived);
-
-                  return (
-                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                      <span style={{ fontSize: '0.875rem', color: '#374151' }}>
-                        {selectedItems.size} selected
-                      </span>
-                      {/* Show Archive button if any unarchived items are selected */}
-                      {canArchiveTransactions && hasUnarchived && (
-                        <button
-                          onClick={async () => {
-                            const toArchive = selectedTxs.filter(tx => !tx.archived);
-                            await Promise.all(
-                              toArchive.map((tx) => {
-                                const txRef = doc(db, 'transactions', tx.id);
-                                return updateDoc(txRef, { archived: true });
-                              })
-                            );
-                            setTransactions((prev) =>
-                              prev.map((row) =>
-                                toArchive.some(t => t.id === row.id)
-                                  ? { ...row, archived: true }
-                                  : row,
-                              ),
-                            );
-                            setSelectedItems(new Set());
-                            setIsSelectMode(false);
-                          }}
-                          style={{
-                            backgroundColor: '#f59e0b',
-                            color: 'white',
-                            padding: '0.5rem 1rem',
-                            borderRadius: '0.375rem',
-                            border: 'none',
-                            cursor: 'pointer',
-                            fontSize: '0.875rem',
-                            fontWeight: 500,
-                          }}
-                        >
-                          Archive Selected
-                        </button>
-                      )}
-                      {/* Show Unarchive button if any archived items are selected */}
-                      {canUnarchiveTransactions && hasArchived && (
-                        <button
-                          onClick={async () => {
-                            const toUnarchive = selectedTxs.filter(tx => tx.archived);
-                            await Promise.all(
-                              toUnarchive.map((tx) => {
-                                const txRef = doc(db, 'transactions', tx.id);
-                                return updateDoc(txRef, { archived: false });
-                              })
-                            );
-                            setTransactions((prev) =>
-                              prev.map((row) =>
-                                toUnarchive.some(t => t.id === row.id)
-                                  ? { ...row, archived: false }
-                                  : row,
-                              ),
-                            );
-                            setSelectedItems(new Set());
-                            setIsSelectMode(false);
-                          }}
-                          style={{
-                            backgroundColor: '#3b82f6',
-                            color: 'white',
-                            padding: '0.5rem 1rem',
-                            borderRadius: '0.375rem',
-                            border: 'none',
-                            cursor: 'pointer',
-                            fontSize: '0.875rem',
-                            fontWeight: 500,
-                          }}
-                        >
-                          Unarchive Selected
-                        </button>
-                      )}
-                      {/* Show Delete button if only archived items are selected */}
-                      {canDeleteTransactions && hasArchived && !hasUnarchived && (
-                        <button
-                          onClick={async () => {
-                            const toDelete = selectedTxs.filter(tx => tx.archived);
-                            await Promise.all(
-                              toDelete.map((tx) => {
-                                const txRef = doc(db, 'transactions', tx.id);
-                                return updateDoc(txRef, { deleted: true });
-                              })
-                            );
-                            setTransactions((prev) =>
-                              prev.filter((row) =>
-                                !toDelete.some(t => t.id === row.id)
-                              ),
-                            );
-                            setSelectedItems(new Set());
-                            setIsSelectMode(false);
-                          }}
-                          style={{
-                            backgroundColor: '#ef4444',
-                            color: 'white',
-                            padding: '0.5rem 1rem',
-                            borderRadius: '0.375rem',
-                            border: 'none',
-                            cursor: 'pointer',
-                            fontSize: '0.875rem',
-                            fontWeight: 500,
-                          }}
-                        >
-                          Delete Selected
-                        </button>
-                      )}
-                    </div>
-                  );
-                })()}
+                {isSelectMode && selectedItems.size > 0 && (
+                  <span style={{ fontSize: '0.875rem', color: '#374151' }}>
+                    {selectedItems.size} selected
+                  </span>
+                )}
               </div>
 
               <div style={{

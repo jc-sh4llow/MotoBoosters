@@ -2069,14 +2069,44 @@ export function Services() {
                           flexDirection: 'column'
                         }}
                       >
-                        <h2 style={{
-                          marginBottom: '1.5rem',
-                          fontSize: '1.25rem',
-                          fontWeight: '600',
-                          color: 'var(--text-primary)'
+                        <div style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          marginBottom: '1.5rem'
                         }}>
-                          Service Details
-                        </h2>
+                          <h2 style={{
+                            fontSize: '1.25rem',
+                            fontWeight: '600',
+                            color: 'var(--text-primary)',
+                            margin: 0
+                          }}>
+                            Service Details
+                          </h2>
+                          <button
+                            onClick={() => {
+                              setIsDetailsVisible(false);
+                              setTimeout(() => setShouldShowDetails(false), 300);
+                            }}
+                            style={{
+                              background: 'transparent',
+                              border: 'none',
+                              fontSize: '1.5rem',
+                              cursor: 'pointer',
+                              color: '#6b7280',
+                              padding: '0.25rem',
+                              lineHeight: 1,
+                              minWidth: '32px',
+                              minHeight: '32px',
+                              borderRadius: '0.375rem',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}
+                          >
+                            ×
+                          </button>
+                        </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                           {/* Service ID (readonly) */}
                           <div>

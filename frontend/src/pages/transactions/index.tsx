@@ -531,7 +531,7 @@ export function Transactions() {
             }}
           >
             {/* Left: logo, title, welcome */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+            <div style={{ display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', gap: '1.5rem' }}>
               <div
                 style={{
                   display: 'flex',
@@ -552,77 +552,88 @@ export function Transactions() {
                   }}
                 />
               </div>
-              <h1
-                style={{
-                  fontSize: '1.875rem',
-                  fontWeight: 'bold',
-                  color: '#1e40af',
-                  margin: 0,
-                }}
-              >
-                Transactions
-              </h1>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginLeft: '1rem' }}>
-                <span style={{ color: '#374151', fontSize: '0.9rem' }}>
-                  Welcome, {user?.name || 'Guest'}
-                </span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                <h1
+                  style={{
+                    fontSize: '1.875rem',
+                    fontWeight: 'bold',
+                    color: '#1e40af',
+                    margin: 0,
+                  }}
+                >
+                  Transactions
+                </h1>
+                {isMobile && (
+                  <span style={{ color: '#374151', fontSize: '0.9rem' }}>
+                    Welcome, {user?.name || 'Guest'}
+                  </span>
+                )}
               </div>
+              {!isMobile && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginLeft: '1rem' }}>
+                  <span style={{ color: '#374151', fontSize: '0.9rem' }}>
+                    Welcome, {user?.name || 'Guest'}
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Right: search bar, Logout, navbar toggle */}
             <div style={{ display: 'flex', alignItems: 'center', marginLeft: 'auto' }}>
-              <div style={{
-                position: 'relative',
-                display: 'flex',
-                alignItems: 'center',
-                marginRight: '1rem'
-              }}>
-                <FaSearch style={{
-                  position: 'absolute',
-                  left: '12px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  color: '#9ca3af'
-                }} />
-                <input
-                  type="text"
-                  placeholder="Search by Customer or Transaction ID..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  style={{
-                    padding: '0.5rem 2.5rem 0.5rem 2.5rem',
-                    borderRadius: '0.5rem',
-                    border: '1px solid #d1d5db',
-                    backgroundColor: 'rgba(255, 255, 255)',
-                    color: '#1f2937',
-                    width: '320px',
-                    outline: 'none'
-                  }}
-                />
-                {searchTerm && (
-                  <button
-                    onClick={() => setSearchTerm('')}
+              {!isMobile && (
+                <div style={{
+                  position: 'relative',
+                  display: 'flex',
+                  alignItems: 'center',
+                  marginRight: '1rem'
+                }}>
+                  <FaSearch style={{
+                    position: 'absolute',
+                    left: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    color: '#9ca3af'
+                  }} />
+                  <input
+                    type="text"
+                    placeholder="Search by Customer or Transaction ID..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
                     style={{
-                      position: 'absolute',
-                      right: '8px',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      background: 'transparent',
-                      border: 'none',
-                      color: '#9ca3af',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      padding: '4px'
+                      padding: '0.5rem 2.5rem 0.5rem 2.5rem',
+                      borderRadius: '0.5rem',
+                      border: '1px solid #d1d5db',
+                      backgroundColor: 'rgba(255, 255, 255)',
+                      color: '#1f2937',
+                      width: '320px',
+                      outline: 'none'
                     }}
-                  >
-                    <FaTimes size={14} />
-                  </button>
-                )}
-              </div>
+                  />
+                  {searchTerm && (
+                    <button
+                      onClick={() => setSearchTerm('')}
+                      style={{
+                        position: 'absolute',
+                        right: '8px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#9ca3af',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '4px'
+                      }}
+                    >
+                      <FaTimes size={14} />
+                    </button>
+                  )}
+                </div>
+              )}
 
-              {user && (
+              {!isMobile && user && (
                 <button
                   onClick={() => {
                     logout();
@@ -907,7 +918,7 @@ export function Transactions() {
                           {endDate ? new Date(endDate).toLocaleDateString() : 'End Date'}
                         </button>
                       </div>
-                      
+
                       {/* Calendar Picker Dropdown */}
                       {showCalendarPicker && (() => {
                         const minDate = new Date('2020-01-01');
@@ -916,16 +927,16 @@ export function Transactions() {
                         const month = calendarViewDate.getMonth();
                         const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
                         const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-                        
+
                         const firstDay = new Date(year, month, 1).getDay();
                         const daysInMonth = new Date(year, month + 1, 0).getDate();
                         const days: (number | null)[] = [];
                         for (let i = 0; i < firstDay; i++) days.push(null);
                         for (let d = 1; d <= daysInMonth; d++) days.push(d);
-                        
+
                         const canGoPrev = new Date(year, month - 1, 1) >= new Date(minDate.getFullYear(), minDate.getMonth(), 1);
                         const canGoNext = new Date(year, month + 1, 1) <= new Date(maxDate.getFullYear(), maxDate.getMonth(), 1);
-                        
+
                         return (
                           <div style={{
                             position: 'absolute',
@@ -952,7 +963,7 @@ export function Transactions() {
                               </div>
                               <button type="button" onClick={() => canGoNext && setCalendarViewDate(new Date(year, month + 1, 1))} disabled={!canGoNext}
                                 style={{ background: 'none', border: 'none', cursor: canGoNext ? 'pointer' : 'not-allowed', color: canGoNext ? '#374151' : '#d1d5db', fontSize: '1rem', padding: '0.25rem 0.5rem' }}>{'>'}</button>
-                              
+
                               {/* Month Picker */}
                               {showMonthPicker && (
                                 <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', zIndex: 1001, backgroundColor: 'white', borderRadius: '0.5rem', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', border: '1px solid #e5e7eb', padding: '0.5rem', marginTop: '0.25rem', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.25rem', minWidth: '180px' }}>
@@ -965,7 +976,7 @@ export function Transactions() {
                                   })}
                                 </div>
                               )}
-                              
+
                               {/* Year Picker */}
                               {showYearPicker && (() => {
                                 const years: number[] = [];
@@ -980,14 +991,14 @@ export function Transactions() {
                                 );
                               })()}
                             </div>
-                            
+
                             {/* Day Names */}
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.25rem', marginBottom: '0.5rem' }}>
                               {dayNames.map(d => (
                                 <div key={d} style={{ textAlign: 'center', fontSize: '0.7rem', color: '#6b7280', fontWeight: 600 }}>{d}</div>
                               ))}
                             </div>
-                            
+
                             {/* Days Grid */}
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.25rem' }}>
                               {days.map((day, idx) => {
@@ -997,7 +1008,7 @@ export function Transactions() {
                                 const isDisabled = dateObj < minDate || dateObj > maxDate;
                                 const isSelected = dateStr === startDate || dateStr === endDate;
                                 const isInRange = startDate && endDate && dateStr > startDate && dateStr < endDate;
-                                
+
                                 return (
                                   <div key={day} onClick={() => {
                                     if (isDisabled) return;
@@ -1465,7 +1476,7 @@ export function Transactions() {
                               <input
                                 type="checkbox"
                                 checked={selectedItems.has(tx.id)}
-                                onChange={() => {}}
+                                onChange={() => { }}
                                 onClick={(e) => e.stopPropagation()}
                                 style={{ width: '18px', height: '18px', cursor: 'pointer' }}
                               />

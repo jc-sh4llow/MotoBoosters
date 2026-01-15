@@ -90,6 +90,7 @@ export function Transactions() {
   const [isActionBarExpanded, setIsActionBarExpanded] = useState(false);
   const filtersRef = useRef<HTMLDivElement>(null);
   const actionBarRef = useRef<HTMLDivElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
 
   // Responsive column visibility helpers
   // Priority: Customer > Type > Status > Grand Total > Date > Transaction ID > Payment Type > Item
@@ -246,7 +247,7 @@ export function Transactions() {
     };
   }, [canViewArchived]);
 
-  // Click outside listeners for filters and action bar
+  // Click outside listeners for filters, action bar, and modal
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       // Close filters if clicking outside
@@ -262,13 +263,20 @@ export function Transactions() {
           setIsActionBarExpanded(false);
         }
       }
+
+      // Close details modal if clicking outside the modal content
+      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+        if (isModalOpen) {
+          setIsModalOpen(false);
+        }
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showFilters, isActionBarExpanded, isMobile, isSelectMode]);
+  }, [showFilters, isActionBarExpanded, isMobile, isSelectMode, isModalOpen]);
 
   // Calculate summary data
   const getSummaryData = () => {
@@ -1989,7 +1997,7 @@ export function Transactions() {
                     zIndex: 2000,
                     padding: isMobile ? '1rem' : '0'
                   }}>
-                    <div style={{
+                    <div ref={modalRef} style={{
                       backgroundColor: 'var(--surface-elevated)',
                       borderRadius: '0.75rem',
                       padding: isMobile ? '1rem' : '1.5rem 2rem',

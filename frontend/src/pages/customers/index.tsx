@@ -1881,7 +1881,7 @@ export function Customers() {
                   >
                     Available Customers
                   </h2>
-                  {canEditCustomers && (
+                  {canEditCustomers && !isMobile && (
                     <button
                       type="button"
                       onClick={handleNewCustomer}
@@ -2076,7 +2076,7 @@ export function Customers() {
                               Vehicle Type(s)
                             </th>
                           )}
-                          {canViewArchived && (
+                          {canViewArchived && !isMobile && (
                             <th
                               style={{
                                 padding: '0.75rem 1rem',
@@ -2175,7 +2175,7 @@ export function Customers() {
                                 </td>
                               )}
                               {isMobile ? (
-                                /* Mobile: Combined Customer cell (Name + ID) */
+                                /* Mobile: Combined Customer cell (Name + ID + Status) */
                                 <td
                                   style={{
                                     padding: '0.75rem 1rem',
@@ -2185,8 +2185,16 @@ export function Customers() {
                                   }}
                                 >
                                   <div style={{ fontWeight: '500' }}>{customer.name || '-'}</div>
-                                  <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
-                                    {customer.customerId || '-'}
+                                  <div style={{ fontSize: '0.75rem', marginTop: '0.25rem', display: 'flex', gap: '0.25rem' }}>
+                                    <span style={{ color: '#6b7280' }}>{customer.customerId || '-'}</span>
+                                    {canViewArchived && (
+                                      <>
+                                        <span style={{ color: '#6b7280' }}>-</span>
+                                        <span style={{ color: customer.isArchived ? '#b91c1c' : '#059669' }}>
+                                          {customer.isArchived ? 'Archived' : 'Active'}
+                                        </span>
+                                      </>
+                                    )}
                                   </div>
                                 </td>
                               ) : (
@@ -2285,7 +2293,7 @@ export function Customers() {
                                     : '-'}
                                 </td>
                               )}
-                              {canViewArchived && (
+                              {canViewArchived && !isMobile && (
                                 <td
                                   style={{
                                     padding: '0.75rem 1rem',

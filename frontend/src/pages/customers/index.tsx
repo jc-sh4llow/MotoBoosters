@@ -1929,39 +1929,63 @@ export function Customers() {
                               <input type="checkbox" checked={selectedItems.size === filteredCustomers.length && filteredCustomers.length > 0} onChange={(e) => { if (e.target.checked) { setSelectedItems(new Set(filteredCustomers.map(c => c.id))); } else { setSelectedItems(new Set()); } }} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
                             </th>
                           )}
-                          <th
-                            onClick={() => handleHeaderSort('customerId')}
-                            style={{
-                              padding: '0.75rem 1rem',
-                              fontSize: '0.75rem',
-                              textTransform: 'uppercase',
-                              letterSpacing: '0.05em',
-                              textAlign: 'left',
-                              color: '#6b7280',
-                              borderBottom: '1px solid #e5e7eb',
-                              cursor: 'pointer',
-                              userSelect: 'none',
-                            }}
-                          >
-                            Customer ID {sortBy.startsWith('customerId-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
-                          </th>
-                          <th
-                            onClick={() => handleHeaderSort('name')}
-                            style={{
-                              padding: '0.75rem 1rem',
-                              fontSize: '0.75rem',
-                              textTransform: 'uppercase',
-                              letterSpacing: '0.05em',
-                              textAlign: 'left',
-                              color: '#6b7280',
-                              borderBottom: '1px solid #e5e7eb',
-                              cursor: 'pointer',
-                              userSelect: 'none',
-                            }}
-                          >
-                            Customer Name {sortBy.startsWith('name-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
-                          </th>
-                          {showContact && (
+                          {isMobile ? (
+                            /* Mobile: Combined Customer column */
+                            <th
+                              onClick={() => handleHeaderSort('name')}
+                              style={{
+                                padding: '0.75rem 1rem',
+                                fontSize: '0.75rem',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.05em',
+                                textAlign: 'left',
+                                color: '#6b7280',
+                                borderBottom: '1px solid #e5e7eb',
+                                cursor: 'pointer',
+                                userSelect: 'none',
+                              }}
+                            >
+                              Customer {sortBy.startsWith('name-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                            </th>
+                          ) : (
+                            /* Desktop: Separate Customer ID and Name columns */
+                            <>
+                              <th
+                                onClick={() => handleHeaderSort('customerId')}
+                                style={{
+                                  padding: '0.75rem 1rem',
+                                  fontSize: '0.75rem',
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.05em',
+                                  textAlign: 'left',
+                                  color: '#6b7280',
+                                  borderBottom: '1px solid #e5e7eb',
+                                  cursor: 'pointer',
+                                  userSelect: 'none',
+                                }}
+                              >
+                                Customer ID {sortBy.startsWith('customerId-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                              </th>
+                              <th
+                                onClick={() => handleHeaderSort('name')}
+                                style={{
+                                  padding: '0.75rem 1rem',
+                                  fontSize: '0.75rem',
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.05em',
+                                  textAlign: 'left',
+                                  color: '#6b7280',
+                                  borderBottom: '1px solid #e5e7eb',
+                                  cursor: 'pointer',
+                                  userSelect: 'none',
+                                }}
+                              >
+                                Customer Name {sortBy.startsWith('name-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                              </th>
+                            </>
+                          )}
+                          {isMobile ? (
+                            /* Mobile: Combined Contact column */
                             <th
                               onClick={() => handleHeaderSort('contact')}
                               style={{
@@ -1976,26 +2000,48 @@ export function Customers() {
                                 userSelect: 'none',
                               }}
                             >
-                              Contact Number {sortBy.startsWith('contact-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                              Contact {sortBy.startsWith('contact-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
                             </th>
-                          )}
-                          {showEmail && (
-                            <th
-                              onClick={() => handleHeaderSort('email')}
-                              style={{
-                                padding: '0.75rem 1rem',
-                                fontSize: '0.75rem',
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.05em',
-                                textAlign: 'left',
-                                color: '#6b7280',
-                                borderBottom: '1px solid #e5e7eb',
-                                cursor: 'pointer',
-                                userSelect: 'none',
-                              }}
-                            >
-                              Email {sortBy.startsWith('email-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
-                            </th>
+                          ) : (
+                            /* Desktop: Separate Contact and Email columns */
+                            <>
+                              {showContact && (
+                                <th
+                                  onClick={() => handleHeaderSort('contact')}
+                                  style={{
+                                    padding: '0.75rem 1rem',
+                                    fontSize: '0.75rem',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.05em',
+                                    textAlign: 'left',
+                                    color: '#6b7280',
+                                    borderBottom: '1px solid #e5e7eb',
+                                    cursor: 'pointer',
+                                    userSelect: 'none',
+                                  }}
+                                >
+                                  Contact Number {sortBy.startsWith('contact-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                                </th>
+                              )}
+                              {showEmail && (
+                                <th
+                                  onClick={() => handleHeaderSort('email')}
+                                  style={{
+                                    padding: '0.75rem 1rem',
+                                    fontSize: '0.75rem',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.05em',
+                                    textAlign: 'left',
+                                    color: '#6b7280',
+                                    borderBottom: '1px solid #e5e7eb',
+                                    cursor: 'pointer',
+                                    userSelect: 'none',
+                                  }}
+                                >
+                                  Email {sortBy.startsWith('email-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                                </th>
+                              )}
+                            </>
                           )}
                           {showAddress && (
                             <th
@@ -2128,28 +2174,8 @@ export function Customers() {
                                   <input type="checkbox" checked={selectedItems.has(customer.id)} onChange={() => { }} onClick={(e) => e.stopPropagation()} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
                                 </td>
                               )}
-                              <td
-                                style={{
-                                  padding: '0.75rem 1rem',
-                                  fontSize: '0.875rem',
-                                  color: '#111827',
-                                  borderBottom: '1px solid #e5e7eb',
-                                  whiteSpace: 'nowrap',
-                                }}
-                              >
-                                {customer.customerId || '-'}
-                              </td>
-                              <td
-                                style={{
-                                  padding: '0.75rem 1rem',
-                                  fontSize: '0.875rem',
-                                  color: '#111827',
-                                  borderBottom: '1px solid #e5e7eb',
-                                }}
-                              >
-                                {customer.name || '-'}
-                              </td>
-                              {showContact && (
+                              {isMobile ? (
+                                /* Mobile: Combined Customer cell (Name + ID) */
                                 <td
                                   style={{
                                     padding: '0.75rem 1rem',
@@ -2158,10 +2184,39 @@ export function Customers() {
                                     borderBottom: '1px solid #e5e7eb',
                                   }}
                                 >
-                                  {customer.contact || '-'}
+                                  <div style={{ fontWeight: '500' }}>{customer.name || '-'}</div>
+                                  <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
+                                    {customer.customerId || '-'}
+                                  </div>
                                 </td>
+                              ) : (
+                                /* Desktop: Separate Customer ID and Name cells */
+                                <>
+                                  <td
+                                    style={{
+                                      padding: '0.75rem 1rem',
+                                      fontSize: '0.875rem',
+                                      color: '#111827',
+                                      borderBottom: '1px solid #e5e7eb',
+                                      whiteSpace: 'nowrap',
+                                    }}
+                                  >
+                                    {customer.customerId || '-'}
+                                  </td>
+                                  <td
+                                    style={{
+                                      padding: '0.75rem 1rem',
+                                      fontSize: '0.875rem',
+                                      color: '#111827',
+                                      borderBottom: '1px solid #e5e7eb',
+                                    }}
+                                  >
+                                    {customer.name || '-'}
+                                  </td>
+                                </>
                               )}
-                              {showEmail && (
+                              {isMobile ? (
+                                /* Mobile: Combined Contact cell (Contact + Email) */
                                 <td
                                   style={{
                                     padding: '0.75rem 1rem',
@@ -2170,8 +2225,39 @@ export function Customers() {
                                     borderBottom: '1px solid #e5e7eb',
                                   }}
                                 >
-                                  {customer.email || '-'}
+                                  <div style={{ fontWeight: '500' }}>{customer.contact || '-'}</div>
+                                  <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
+                                    {customer.email || '-'}
+                                  </div>
                                 </td>
+                              ) : (
+                                /* Desktop: Separate Contact and Email cells */
+                                <>
+                                  {showContact && (
+                                    <td
+                                      style={{
+                                        padding: '0.75rem 1rem',
+                                        fontSize: '0.875rem',
+                                        color: '#111827',
+                                        borderBottom: '1px solid #e5e7eb',
+                                      }}
+                                    >
+                                      {customer.contact || '-'}
+                                    </td>
+                                  )}
+                                  {showEmail && (
+                                    <td
+                                      style={{
+                                        padding: '0.75rem 1rem',
+                                        fontSize: '0.875rem',
+                                        color: '#111827',
+                                        borderBottom: '1px solid #e5e7eb',
+                                      }}
+                                    >
+                                      {customer.email || '-'}
+                                    </td>
+                                  )}
+                                </>
                               )}
                               {showAddress && (
                                 <td

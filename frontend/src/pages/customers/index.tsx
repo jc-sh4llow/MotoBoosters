@@ -604,7 +604,7 @@ export function Customers() {
             position: 'relative',
           }}>
             {/* Left: logo, title, welcome */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+            <div style={{ display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', gap: '1.5rem' }}>
               <div
                 style={{
                   display: 'flex',
@@ -626,16 +626,28 @@ export function Customers() {
                   }}
                 />
               </div>
-              <h1 style={{
-                fontSize: '1.875rem',
-                fontWeight: 'bold',
-                color: 'var(--text-primary)',
-                margin: 0,
+
+              {/* Container for title + welcome message (mobile: stacked, desktop: inline) */}
+              <div style={{
+                display: 'flex',
+                flexDirection: isMobile ? 'column' : 'row',
+                alignItems: isMobile ? 'flex-start' : 'baseline',
+                gap: isMobile ? '0.25rem' : '0.75rem'
               }}>
-                Customers
-              </h1>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginLeft: '1rem' }}>
-                <span style={{ color: '#374151', fontSize: '0.9rem' }}>
+                <h1 style={{
+                  fontSize: isMobile ? '1.5rem' : '1.875rem',
+                  fontWeight: 'bold',
+                  color: 'var(--text-primary)',
+                  margin: 0,
+                  lineHeight: isMobile ? '1.75rem' : 'normal',
+                }}>
+                  Customers
+                </h1>
+                <span style={{
+                  color: '#374151',
+                  fontSize: isMobile ? '0.75rem' : '0.9rem',
+                  marginLeft: isMobile ? '0' : '1rem',
+                }}>
                   Welcome, {user?.name || 'Guest'}
                 </span>
               </div>
@@ -643,58 +655,62 @@ export function Customers() {
 
             {/* Right: search bar, Logout, navbar toggle */}
             <div style={{ display: 'flex', alignItems: 'center', marginLeft: 'auto' }}>
-              <div style={{
-                position: 'relative',
-                display: 'flex',
-                alignItems: 'center',
-                marginRight: '1rem',
-              }}>
-                <FaSearch style={{
-                  position: 'absolute',
-                  left: '12px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  color: '#9ca3af',
-                }} />
-                <input
-                  type="text"
-                  placeholder="Search customers..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  style={{
-                    padding: '0.5rem 2.5rem 0.5rem 2.5rem',
-                    borderRadius: '0.5rem',
-                    border: '1px solid #d1d5db',
-                    backgroundColor: 'rgba(255, 255, 255)',
-                    color: '#1f2937',
-                    width: '320px',
-                    outline: 'none',
-                  }}
-                />
-                {searchTerm && (
-                  <button
-                    onClick={() => setSearchTerm('')}
+              {/* Search bar - Desktop only, hidden on mobile */}
+              {!isMobile && (
+                <div style={{
+                  position: 'relative',
+                  display: 'flex',
+                  alignItems: 'center',
+                  marginRight: '1rem',
+                }}>
+                  <FaSearch style={{
+                    position: 'absolute',
+                    left: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    color: '#9ca3af',
+                  }} />
+                  <input
+                    type="text"
+                    placeholder="Search customers..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
                     style={{
-                      position: 'absolute',
-                      right: '8px',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      background: 'transparent',
-                      border: 'none',
-                      color: '#9ca3af',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      padding: '4px',
+                      padding: '0.5rem 2.5rem 0.5rem 2.5rem',
+                      borderRadius: '0.5rem',
+                      border: '1px solid #d1d5db',
+                      backgroundColor: 'rgba(255, 255, 255)',
+                      color: '#1f2937',
+                      width: '320px',
+                      outline: 'none',
                     }}
-                  >
-                    <FaTimes size={14} />
-                  </button>
-                )}
-              </div>
+                  />
+                  {searchTerm && (
+                    <button
+                      onClick={() => setSearchTerm('')}
+                      style={{
+                        position: 'absolute',
+                        right: '8px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#9ca3af',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '4px',
+                      }}
+                    >
+                      <FaTimes size={14} />
+                    </button>
+                  )}
+                </div>
+              )}
 
-              {user && (
+              {/* Hide logout button on mobile (will be in dropdown) */}
+              {viewportWidth >= 768 && user && (
                 <button
                   onClick={() => {
                     logout();

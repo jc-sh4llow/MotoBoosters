@@ -1,6 +1,6 @@
-import { FaHome, FaBars, FaWarehouse, FaTag, FaWrench, FaFileInvoice, FaPlus, FaUser, FaSearch, FaTimes, FaUndoAlt, FaCog, FaFileExcel, FaFilter } from 'react-icons/fa';
+import { FaHome, FaBars, FaWarehouse, FaTag, FaWrench, FaFileInvoice, FaPlus, FaUser, FaSearch, FaTimes, FaUndoAlt, FaCog, FaFileExcel, FaFilter, FaChevronDown } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy, getDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -91,6 +91,11 @@ export function Customers() {
   // Select mode and bulk actions state
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+
+  // Action Bar accordion state and refs
+  const [isActionBarExpanded, setIsActionBarExpanded] = useState(false);
+  const actionBarRef = useRef<HTMLDivElement | null>(null);
+  const filtersRef = useRef<HTMLDivElement | null>(null);
 
   // App-level confirmation / message modal
   const [modalState, setModalState] = useState<{

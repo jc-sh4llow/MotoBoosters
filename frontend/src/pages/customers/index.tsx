@@ -1483,7 +1483,7 @@ export function Customers() {
               }}
             >
               {/* Customer Details Section */}
-              {shouldShowDetails && (
+              {shouldShowDetails && !isMobile && (
                 <div
                   data-details-section
                   style={{
@@ -1846,6 +1846,415 @@ export function Customers() {
                         )}
                       </>
                     )}
+                  </div>
+                </div>
+              )}
+
+              {/* Mobile Overlay for Customer Details */}
+              {shouldShowDetails && isMobile && (
+                <div
+                  onClick={() => {
+                    setIsDetailsVisible(false);
+                    setTimeout(() => setShouldShowDetails(false), 300);
+                  }}
+                  style={{
+                    position: 'fixed',
+                    inset: 0,
+                    zIndex: 200,
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'flex-start',
+                    paddingTop: '6rem',
+                    paddingBottom: '2rem',
+                    backgroundColor: 'rgba(15, 23, 42, 0.55)'
+                  }}
+                >
+                  <div
+                    style={{
+                      position: 'relative',
+                      width: '100%',
+                      maxWidth: '100%',
+                      margin: '0 auto',
+                      padding: '0 0.5rem'
+                    }}
+                  >
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      style={{
+                        backgroundColor: 'var(--surface-elevated)',
+                        backdropFilter: 'blur(12px)',
+                        borderRadius: '0.75rem',
+                        padding: '1.5rem',
+                        border: '1px solid #e5e7eb',
+                        boxShadow: '0 20px 40px rgba(15, 23, 42, 0.45)',
+                        maxHeight: 'calc(100vh - 8rem)',
+                        overflowY: 'auto',
+                        transform: isDetailsVisible ? 'translateY(0)' : 'translateY(24px)',
+                        opacity: isDetailsVisible ? 1 : 0,
+                        transition: 'transform 0.25s ease, opacity 0.25s ease',
+                        display: 'flex',
+                        flexDirection: 'column'
+                      }}
+                    >
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: '1.5rem'
+                      }}>
+                        <h2 style={{
+                          fontSize: '1.25rem',
+                          fontWeight: '600',
+                          color: 'var(--text-primary)',
+                          margin: 0
+                        }}>
+                          Customer Details
+                        </h2>
+                        <button
+                          onClick={() => {
+                            setIsDetailsVisible(false);
+                            setTimeout(() => setShouldShowDetails(false), 300);
+                          }}
+                          style={{
+                            background: 'transparent',
+                            border: 'none',
+                            fontSize: '1.5rem',
+                            cursor: 'pointer',
+                            color: '#6b7280',
+                            padding: '0.25rem',
+                            lineHeight: 1,
+                            minWidth: '32px',
+                            minHeight: '32px',
+                            borderRadius: '0.375rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        {/* Customer ID (readonly) */}
+                        <div>
+                          <label
+                            style={{
+                              display: 'block',
+                              marginBottom: '0.5rem',
+                              fontSize: '0.875rem',
+                              fontWeight: '500',
+                              color: 'var(--field-label-text)',
+                            }}
+                          >
+                            Customer ID
+                          </label>
+                          <input
+                            type="text"
+                            readOnly
+                            value={customerForm.id || 'Auto-generated'}
+                            style={{
+                              width: '100%',
+                              padding: '0.5rem 0.75rem',
+                              borderRadius: '0.375rem',
+                              border: '1px solid #d1d5db',
+                              backgroundColor: 'rgba(255, 255, 255)',
+                              color: '#6b7280',
+                            }}
+                          />
+                        </div>
+
+                        {/* Customer Name */}
+                        <div>
+                          <label
+                            style={{
+                              display: 'block',
+                              marginBottom: '0.5rem',
+                              fontSize: '0.875rem',
+                              fontWeight: '500',
+                              color: 'var(--field-label-text)',
+                            }}
+                          >
+                            Customer Name{customersRequiredFields.customerName ? ' *' : ''}
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="Enter customer name"
+                            value={customerForm.name}
+                            onChange={(e) => {
+                              setCustomerForm(prev => ({ ...prev, name: e.target.value }));
+                              setCustomerHasUnsavedChanges(true);
+                            }}
+                            disabled={!canEditCustomers}
+                            style={{
+                              width: '100%',
+                              padding: '0.5rem 0.75rem',
+                              borderRadius: '0.375rem',
+                              border: '1px solid #d1d5db',
+                              backgroundColor: 'var(--surface-elevated)',
+                              color: 'var(--text-primary)',
+                            }}
+                          />
+                        </div>
+
+                        {/* Contact Number */}
+                        <div>
+                          <label
+                            style={{
+                              display: 'block',
+                              marginBottom: '0.5rem',
+                              fontSize: '0.875rem',
+                              fontWeight: '500',
+                              color: 'var(--field-label-text)',
+                            }}
+                          >
+                            Contact Number{customersRequiredFields.contactNumber ? ' *' : ''}
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="09xxxxxxxxx"
+                            value={customerForm.contact}
+                            onChange={(e) => {
+                              setCustomerForm(prev => ({ ...prev, contact: e.target.value }));
+                              setCustomerHasUnsavedChanges(true);
+                            }}
+                            disabled={!canEditCustomers}
+                            style={{
+                              width: '100%',
+                              padding: '0.5rem 0.75rem',
+                              borderRadius: '0.375rem',
+                              border: '1px solid #d1d5db',
+                              backgroundColor: 'var(--surface-elevated)',
+                              color: 'var(--text-primary)',
+                            }}
+                          />
+                        </div>
+
+                        {/* Email */}
+                        <div>
+                          <label
+                            style={{
+                              display: 'block',
+                              marginBottom: '0.5rem',
+                              fontSize: '0.875rem',
+                              fontWeight: '500',
+                              color: 'var(--field-label-text)',
+                            }}
+                          >
+                            Email{customersRequiredFields.email ? ' *' : ''}
+                          </label>
+                          <input
+                            type="email"
+                            placeholder="customer@example.com"
+                            value={customerForm.email}
+                            onChange={(e) => {
+                              setCustomerForm(prev => ({ ...prev, email: e.target.value }));
+                              setCustomerHasUnsavedChanges(true);
+                            }}
+                            disabled={!canEditCustomers}
+                            style={{
+                              width: '100%',
+                              padding: '0.5rem 0.75rem',
+                              borderRadius: '0.375rem',
+                              border: '1px solid #d1d5db',
+                              backgroundColor: 'var(--surface-elevated)',
+                              color: 'var(--text-primary)',
+                            }}
+                          />
+                        </div>
+
+                        {/* Address */}
+                        <div>
+                          <label
+                            style={{
+                              display: 'block',
+                              marginBottom: '0.5rem',
+                              fontSize: '0.875rem',
+                              fontWeight: '500',
+                              color: 'var(--field-label-text)',
+                            }}
+                          >
+                            Address{customersRequiredFields.address ? ' *' : ''}
+                          </label>
+                          <textarea
+                            placeholder="Enter address"
+                            rows={3}
+                            value={customerForm.address}
+                            onChange={(e) => {
+                              setCustomerForm(prev => ({ ...prev, address: e.target.value }));
+                              setCustomerHasUnsavedChanges(true);
+                            }}
+                            disabled={!canEditCustomers}
+                            style={{
+                              width: '100%',
+                              padding: '0.5rem 0.75rem',
+                              borderRadius: '0.375rem',
+                              border: '1px solid #d1d5db',
+                              backgroundColor: 'var(--surface-elevated)',
+                              color: 'var(--text-primary)',
+                              resize: 'vertical',
+                              minHeight: '4.5rem',
+                            }}
+                          />
+                        </div>
+
+                        {/* Vehicle Types */}
+                        <div>
+                          <label
+                            style={{
+                              display: 'block',
+                              marginBottom: '0.5rem',
+                              fontSize: '0.875rem',
+                              fontWeight: '500',
+                              color: 'var(--field-label-text)',
+                            }}
+                          >
+                            Vehicle Type(s){customersRequiredFields.vehicleType ? ' *' : ''}
+                          </label>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                            {vehicleTypeOptions.map((type) => (
+                              <label
+                                key={type}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '0.5rem',
+                                  cursor: canEditCustomers ? 'pointer' : 'default',
+                                }}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={selectedTypes.has(type)}
+                                  onChange={() => handleTypeChange(type)}
+                                  disabled={!canEditCustomers}
+                                  style={{ width: '16px', height: '16px' }}
+                                />
+                                <span style={{ fontSize: '0.875rem', color: 'var(--text-primary)' }}>
+                                  {type}
+                                </span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+
+                        {canEditCustomers && (
+                          <>
+                            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                              <button
+                                type="button"
+                                onClick={handleSaveCustomer}
+                                style={{
+                                  padding: '0.5rem 1rem',
+                                  backgroundColor: '#3b82f6',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '0.375rem',
+                                  fontWeight: '500',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s',
+                                  width: '50%',
+                                }}
+                                onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#2563eb')}
+                                onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#3b82f6')}
+                              >
+                                Save Customer
+                              </button>
+                              <button
+                                type="button"
+                                onClick={handleCancelEdit}
+                                style={{
+                                  padding: '0.5rem 1rem',
+                                  backgroundColor: 'white',
+                                  color: 'var(--field-label-text)',
+                                  border: '1px solid #d1d5db',
+                                  borderRadius: '0.375rem',
+                                  fontWeight: '500',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s',
+                                  width: '50%',
+                                }}
+                                onMouseOver={(e) => {
+                                  e.currentTarget.style.backgroundColor = '#f3f4f6';
+                                  e.currentTarget.style.borderColor = '#9ca3af';
+                                }}
+                                onMouseOut={(e) => {
+                                  e.currentTarget.style.backgroundColor = 'white';
+                                  e.currentTarget.style.borderColor = '#d1d5db';
+                                }}
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                            {canArchiveCustomers && selectedCustomer && !selectedCustomer.isArchived && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setDeleteMode('archive');
+                                  setIsDeleteConfirmOpen(true);
+                                }}
+                                style={{
+                                  marginTop: '0.75rem',
+                                  padding: '0.5rem 1rem',
+                                  backgroundColor: '#fef2f2',
+                                  color: '#dc2626',
+                                  border: '1px solid #fecaca',
+                                  borderRadius: '0.375rem',
+                                  fontWeight: '500',
+                                  cursor: 'pointer',
+                                  width: '100%',
+                                }}
+                              >
+                                Archive Customer
+                              </button>
+                            )}
+                            {canArchiveCustomers && selectedCustomer && selectedCustomer.isArchived && (
+                              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setDeleteMode('unarchive');
+                                    setIsDeleteConfirmOpen(true);
+                                  }}
+                                  style={{
+                                    flex: 1,
+                                    padding: '0.5rem 1rem',
+                                    backgroundColor: '#dbeafe',
+                                    color: '#1d4ed8',
+                                    border: '1px solid #93c5fd',
+                                    borderRadius: '0.375rem',
+                                    fontWeight: '500',
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  Unarchive
+                                </button>
+                                {canDeleteCustomers && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setDeleteMode('hard');
+                                      setIsDeleteConfirmOpen(true);
+                                    }}
+                                    style={{
+                                      flex: 1,
+                                      padding: '0.5rem 1rem',
+                                      backgroundColor: '#fef2f2',
+                                      color: '#dc2626',
+                                      border: '1px solid #fecaca',
+                                      borderRadius: '0.375rem',
+                                      fontWeight: '500',
+                                      cursor: 'pointer',
+                                    }}
+                                  >
+                                    Delete
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}

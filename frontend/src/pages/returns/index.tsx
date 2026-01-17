@@ -2640,15 +2640,26 @@ export const Returns: React.FC = () => {
                               <input type="checkbox" checked={selectedItems.size === previousReturns.length && previousReturns.length > 0} onChange={(e) => { if (e.target.checked) { setSelectedItems(new Set(previousReturns.map(r => r.returnDocId))); } else { setSelectedItems(new Set()); } }} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
                             </th>
                           )}
-                          <th onClick={() => handleHeaderSort('returnCode')} style={{ padding: '0.6rem 1rem', cursor: 'pointer', userSelect: 'none' }}>Return ID {sortBy.startsWith('returnCode-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}</th>
-                          <th onClick={() => handleHeaderSort('date')} style={{ padding: '0.6rem 1rem', cursor: 'pointer', userSelect: 'none' }}>Date {sortBy.startsWith('date-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}</th>
-                          <th onClick={() => handleHeaderSort('customer')} style={{ padding: '0.6rem 1rem', cursor: 'pointer', userSelect: 'none' }}>Customer {sortBy.startsWith('customer-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}</th>
-                          <th onClick={() => handleHeaderSort('transactionCode')} style={{ padding: '0.6rem 1rem', cursor: 'pointer', userSelect: 'none' }}>Transaction ID {sortBy.startsWith('transactionCode-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}</th>
-                          <th onClick={() => handleHeaderSort('itemsReturned')} style={{ padding: '0.6rem 1rem', cursor: 'pointer', userSelect: 'none' }}>Items Returned {sortBy.startsWith('itemsReturned-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}</th>
-                          <th onClick={() => handleHeaderSort('totalRefund')} style={{ padding: '0.6rem 1rem', textAlign: 'right', cursor: 'pointer', userSelect: 'none' }}>
-                            Returned Total {sortBy.startsWith('totalRefund-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
-                          </th>
-                          <th style={{ padding: '0.6rem 1rem', textAlign: 'right' }}>Actions</th>
+                          {isMobile ? (
+                            <>
+                              <th onClick={() => handleHeaderSort('returnCode')} style={{ padding: '0.6rem 1rem', cursor: 'pointer', userSelect: 'none' }}>Return Info {sortBy.startsWith('returnCode-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}</th>
+                              <th onClick={() => handleHeaderSort('totalRefund')} style={{ padding: '0.6rem 1rem', textAlign: 'right', cursor: 'pointer', userSelect: 'none' }}>
+                                Details {sortBy.startsWith('totalRefund-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                              </th>
+                            </>
+                          ) : (
+                            <>
+                              <th onClick={() => handleHeaderSort('returnCode')} style={{ padding: '0.6rem 1rem', cursor: 'pointer', userSelect: 'none' }}>Return ID {sortBy.startsWith('returnCode-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}</th>
+                              <th onClick={() => handleHeaderSort('date')} style={{ padding: '0.6rem 1rem', cursor: 'pointer', userSelect: 'none' }}>Date {sortBy.startsWith('date-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}</th>
+                              <th onClick={() => handleHeaderSort('customer')} style={{ padding: '0.6rem 1rem', cursor: 'pointer', userSelect: 'none' }}>Customer {sortBy.startsWith('customer-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}</th>
+                              <th onClick={() => handleHeaderSort('transactionCode')} style={{ padding: '0.6rem 1rem', cursor: 'pointer', userSelect: 'none' }}>Transaction ID {sortBy.startsWith('transactionCode-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}</th>
+                              <th onClick={() => handleHeaderSort('itemsReturned')} style={{ padding: '0.6rem 1rem', cursor: 'pointer', userSelect: 'none' }}>Items Returned {sortBy.startsWith('itemsReturned-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}</th>
+                              <th onClick={() => handleHeaderSort('totalRefund')} style={{ padding: '0.6rem 1rem', textAlign: 'right', cursor: 'pointer', userSelect: 'none' }}>
+                                Returned Total {sortBy.startsWith('totalRefund-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                              </th>
+                              <th style={{ padding: '0.6rem 1rem', textAlign: 'right' }}>Actions</th>
+                            </>
+                          )}
                         </tr>
                       </thead>
                       <tbody>
@@ -2695,31 +2706,50 @@ export const Returns: React.FC = () => {
                                 <input type="checkbox" checked={selectedItems.has(ret.returnDocId)} onChange={() => { }} onClick={(e) => { e.stopPropagation(); setSelectedItems(prev => { const next = new Set(prev); if (next.has(ret.returnDocId)) { next.delete(ret.returnDocId); } else { next.add(ret.returnDocId); } return next; }); }} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
                               </td>
                             )}
-                            <td style={{ padding: '0.6rem 1rem' }}>{ret.id}</td>
-                            <td style={{ padding: '0.6rem 1rem' }}>{ret.date}</td>
-                            <td style={{ padding: '0.6rem 1rem' }}>{ret.customerName || 'Walk-in Customer'}</td>
-                            <td style={{ padding: '0.6rem 1rem' }}>{ret.transactionCode}</td>
-                            <td style={{ padding: '0.6rem 1rem' }}>
-                              {ret.itemsReturned} item{ret.itemsReturned === 1 ? '' : 's'}
-                            </td>
-                            <td
-                              style={{
-                                padding: '0.6rem 1rem',
-                                textAlign: 'right',
-                                fontVariantNumeric: 'tabular-nums',
-                              }}
-                            >
-                              ₱{ret.returnedTotal.toFixed(2)}
-                            </td>
-                            <td
-                              style={{
-                                padding: '0.6rem 1rem',
-                                textAlign: 'right',
-                                display: 'flex',
-                                gap: '0.5rem',
-                                justifyContent: 'flex-end',
-                              }}
-                            >
+                            {isMobile ? (
+                              <>
+                                <td style={{ padding: '0.6rem 1rem' }}>
+                                  <div style={{ fontWeight: '500' }}>{ret.id}</div>
+                                  <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
+                                    {ret.customerName || 'Walk-in Customer'} - {ret.transactionCode}
+                                  </div>
+                                </td>
+                                <td style={{ padding: '0.6rem 1rem', textAlign: 'right' }}>
+                                  <div style={{ fontWeight: '500', fontVariantNumeric: 'tabular-nums' }}>
+                                    ₱{ret.returnedTotal.toFixed(2)}
+                                  </div>
+                                  <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
+                                    {ret.itemsReturned} item{ret.itemsReturned === 1 ? '' : 's'} • {ret.date}
+                                  </div>
+                                </td>
+                              </>
+                            ) : (
+                              <>
+                                <td style={{ padding: '0.6rem 1rem' }}>{ret.id}</td>
+                                <td style={{ padding: '0.6rem 1rem' }}>{ret.date}</td>
+                                <td style={{ padding: '0.6rem 1rem' }}>{ret.customerName || 'Walk-in Customer'}</td>
+                                <td style={{ padding: '0.6rem 1rem' }}>{ret.transactionCode}</td>
+                                <td style={{ padding: '0.6rem 1rem' }}>
+                                  {ret.itemsReturned} item{ret.itemsReturned === 1 ? '' : 's'}
+                                </td>
+                                <td
+                                  style={{
+                                    padding: '0.6rem 1rem',
+                                    textAlign: 'right',
+                                    fontVariantNumeric: 'tabular-nums',
+                                  }}
+                                >
+                                  ₱{ret.returnedTotal.toFixed(2)}
+                                </td>
+                                <td
+                                  style={{
+                                    padding: '0.6rem 1rem',
+                                    textAlign: 'right',
+                                    display: 'flex',
+                                    gap: '0.5rem',
+                                    justifyContent: 'flex-end',
+                                  }}
+                                >
                               {ret.status !== 'archived' && canArchiveReturns && (
                                 <button
                                   type="button"
@@ -2800,7 +2830,9 @@ export const Returns: React.FC = () => {
                                   Delete
                                 </button>
                               )}
-                            </td>
+                                </td>
+                              </>
+                            )}
                           </tr>
                         ))}
                       </tbody>

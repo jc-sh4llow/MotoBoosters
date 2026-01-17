@@ -1931,12 +1931,12 @@ export const Returns: React.FC = () => {
 
                   {isReturnDetailsExpanded && (
                     <div ref={returnDetailsRef} style={{ padding: '1.25rem 1.5rem 1.5rem 1.5rem' }}>
-                      {/* First row: Return ID / Handled By / Transaction ID / Return Date */}
+                      {/* Row 1: Return ID | Date */}
                       <div
                         style={{
                           display: 'grid',
-                          gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-                          gap: '1.25rem',
+                          gridTemplateColumns: isMobile ? '1.2fr 0.8fr' : 'repeat(2, minmax(0, 1fr))',
+                          gap: '1rem',
                           marginBottom: '1rem',
                         }}
                       >
@@ -1966,69 +1966,11 @@ export const Returns: React.FC = () => {
                               color: '#6b7280',
                             }}
                           />
-                          <label
-                            style={{
-                              display: 'block',
-                              marginTop: '0.5rem',
-                              marginBottom: '0.35rem',
-                              fontSize: '0.85rem',
-                              fontWeight: 500,
-                              color: '#374151',
-                            }}
-                          >
-                            Handled By
-                          </label>
-                          <select
-                            value={handledBy}
-                            onChange={(e) => setHandledBy(e.target.value)}
-                            style={{
-                              width: '100%',
-                              padding: '0.5rem 0.75rem',
-                              borderRadius: '0.375rem',
-                              border: '1px solid #d1d5db',
-                              backgroundColor: 'white',
-                              color: '#111827',
-                              fontSize: '0.875rem',
-                            }}
-                          >
-                            <option value="">Select employee</option>
-                            {employees.map((emp) => (
-                              <option key={emp.id} value={emp.id}>
-                                {emp.name}
-                              </option>
-                            ))}
-                          </select>
                         </div>
                         <div>
                           <label
                             style={{
                               display: 'block',
-                              marginBottom: '0.35rem',
-                              fontSize: '0.85rem',
-                              fontWeight: 500,
-                              color: '#374151',
-                            }}
-                          >
-                            Transaction ID
-                          </label>
-                          <input
-                            type="text"
-                            readOnly
-                            value={selectedTransaction?.transactionCode || ''}
-                            placeholder="Select a transaction from the left"
-                            style={{
-                              width: '100%',
-                              padding: '0.5rem 0.75rem',
-                              borderRadius: '0.375rem',
-                              border: '1px solid #d1d5db',
-                              backgroundColor: '#f9fafb',
-                              color: '#6b7280',
-                            }}
-                          />
-                          <label
-                            style={{
-                              display: 'block',
-                              marginTop: '0.5rem',
                               marginBottom: '0.35rem',
                               fontSize: '0.85rem',
                               fontWeight: 500,
@@ -2053,73 +1995,335 @@ export const Returns: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Summary row */}
+                      {/* Row 2: Transaction ID | Original Date */}
                       <div
                         style={{
                           display: 'grid',
-                          gridTemplateColumns: '1.6fr 1fr 1fr 1fr',
+                          gridTemplateColumns: '1fr 1fr',
                           gap: '1rem',
-                          marginBottom: '1.25rem',
+                          marginBottom: '1rem',
                         }}
                       >
-                        {["Customer Name", "Original Date", "Original Total", "Payment Type"].map(
-                          (label) => (
-                            <div key={label}>
-                              <label
-                                style={{
-                                  display: 'block',
-                                  marginBottom: '0.35rem',
-                                  fontSize: '0.8rem',
-                                  fontWeight: 500,
-                                  color: '#4b5563',
-                                }}
-                              >
-                                {label}
-                              </label>
-                              <div
-                                style={{
-                                  padding: '0.45rem 0.75rem',
-                                  borderRadius: '0.375rem',
-                                  border: '1px solid #e5e7eb',
-                                  backgroundColor: '#f9fafb',
-                                  fontSize: '0.85rem',
-                                  color: '#6b7280',
-                                }}
-                              >
-                                {selectedTransaction && (
-                                  (() => {
-                                    if (label === 'Customer Name') {
-                                      return selectedTransaction.customerName || 'Walk-in Customer';
-                                    }
-                                    if (label === 'Original Date') {
-                                      const raw = selectedTransaction.date || '';
-                                      const parts = raw.split('-');
-                                      if (parts.length === 3) {
-                                        const [yyyy, mm, dd] = parts;
-                                        const yy = yyyy.slice(-2);
-                                        return `${dd}/${mm}/${yy}`;
-                                      }
-                                      return raw;
-                                    }
-                                    if (label === 'Original Total') {
-                                      return `₱${selectedTransaction.total.toFixed(2)}`;
-                                    }
-                                    if (label === 'Payment Type') {
-                                      const p = (selectedTransaction.paymentType || '').toLowerCase();
-                                      if (p === 'cash') return 'Cash';
-                                      if (p === 'gcash') return 'GCash';
-                                      return selectedTransaction.paymentType || 'N/A';
-                                    }
-                                    return '';
-                                  })()
-                                )}
-                              </div>
-                            </div>
-                          ),
-                        )}
+                        <div>
+                          <label
+                            style={{
+                              display: 'block',
+                              marginBottom: '0.35rem',
+                              fontSize: '0.85rem',
+                              fontWeight: 500,
+                              color: '#374151',
+                            }}
+                          >
+                            Transaction ID
+                          </label>
+                          <input
+                            type="text"
+                            readOnly
+                            value={selectedTransaction?.transactionCode || ''}
+                            placeholder="Select a transaction"
+                            style={{
+                              width: '100%',
+                              padding: '0.5rem 0.75rem',
+                              borderRadius: '0.375rem',
+                              border: '1px solid #d1d5db',
+                              backgroundColor: '#f9fafb',
+                              color: '#6b7280',
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <label
+                            style={{
+                              display: 'block',
+                              marginBottom: '0.35rem',
+                              fontSize: '0.85rem',
+                              fontWeight: 500,
+                              color: '#374151',
+                            }}
+                          >
+                            Original Date
+                          </label>
+                          <input
+                            type="text"
+                            readOnly
+                            value={selectedTransaction ? (() => {
+                              const raw = selectedTransaction.date || '';
+                              const parts = raw.split('-');
+                              if (parts.length === 3) {
+                                const [yyyy, mm, dd] = parts;
+                                const yy = yyyy.slice(-2);
+                                return `${dd}/${mm}/${yy}`;
+                              }
+                              return raw;
+                            })() : ''}
+                            placeholder=""
+                            style={{
+                              width: '100%',
+                              padding: '0.5rem 0.75rem',
+                              borderRadius: '0.375rem',
+                              border: '1px solid #d1d5db',
+                              backgroundColor: '#f9fafb',
+                              color: '#6b7280',
+                            }}
+                          />
+                        </div>
                       </div>
 
-                      {/* Items table */}
+                      {/* Row 3: Handled By */}
+                      <div style={{ marginBottom: '1rem' }}>
+                        <label
+                          style={{
+                            display: 'block',
+                            marginBottom: '0.35rem',
+                            fontSize: '0.85rem',
+                            fontWeight: 500,
+                            color: '#374151',
+                          }}
+                        >
+                          Handled By
+                        </label>
+                        <select
+                          value={handledBy}
+                          onChange={(e) => setHandledBy(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '0.5rem 0.75rem',
+                            borderRadius: '0.375rem',
+                            border: '1px solid #d1d5db',
+                            backgroundColor: 'white',
+                            color: '#111827',
+                            fontSize: '0.875rem',
+                          }}
+                        >
+                          <option value="">Select employee</option>
+                          {employees.map((emp) => (
+                            <option key={emp.id} value={emp.id}>
+                              {emp.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Row 4: Customer Name */}
+                      <div style={{ marginBottom: '1rem' }}>
+                        <label
+                          style={{
+                            display: 'block',
+                            marginBottom: '0.35rem',
+                            fontSize: '0.85rem',
+                            fontWeight: 500,
+                            color: '#374151',
+                          }}
+                        >
+                          Customer Name
+                        </label>
+                        <input
+                          type="text"
+                          readOnly
+                          value={selectedTransaction?.customerName || 'Walk-in Customer'}
+                          style={{
+                            width: '100%',
+                            padding: '0.5rem 0.75rem',
+                            borderRadius: '0.375rem',
+                            border: '1px solid #d1d5db',
+                            backgroundColor: '#f9fafb',
+                            color: '#6b7280',
+                          }}
+                        />
+                      </div>
+
+                      {/* Row 5: Original Total | Payment Type */}
+                      <div
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: '1fr 1fr',
+                          gap: '1rem',
+                          marginBottom: '1rem',
+                        }}
+                      >
+                        <div>
+                          <label
+                            style={{
+                              display: 'block',
+                              marginBottom: '0.35rem',
+                              fontSize: '0.85rem',
+                              fontWeight: 500,
+                              color: '#374151',
+                            }}
+                          >
+                            Original Total
+                          </label>
+                          <input
+                            type="text"
+                            readOnly
+                            value={selectedTransaction ? `₱${selectedTransaction.total.toFixed(2)}` : ''}
+                            style={{
+                              width: '100%',
+                              padding: '0.5rem 0.75rem',
+                              borderRadius: '0.375rem',
+                              border: '1px solid #d1d5db',
+                              backgroundColor: '#f9fafb',
+                              color: '#6b7280',
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <label
+                            style={{
+                              display: 'block',
+                              marginBottom: '0.35rem',
+                              fontSize: '0.85rem',
+                              fontWeight: 500,
+                              color: '#374151',
+                            }}
+                          >
+                            Payment Type
+                          </label>
+                          <input
+                            type="text"
+                            readOnly
+                            value={selectedTransaction ? (() => {
+                              const p = (selectedTransaction.paymentType || '').toLowerCase();
+                              if (p === 'cash') return 'Cash';
+                              if (p === 'gcash') return 'GCash';
+                              return selectedTransaction.paymentType || 'N/A';
+                            })() : ''}
+                            style={{
+                              width: '100%',
+                              padding: '0.5rem 0.75rem',
+                              borderRadius: '0.375rem',
+                              border: '1px solid #d1d5db',
+                              backgroundColor: '#f9fafb',
+                              color: '#6b7280',
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Row 6: Items table - Desktop table / Mobile card-based */}
+                      {isMobile ? (
+                        <div style={{ marginBottom: '1.25rem' }}>
+                          <div style={{ fontSize: '0.875rem', fontWeight: '600', color: '#374151', marginBottom: '0.75rem' }}>
+                            Items to Return
+                          </div>
+                          {returnLines.length > 0 ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                              {returnLines.map((line, index) => (
+                                <div key={line.id} style={{ backgroundColor: 'white', borderRadius: '0.5rem', padding: '0.75rem', border: '1px solid #e5e7eb' }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                                    <div style={{ fontWeight: '500', fontSize: '0.875rem', color: '#111827' }}>{line.itemName}</div>
+                                    <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>Qty: {line.quantity}</div>
+                                  </div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                                    <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+                                      Bought: {line.quantity} | Returned: {line.alreadyReturned} | Max: {line.maxReturn}
+                                    </div>
+                                    <div style={{ fontSize: '0.875rem', fontWeight: '600', color: '#111827' }}>₱{line.totalAmount.toFixed(2)}</div>
+                                  </div>
+                                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                    <input
+                                      type="number"
+                                      placeholder="0"
+                                      min={0}
+                                      max={line.maxReturn}
+                                      value={Number.isNaN(line.qtyToReturn) ? '' : line.qtyToReturn}
+                                      disabled={line.maxReturn <= 0}
+                                      onChange={(e) => {
+                                        const value = e.target.value;
+                                        setReturnLines((prev) => {
+                                          const next = [...prev];
+                                          if (value === '') {
+                                            next[index] = { ...next[index], qtyToReturn: Number.NaN };
+                                            return next;
+                                          }
+                                          const numeric = Number(value);
+                                          const clamped = Math.max(0, Math.min(line.maxReturn, numeric || 0));
+                                          next[index] = { ...next[index], qtyToReturn: clamped };
+                                          return next;
+                                        });
+                                      }}
+                                      style={{
+                                        width: '70px',
+                                        padding: '0.4rem',
+                                        border: '1px solid #d1d5db',
+                                        borderRadius: '0.375rem',
+                                        fontSize: '0.875rem',
+                                        backgroundColor: line.maxReturn <= 0 ? '#f9fafb' : 'white',
+                                        color: line.maxReturn <= 0 ? '#9ca3af' : '#111827',
+                                      }}
+                                    />
+                                    <input
+                                      type="text"
+                                      placeholder="Reason (optional)"
+                                      disabled={line.maxReturn <= 0}
+                                      value={line.reason}
+                                      onChange={(e) => {
+                                        const value = e.target.value;
+                                        setReturnLines((prev) => {
+                                          const next = [...prev];
+                                          next[index] = { ...next[index], reason: value };
+                                          return next;
+                                        });
+                                      }}
+                                      style={{
+                                        flex: 1,
+                                        padding: '0.4rem',
+                                        border: '1px solid #d1d5db',
+                                        borderRadius: '0.375rem',
+                                        fontSize: '0.75rem',
+                                        backgroundColor: line.maxReturn <= 0 ? '#f9fafb' : 'white',
+                                        color: line.maxReturn <= 0 ? '#9ca3af' : '#111827',
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div style={{ backgroundColor: 'white', borderRadius: '0.5rem', padding: '0.75rem', border: '1px solid #e5e7eb' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                                <div style={{ fontWeight: '500', fontSize: '0.875rem', color: '#9ca3af' }}>Item Name</div>
+                                <div style={{ fontSize: '0.75rem', color: '#9ca3af' }}>Qty: 0</div>
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                                <div style={{ fontSize: '0.75rem', color: '#9ca3af' }}>Bought: 0 | Returned: 0 | Max: 0</div>
+                                <div style={{ fontSize: '0.875rem', fontWeight: '600', color: '#9ca3af' }}>₱0.00</div>
+                              </div>
+                              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                <input
+                                  type="number"
+                                  placeholder="0"
+                                  disabled
+                                  style={{
+                                    width: '70px',
+                                    padding: '0.4rem',
+                                    border: '1px solid #d1d5db',
+                                    borderRadius: '0.375rem',
+                                    fontSize: '0.875rem',
+                                    backgroundColor: '#f9fafb',
+                                    color: '#9ca3af',
+                                  }}
+                                />
+                                <input
+                                  type="text"
+                                  placeholder="Select a transaction to see items"
+                                  disabled
+                                  style={{
+                                    flex: 1,
+                                    padding: '0.4rem',
+                                    border: '1px solid #d1d5db',
+                                    borderRadius: '0.375rem',
+                                    fontSize: '0.75rem',
+                                    backgroundColor: '#f9fafb',
+                                    color: '#9ca3af',
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        /* Desktop Items table */
                       <div
                         style={{
                           marginBottom: '1.25rem',
@@ -2269,15 +2473,44 @@ export const Returns: React.FC = () => {
                           ))}
                         </div>
                       </div>
+                      )}
 
-                      {/* Overall notes and totals */}
+                      {/* Row 7: Overall Reason / Notes */}
+                      <div style={{ marginBottom: '1rem' }}>
+                        <label
+                          style={{
+                            display: 'block',
+                            marginBottom: '0.35rem',
+                            fontSize: '0.85rem',
+                            fontWeight: 500,
+                            color: '#374151',
+                          }}
+                        >
+                          Overall Reason / Notes
+                        </label>
+                        <textarea
+                          rows={3}
+                          placeholder="Add any additional notes about this return..."
+                          style={{
+                            width: '100%',
+                            padding: '0.5rem 0.75rem',
+                            borderRadius: '0.375rem',
+                            border: '1px solid #d1d5db',
+                            resize: 'vertical',
+                            fontSize: '0.85rem',
+                            backgroundColor: 'white',
+                            color: '#111827',
+                          }}
+                        />
+                      </div>
+
+                      {/* Row 8: Total Refund Amount | Refund Method */}
                       <div
                         style={{
                           display: 'grid',
-                          gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)',
-                          gap: '1.25rem',
-                          alignItems: 'flex-start',
-                          marginBottom: '1.5rem',
+                          gridTemplateColumns: '1fr 1fr',
+                          gap: '1rem',
+                          marginBottom: '1rem',
                         }}
                       >
                         <div>
@@ -2285,144 +2518,104 @@ export const Returns: React.FC = () => {
                             style={{
                               display: 'block',
                               marginBottom: '0.35rem',
-                              fontSize: '0.8rem',
+                              fontSize: '0.85rem',
                               fontWeight: 500,
-                              color: '#4b5563',
+                              color: '#374151',
                             }}
                           >
-                            Overall Reason / Notes
+                            Total Refund Amount
                           </label>
-                          <textarea
-                            rows={3}
-                            placeholder="Add any additional notes about this return..."
+                          <div
+                            style={{
+                              fontSize: '1.1rem',
+                              fontWeight: 700,
+                              color: '#111827',
+                              padding: '0.5rem 0',
+                            }}
+                          >
+                            ₱{totalRefundAmount.toFixed(2)}
+                          </div>
+                        </div>
+                        <div>
+                          <label
+                            style={{
+                              display: 'block',
+                              marginBottom: '0.35rem',
+                              fontSize: '0.85rem',
+                              fontWeight: 500,
+                              color: '#374151',
+                            }}
+                          >
+                            Refund Method
+                          </label>
+                          <select
+                            value={refundMethod}
+                            onChange={(e) => {
+                              const value = e.target.value as 'cash' | 'gcash';
+                              setRefundMethod(value);
+                              setCashConfirmed(false);
+                              setGcashRef('');
+                            }}
                             style={{
                               width: '100%',
                               padding: '0.5rem 0.75rem',
                               borderRadius: '0.375rem',
                               border: '1px solid #d1d5db',
-                              resize: 'vertical',
-                              fontSize: '0.85rem',
                               backgroundColor: 'white',
                               color: '#111827',
-                            }}
-                          />
-                        </div>
-                        <div
-                          style={{
-                            backgroundColor: '#f9fafb',
-                            borderRadius: '0.75rem',
-                            padding: '0.75rem 1rem',
-                            border: '1px solid #e5e7eb',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: '0.35rem',
-                          }}
-                        >
-                          <div
-                            style={{
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              fontSize: '0.85rem',
-                              color: '#4b5563',
+                              fontSize: '0.875rem',
                             }}
                           >
-                            <span>Total Refund Amount</span>
-                            <span
-                              style={{
-                                fontWeight: 700,
-                                color: '#111827',
-                                fontSize: '1.1rem',
-                              }}
-                            >
-                              ₱{totalRefundAmount.toFixed(2)}
+                            <option value="cash">Cash</option>
+                            <option value="gcash">GCash</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Row 9: Cash Confirm / GCash Ref */}
+                      <div style={{ marginBottom: '1.5rem' }}>
+                        {refundMethod === 'cash' && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <Switch
+                              checked={cashConfirmed}
+                              onChange={(checked) => setCashConfirmed(checked)}
+                              size="sm"
+                            />
+                            <span style={{ fontSize: '0.875rem', color: '#374151' }}>
+                              Confirmed cash refund was handed to customer
                             </span>
                           </div>
-                          <div
-                            style={{
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'center',
-                              marginTop: '0.25rem',
-                            }}
-                          >
-                            <span
+                        )}
+                        {refundMethod === 'gcash' && (
+                          <div>
+                            <label
                               style={{
-                                fontSize: '0.8rem',
-                                color: '#6b7280',
+                                display: 'block',
+                                marginBottom: '0.35rem',
+                                fontSize: '0.85rem',
+                                fontWeight: 500,
+                                color: '#374151',
                               }}
                             >
-                              Refund Method
-                            </span>
-                            <select
-                              value={refundMethod}
-                              onChange={(e) => {
-                                const value = e.target.value as 'cash' | 'gcash';
-                                setRefundMethod(value);
-                                // Reset method-specific confirmations when switching
-                                setCashConfirmed(false);
-                                setGcashRef('');
-                              }}
+                              GCash Reference Code
+                            </label>
+                            <input
+                              type="text"
+                              value={gcashRef}
+                              onChange={(e) => setGcashRef(e.target.value)}
+                              placeholder="Enter GCash reference number"
                               style={{
-                                padding: '0.25rem 0.5rem',
+                                width: '100%',
+                                padding: '0.5rem 0.75rem',
                                 borderRadius: '0.375rem',
                                 border: '1px solid #d1d5db',
-                                fontSize: '0.8rem',
                                 backgroundColor: 'white',
                                 color: '#111827',
+                                fontSize: '0.875rem',
                               }}
-                            >
-                              <option value="cash">Cash</option>
-                              <option value="gcash">GCash</option>
-                            </select>
+                            />
                           </div>
-                          {refundMethod === 'cash' && (
-                            <div
-                              style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.5rem',
-                                fontSize: '0.8rem',
-                                color: '#4b5563',
-                              }}
-                            >
-                              <Switch
-                                checked={cashConfirmed}
-                                onChange={(checked) => setCashConfirmed(checked)}
-                                size="sm"
-                              />
-                              <span>Confirmed cash refund was handed to customer</span>
-                            </div>
-                          )}
-                          {refundMethod === 'gcash' && (
-                            <div
-                              style={{
-                                marginTop: '0.4rem',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: '0.25rem',
-                                fontSize: '0.8rem',
-                                color: '#4b5563',
-                              }}
-                            >
-                              <span>GCash Reference Code</span>
-                              <input
-                                type="text"
-                                value={gcashRef}
-                                onChange={(e) => setGcashRef(e.target.value)}
-                                placeholder="Enter GCash reference number"
-                                style={{
-                                  width: '100%',
-                                  padding: '0.35rem 0.5rem',
-                                  borderRadius: '0.375rem',
-                                  border: '1px solid #d1d5db',
-                                  backgroundColor: 'white',
-                                  color: '#111827',
-                                  fontSize: '0.8rem',
-                                }}
-                              />
-                            </div>
-                          )}
-                        </div>
+                        )}
                       </div>
 
                       {/* Actions */}

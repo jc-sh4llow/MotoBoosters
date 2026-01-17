@@ -893,33 +893,56 @@ export const Returns: React.FC = () => {
                   }}
                 />
               </div>
-              <h1
-                style={{
-                  fontSize: '1.75rem',
-                  fontWeight: 700,
-                  color: 'var(--text-primary)',
-                  margin: 0,
-                }}
-              >
-                Returns & Refunds
-              </h1>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginLeft: '1rem' }}>
-                <span style={{ color: '#374151', fontSize: '0.9rem' }}>
-                  Welcome, {user?.name || 'Guest'}
-                </span>
-              </div>
+              {isMobile ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <h1
+                    style={{
+                      fontSize: '1.75rem',
+                      fontWeight: 700,
+                      color: 'var(--text-primary)',
+                      margin: 0,
+                    }}
+                  >
+                    Returns
+                  </h1>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <span style={{ color: '#374151', fontSize: '0.9rem' }}>
+                      Welcome, {user?.name || 'Guest'}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <h1
+                    style={{
+                      fontSize: '1.75rem',
+                      fontWeight: 700,
+                      color: 'var(--text-primary)',
+                      margin: 0,
+                    }}
+                  >
+                    Returns
+                  </h1>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginLeft: '1rem' }}>
+                    <span style={{ color: '#374151', fontSize: '0.9rem' }}>
+                      Welcome, {user?.name || 'Guest'}
+                    </span>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Right: search bar, Logout, navbar toggle */}
             <div style={{ display: 'flex', alignItems: 'center', marginLeft: 'auto' }}>
-              <div
-                style={{
-                  position: 'relative',
-                  display: 'flex',
-                  alignItems: 'center',
-                  marginRight: '1rem',
-                }}
-              >
+              {!isMobile && (
+                <div
+                  style={{
+                    position: 'relative',
+                    display: 'flex',
+                    alignItems: 'center',
+                    marginRight: '1rem',
+                  }}
+                >
                 <FaSearch
                   style={{
                     position: 'absolute',
@@ -965,9 +988,10 @@ export const Returns: React.FC = () => {
                     <FaTimes size={14} />
                   </button>
                 )}
-              </div>
+                </div>
+              )}
 
-              {user && (
+              {!isMobile && user && (
                 <button
                   onClick={() => {
                     logout();

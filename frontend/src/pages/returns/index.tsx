@@ -93,6 +93,8 @@ export const Returns: React.FC = () => {
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [showFilters, setShowFilters] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
+  const [isActionBarExpanded, setIsActionBarExpanded] = useState(false);
+  const actionBarRef = useRef<HTMLDivElement | null>(null);
   const [sortBy, setSortBy] = useState('date-desc');
   const [returnDate] = useState<string>(() => {
     const now = new Date();
@@ -507,6 +509,21 @@ export const Returns: React.FC = () => {
 
   // Firestore collection ref for transactions
   const transactionsCollection = collection(db, 'transactions');
+
+  // Click-outside listener for Action Bar accordion
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (actionBarRef.current && !actionBarRef.current.contains(event.target as Node) && isActionBarExpanded && !isSelectMode) {
+        setIsActionBarExpanded(false);
+      }
+    };
+    if (isActionBarExpanded) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isActionBarExpanded, isSelectMode]);
 
   // Load global previous returns history (all returns across transactions)
   useEffect(() => {
@@ -935,14 +952,14 @@ export const Returns: React.FC = () => {
             {/* Right: search bar, Logout, navbar toggle */}
             <div style={{ display: 'flex', alignItems: 'center', marginLeft: 'auto' }}>
               {!isMobile && (
-                <div
-                  style={{
-                    position: 'relative',
-                    display: 'flex',
-                    alignItems: 'center',
-                    marginRight: '1rem',
-                  }}
-                >
+              <div
+                style={{
+                  position: 'relative',
+                  display: 'flex',
+                  alignItems: 'center',
+                  marginRight: '1rem',
+                }}
+              >
                 <FaSearch
                   style={{
                     position: 'absolute',
@@ -1090,9 +1107,196 @@ export const Returns: React.FC = () => {
             {/* Action Bar */}
             <section style={{ marginBottom: '1rem' }}>
               <div style={{ backgroundColor: 'var(--surface-elevated)', borderRadius: '0.5rem', padding: '1rem', border: '1px solid var(--border)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: showFilters ? '1rem' : 0 }}>
-                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                    {canExportReturns && (
+                {isMobile ? (
+                  <div ref={actionBarRef}>
+                    <button
+                      type="button"
+                      onClick={() => setIsActionBarExpanded(!isActionBarExpanded)}
+                      style={{
+                        width: '100%',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        backgroundColor: '#1d4ed8',
+                        color: 'white',
+                        padding: '0.75rem 1rem',
+                        borderRadius: '0.375rem',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontWeight: 600,
+                        fontSize: '0.9rem',
+                      }}
+                    >
+                      Actions
+                      <FaChevronDown
+                        style={{
+                          transform: isActionBarExpanded ? 'rotate(180deg)' : 'rotate(0)',
+                          transition: 'transform 0.2s ease',
+                        }}
+                      />
+                    </button>
+                    {isActionBarExpanded && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.75rem' }}>
+                        {canExportReturns && (
+                          <button type="button" onClick={() => {
+                            const rows = previousReturns;
+                            if (!rows.length) return;
+                            const headers = ['Return Code', 'Date', 'Customer', 'Transaction', 'Items Returned', 'Total Refunded'];
+                            const escapeCell = (v: unknown) => { const s = (v ?? '').toString(); return s.includes('"') || s.includes(',') || s.includes('\n') ? '"' + s.replace(/"/g, '""') + '"' : s; };
+                            const csv = [headers.join(','), ...rows.map(r => [r.id, r.date, r.customerName, r.transactionCode, r.itemsReturned, r.returnedTotal].map(escapeCell).join(','))].join('\r\n');
+                            const blob = new Blob([csv], { type: 'text/csv' });
+                            const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `returns_${new Date().toISOString().split('T')[0]}.csv`; document.body.appendChild(link); link.click(); document.body.removeChild(link);
+                          }} style={{ backgroundColor: '#059669', color: 'white', padding: '0.75rem 1rem', borderRadius: '0.375rem', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', fontWeight: 500, fontSize: '0.875rem' }}>
+                            Export to CSV <FaFileExcel />
+                          </button>
+                        )}
+                        {canArchiveReturns && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (isSelectMode) {
+                                setIsSelectMode(false);
+                                setSelectedItems(new Set());
+                              } else {
+                                setIsSelectMode(true);
+                              }
+                            }}
+                            style={{
+                              backgroundColor: isSelectMode ? '#6b7280' : '#1d4ed8',
+                              color: 'white',
+                              padding: '0.75rem 1rem',
+                              borderRadius: '0.375rem',
+                              border: 'none',
+                              cursor: 'pointer',
+                              fontWeight: 500,
+                              fontSize: '0.875rem',
+                            }}
+                          >
+                            {isSelectMode ? 'Cancel' : 'Select'}
+                          </button>
+                        )}
+                        <button type="button" onClick={() => setShowFilters(!showFilters)} style={{ backgroundColor: '#1e40af', color: 'white', padding: '0.75rem 1rem', borderRadius: '0.375rem', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', fontWeight: 500, fontSize: '0.875rem' }}>
+                          Filters <FaFilter />
+                        </button>
+                        <button type="button" onClick={() => { setDateFilter('all'); setShowArchived(false); setSortBy('date-desc'); }} style={{ backgroundColor: '#6b7280', color: 'white', padding: '0.75rem 1rem', borderRadius: '0.375rem', border: 'none', cursor: 'pointer', fontWeight: 500, fontSize: '0.875rem' }}>
+                          Clear Filters
+                        </button>
+                        {isSelectMode && selectedItems.size > 0 && (() => {
+                          const selectedRets = previousReturns.filter(ret => selectedItems.has(ret.returnDocId));
+                          const hasUnarchived = selectedRets.some(ret => ret.status !== 'archived');
+                          const hasArchived = selectedRets.some(ret => ret.status === 'archived');
+                          return (
+                            <>
+                              {canArchiveReturns && hasUnarchived && (
+                                <button
+                                  onClick={async () => {
+                                    const toArchive = selectedRets.filter(ret => ret.status !== 'archived');
+                                    await Promise.all(
+                                      toArchive.map((ret) => {
+                                        const retRef = doc(db, 'returns', ret.returnDocId);
+                                        return updateDoc(retRef, { status: 'archived', archivedAt: new Date().toISOString() });
+                                      })
+                                    );
+                                    setPreviousReturns((prev) =>
+                                      prev.map((row) =>
+                                        toArchive.some(r => r.returnDocId === row.returnDocId)
+                                          ? { ...row, status: 'archived' }
+                                          : row,
+                                      ),
+                                    );
+                                    setSelectedItems(new Set());
+                                    setIsSelectMode(false);
+                                  }}
+                                  style={{
+                                    backgroundColor: '#f59e0b',
+                                    color: 'white',
+                                    padding: '0.75rem 1rem',
+                                    borderRadius: '0.375rem',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    fontSize: '0.875rem',
+                                    fontWeight: 500,
+                                  }}
+                                >
+                                  Archive Selected
+                                </button>
+                              )}
+                              {canUnarchiveReturns && hasArchived && (
+                                <button
+                                  onClick={async () => {
+                                    const toUnarchive = selectedRets.filter(ret => ret.status === 'archived');
+                                    await Promise.all(
+                                      toUnarchive.map((ret) => {
+                                        const retRef = doc(db, 'returns', ret.returnDocId);
+                                        return updateDoc(retRef, { status: 'active', archivedAt: null });
+                                      })
+                                    );
+                                    setPreviousReturns((prev) =>
+                                      prev.map((row) =>
+                                        toUnarchive.some(r => r.returnDocId === row.returnDocId)
+                                          ? { ...row, status: 'active' }
+                                          : row,
+                                      ),
+                                    );
+                                    setSelectedItems(new Set());
+                                    setIsSelectMode(false);
+                                  }}
+                                  style={{
+                                    backgroundColor: '#3b82f6',
+                                    color: 'white',
+                                    padding: '0.75rem 1rem',
+                                    borderRadius: '0.375rem',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    fontSize: '0.875rem',
+                                    fontWeight: 500,
+                                  }}
+                                >
+                                  Unarchive Selected
+                                </button>
+                              )}
+                              {canDeleteReturns && hasArchived && !hasUnarchived && (
+                                <button
+                                  onClick={async () => {
+                                    const toDelete = selectedRets.filter(ret => ret.status === 'archived');
+                                    await Promise.all(
+                                      toDelete.map((ret) => {
+                                        const retRef = doc(db, 'returns', ret.returnDocId);
+                                        return updateDoc(retRef, { deleted: true });
+                                      })
+                                    );
+                                    setPreviousReturns((prev) =>
+                                      prev.filter((row) =>
+                                        !toDelete.some(r => r.returnDocId === row.returnDocId)
+                                      ),
+                                    );
+                                    setSelectedItems(new Set());
+                                    setIsSelectMode(false);
+                                  }}
+                                  style={{
+                                    backgroundColor: '#ef4444',
+                                    color: 'white',
+                                    padding: '0.75rem 1rem',
+                                    borderRadius: '0.375rem',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    fontSize: '0.875rem',
+                                    fontWeight: 500,
+                                  }}
+                                >
+                                  Delete Selected
+                                </button>
+                              )}
+                            </>
+                          );
+                        })()}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: showFilters ? '1rem' : 0 }}>
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                      {canExportReturns && (
                       <button type="button" onClick={() => {
                         const rows = previousReturns;
                         if (!rows.length) return;
@@ -1141,6 +1345,7 @@ export const Returns: React.FC = () => {
                     </button>
                   </div>
                 </div>
+                )}
                 {showFilters && (
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1rem', paddingTop: '1rem', borderTop: '1px solid #e5e7eb' }}>
                     <div>

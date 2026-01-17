@@ -44,6 +44,7 @@ export const Returns: React.FC = () => {
   const [isReturnDetailsExpanded, setIsReturnDetailsExpanded] = useState(false);
   const returnDetailsRef = useRef<HTMLDivElement | null>(null);
   const returnDetailsToggleRef = useRef<HTMLButtonElement | null>(null);
+  const transactionsPanelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!isReturnDetailsExpanded) return;
@@ -64,6 +65,7 @@ export const Returns: React.FC = () => {
     document.addEventListener('pointerdown', handlePointerDown);
     return () => document.removeEventListener('pointerdown', handlePointerDown);
   }, [isReturnDetailsExpanded]);
+
   const { effectiveRoleIds } = useEffectiveRoleIds();
   const [transactions, setTransactions] = useState<TransactionRow[]>([]);
   const [transactionsLoading, setTransactionsLoading] = useState(false);
@@ -526,6 +528,18 @@ export const Returns: React.FC = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isActionBarExpanded, isSelectMode]);
+
+  // Click-outside listener for Transactions List panel
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (transactionsPanelRef.current && !transactionsPanelRef.current.contains(event.target as Node) && isTransactionsPanelOpen) {
+        setIsTransactionsPanelOpen(false);
+        setTimeout(() => setShowTransactionsContent(false), 300);
+      }
+    };
+    if (isTransactionsPanelOpen) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isTransactionsPanelOpen]);
 
   // Load global previous returns history (all returns across transactions)
   useEffect(() => {
@@ -1377,6 +1391,7 @@ export const Returns: React.FC = () => {
             </section>
             {/* Slide-out Transactions List panel */}
             <section
+              ref={transactionsPanelRef}
               style={{
                 backgroundColor: isTransactionsPanelOpen ? 'white' : 'transparent',
                 borderRadius: isTransactionsPanelOpen ? '0 0.75rem 0.75rem 0' : '0.75rem 0 0 0.75rem',
@@ -1390,10 +1405,12 @@ export const Returns: React.FC = () => {
                 flexDirection: 'column',
                 position: 'absolute',
                 top: '1rem',
-                left: 0,
-                width: isTransactionsPanelOpen ? 480 : 40,
+                left: isMobile ? '50%' : 0,
+                transform: isMobile ? 'translateX(-50%)' : 'none',
+                width: isMobile ? '85%' : (isTransactionsPanelOpen ? 480 : 40),
+                maxWidth: isMobile ? '320px' : 'none',
                 zIndex: 210,
-                transition: 'width 0.3s ease, border-radius 0.3s ease, background-color 0.2s ease',
+                transition: 'width 0.3s ease, border-radius 0.3s ease, background-color 0.2s ease, left 0.3s ease, transform 0.3s ease',
               }}
             >
               {/* Vertical tab toggle */}
@@ -3072,7 +3089,7 @@ export const Returns: React.FC = () => {
               boxShadow: '0 20px 40px rgba(15, 23, 42, 0.45)',
             }}
           >
-            <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem', color: '#111827', margin: 0, marginBottom: '1rem' }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#111827', margin: 0, marginBottom: '1rem' }}>
               Return Details
             </h3>
             

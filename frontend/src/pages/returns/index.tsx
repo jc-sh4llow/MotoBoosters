@@ -95,6 +95,8 @@ export const Returns: React.FC = () => {
   const [showArchived, setShowArchived] = useState(false);
   const [isActionBarExpanded, setIsActionBarExpanded] = useState(false);
   const actionBarRef = useRef<HTMLDivElement | null>(null);
+  const [showReturnDetailsModal, setShowReturnDetailsModal] = useState(false);
+  const [selectedReturnForModal, setSelectedReturnForModal] = useState<any>(null);
   const [sortBy, setSortBy] = useState('date-desc');
   const [returnDate] = useState<string>(() => {
     const now = new Date();
@@ -2885,12 +2887,15 @@ export const Returns: React.FC = () => {
                                   }
                                   return next;
                                 });
+                              } else {
+                                setSelectedReturnForModal(ret);
+                                setShowReturnDetailsModal(true);
                               }
                             }}
                             style={{
                               borderBottom: '1px solid #e5e7eb',
                               opacity: ret.status === 'archived' ? 0.6 : 1,
-                              cursor: isSelectMode ? 'pointer' : 'default',
+                              cursor: 'pointer',
                               backgroundColor: isSelectMode && selectedItems.has(ret.returnDocId) ? '#eff6ff' : 'white',
                             }}
                           >
@@ -3039,6 +3044,169 @@ export const Returns: React.FC = () => {
       </div>
 
       <Footer />
+
+      {/* Return Details Modal */}
+      {showReturnDetailsModal && selectedReturnForModal && (
+        <div
+          onClick={() => setShowReturnDetailsModal(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 200,
+            backgroundColor: 'rgba(15, 23, 42, 0.55)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: '1rem',
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: 'white',
+              borderRadius: '0.75rem',
+              padding: '1.5rem',
+              maxWidth: '500px',
+              width: '100%',
+              border: '1px solid #e5e7eb',
+              boxShadow: '0 20px 40px rgba(15, 23, 42, 0.45)',
+            }}
+          >
+            <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem', color: '#111827', margin: 0, marginBottom: '1rem' }}>
+              Return Details
+            </h3>
+            
+            <div style={{ marginBottom: '1rem' }}>
+              <div style={{ marginBottom: '0.75rem', display: 'flex', gap: '0.5rem' }}>
+                <strong style={{ color: '#374151', minWidth: '140px' }}>Return ID:</strong>
+                <span style={{ color: '#111827' }}>{selectedReturnForModal.id}</span>
+              </div>
+              <div style={{ marginBottom: '0.75rem', display: 'flex', gap: '0.5rem' }}>
+                <strong style={{ color: '#374151', minWidth: '140px' }}>Date:</strong>
+                <span style={{ color: '#111827' }}>{selectedReturnForModal.date}</span>
+              </div>
+              <div style={{ marginBottom: '0.75rem', display: 'flex', gap: '0.5rem' }}>
+                <strong style={{ color: '#374151', minWidth: '140px' }}>Customer:</strong>
+                <span style={{ color: '#111827' }}>{selectedReturnForModal.customerName || 'Walk-in Customer'}</span>
+              </div>
+              <div style={{ marginBottom: '0.75rem', display: 'flex', gap: '0.5rem' }}>
+                <strong style={{ color: '#374151', minWidth: '140px' }}>Transaction ID:</strong>
+                <span style={{ color: '#111827' }}>{selectedReturnForModal.transactionCode}</span>
+              </div>
+              <div style={{ marginBottom: '0.75rem', display: 'flex', gap: '0.5rem' }}>
+                <strong style={{ color: '#374151', minWidth: '140px' }}>Items Returned:</strong>
+                <span style={{ color: '#111827' }}>{selectedReturnForModal.itemsReturned} item{selectedReturnForModal.itemsReturned === 1 ? '' : 's'}</span>
+              </div>
+              <div style={{ marginBottom: '0.75rem', display: 'flex', gap: '0.5rem' }}>
+                <strong style={{ color: '#374151', minWidth: '140px' }}>Returned Total:</strong>
+                <span style={{ color: '#111827', fontWeight: '600' }}>₱{selectedReturnForModal.returnedTotal.toFixed(2)}</span>
+              </div>
+            </div>
+            
+            {/* Individual Actions */}
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', justifyContent: 'flex-start', flexWrap: 'wrap' }}>
+              {selectedReturnForModal.status !== 'archived' && canArchiveReturns && (
+                <button
+                  onClick={async () => {
+                    const retRef = doc(db, 'returns', selectedReturnForModal.returnDocId);
+                    await updateDoc(retRef, { status: 'archived', archivedAt: new Date().toISOString() });
+                    setPreviousReturns((prev) =>
+                      prev.map((row) =>
+                        row.returnDocId === selectedReturnForModal.returnDocId
+                          ? { ...row, status: 'archived' }
+                          : row,
+                      ),
+                    );
+                    setShowReturnDetailsModal(false);
+                  }}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    backgroundColor: '#fee2e2',
+                    color: '#b91c1c',
+                    border: '1px solid #fecaca',
+                    borderRadius: '0.375rem',
+                    fontWeight: '500',
+                    cursor: 'pointer',
+                    fontSize: '0.875rem',
+                  }}
+                >
+                  Archive
+                </button>
+              )}
+              {selectedReturnForModal.status === 'archived' && canUnarchiveReturns && (
+                <button
+                  onClick={async () => {
+                    const retRef = doc(db, 'returns', selectedReturnForModal.returnDocId);
+                    await updateDoc(retRef, { status: 'active', archivedAt: null });
+                    setPreviousReturns((prev) =>
+                      prev.map((row) =>
+                        row.returnDocId === selectedReturnForModal.returnDocId
+                          ? { ...row, status: 'active' }
+                          : row,
+                      ),
+                    );
+                    setShowReturnDetailsModal(false);
+                  }}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    backgroundColor: '#dbeafe',
+                    color: '#1d4ed8',
+                    border: '1px solid #93c5fd',
+                    borderRadius: '0.375rem',
+                    fontWeight: '500',
+                    cursor: 'pointer',
+                    fontSize: '0.875rem',
+                  }}
+                >
+                  Unarchive
+                </button>
+              )}
+              {selectedReturnForModal.status === 'archived' && canDeleteReturns && (
+                <button
+                  onClick={async () => {
+                    const retRef = doc(db, 'returns', selectedReturnForModal.returnDocId);
+                    await updateDoc(retRef, { deleted: true });
+                    setPreviousReturns((prev) =>
+                      prev.filter((row) => row.returnDocId !== selectedReturnForModal.returnDocId),
+                    );
+                    setShowReturnDetailsModal(false);
+                  }}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    backgroundColor: '#fef2f2',
+                    color: '#dc2626',
+                    border: '1px solid #fca5a5',
+                    borderRadius: '0.375rem',
+                    fontWeight: '500',
+                    cursor: 'pointer',
+                    fontSize: '0.875rem',
+                  }}
+                >
+                  Delete
+                </button>
+              )}
+            </div>
+            
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setShowReturnDetailsModal(false)}
+                style={{
+                  padding: '0.5rem 1.5rem',
+                  backgroundColor: '#1d4ed8',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '0.375rem',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem',
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {modalState && (
         <div

@@ -1050,6 +1050,14 @@ export const Returns: React.FC = () => {
                 isNavExpanded={isNavExpanded}
                 setIsNavExpanded={setIsNavExpanded}
                 isMobile={isMobile}
+                currentPage="returns"
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+                onLogout={() => {
+                  logout();
+                  navigate('/login');
+                }}
+                userName={user?.name}
                 onMouseEnter={() => {
                   if (!isMobile && closeMenuTimeout) {
                     clearTimeout(closeMenuTimeout);

@@ -45,6 +45,7 @@ export const Returns: React.FC = () => {
   const returnDetailsRef = useRef<HTMLDivElement | null>(null);
   const returnDetailsToggleRef = useRef<HTMLButtonElement | null>(null);
   const transactionsPanelRef = useRef<HTMLDivElement | null>(null);
+  const filtersRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!isReturnDetailsExpanded) return;
@@ -100,6 +101,12 @@ export const Returns: React.FC = () => {
   const [showReturnDetailsModal, setShowReturnDetailsModal] = useState(false);
   const [selectedReturnForModal, setSelectedReturnForModal] = useState<any>(null);
   const [sortBy, setSortBy] = useState('date-desc');
+  const [toast, setToast] = useState({ message: '', type: '', visible: false });
+
+  const showToast = (message: string, type = 'info') => {
+    setToast({ message, type, visible: true });
+    setTimeout(() => setToast({ message: '', type: '', visible: false }), 3000);
+  };
   const [returnDate] = useState<string>(() => {
     const now = new Date();
     const yyyy = now.getFullYear();
@@ -540,6 +547,17 @@ export const Returns: React.FC = () => {
     if (isTransactionsPanelOpen) document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isTransactionsPanelOpen]);
+
+  // Click-outside listener for Filters section
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (filtersRef.current && !filtersRef.current.contains(event.target as Node) && showFilters) {
+        setShowFilters(false);
+      }
+    };
+    if (showFilters) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showFilters]);
 
   // Load global previous returns history (all returns across transactions)
   useEffect(() => {
@@ -1180,6 +1198,10 @@ export const Returns: React.FC = () => {
                                 setIsSelectMode(false);
                                 setSelectedItems(new Set());
                               } else {
+                                if (isReturnDetailsExpanded) {
+                                  showToast('Please close the Return Details section before entering Select mode.', 'warning');
+                                  return;
+                                }
                                 setIsSelectMode(true);
                               }
                             }}
@@ -1339,6 +1361,10 @@ export const Returns: React.FC = () => {
                             setIsSelectMode(false);
                             setSelectedItems(new Set());
                           } else {
+                            if (isReturnDetailsExpanded) {
+                              showToast('Please close the Return Details section before entering Select mode.', 'warning');
+                              return;
+                            }
                             setIsSelectMode(true);
                           }
                         }}
@@ -1369,7 +1395,7 @@ export const Returns: React.FC = () => {
                 </div>
                 )}
                 {showFilters && (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1rem', paddingTop: '1rem', borderTop: '1px solid #e5e7eb' }}>
+                  <div ref={filtersRef} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1rem', paddingTop: '1rem', borderTop: '1px solid #e5e7eb' }}>
                     <div>
                       <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#4b5563' }}>Date Filter</label>
                       <select value={dateFilter} onChange={(e) => setDateFilter(e.target.value as any)} style={{ width: '100%', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #d1d5db', backgroundColor: 'white', color: '#111827' }}>
@@ -1893,7 +1919,13 @@ export const Returns: React.FC = () => {
                 >
                   <button
                     type="button"
-                    onClick={() => setIsReturnDetailsExpanded((prev) => !prev)}
+                    onClick={() => {
+                      if (!isReturnDetailsExpanded && isSelectMode) {
+                        showToast('Please exit Select mode before opening Return Details.', 'warning');
+                        return;
+                      }
+                      setIsReturnDetailsExpanded((prev) => !prev);
+                    }}
                     ref={returnDetailsToggleRef}
                     style={{
                       width: '100%',
@@ -3521,6 +3553,29 @@ export const Returns: React.FC = () => {
               </>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Toast Notification */}
+      {toast.visible && (
+        <div
+          style={{
+            position: 'fixed',
+            top: '1rem',
+            right: '1rem',
+            backgroundColor: toast.type === 'warning' ? '#fef3c7' : '#dbeafe',
+            color: toast.type === 'warning' ? '#92400e' : '#1e40af',
+            padding: '0.75rem 1rem',
+            borderRadius: '0.5rem',
+            border: `1px solid ${toast.type === 'warning' ? '#fbbf24' : '#93c5fd'}`,
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+            zIndex: 9999,
+            maxWidth: '400px',
+            fontSize: '0.875rem',
+            fontWeight: '500',
+          }}
+        >
+          {toast.message}
         </div>
       )}
     </div>

@@ -1657,52 +1657,19 @@ export const Returns: React.FC = () => {
                             <th
                               style={{
                                 padding: '0.4rem 0.5rem',
-                                textAlign: 'center',
+                                textAlign: 'left',
                                 fontWeight: 600,
                                 color: '#6b7280',
                               }}
                             >
-                              Customer
+                              Transaction
                             </th>
                             <th
                               style={{
                                 padding: '0.4rem 0.5rem',
-                                textAlign: 'center',
+                                textAlign: 'right',
                                 fontWeight: 600,
                                 color: '#6b7280',
-                              }}
-                            >
-                              Date
-                            </th>
-                            <th
-                              style={{
-                                padding: '0.4rem 0.5rem',
-                                textAlign: 'center',
-                                fontWeight: 600,
-                                color: '#6b7280',
-                                width: '8%',
-                              }}
-                            >
-                              Type
-                            </th>
-                            <th
-                              style={{
-                                padding: '0.4rem 0.5rem',
-                                textAlign: 'center',
-                                fontWeight: 600,
-                                color: '#6b7280',
-                                width: 'auto',
-                              }}
-                            >
-                              Total
-                            </th>
-                            <th
-                              style={{
-                                padding: '0.4rem 0.5rem',
-                                textAlign: 'center',
-                                fontWeight: 600,
-                                color: '#6b7280',
-                                width: 'auto',
                               }}
                             >
                               Payment
@@ -1713,7 +1680,7 @@ export const Returns: React.FC = () => {
                           {transactionsLoading && (
                             <tr>
                               <td
-                                colSpan={5}
+                                colSpan={2}
                                 style={{
                                   padding: '0.75rem 0.75rem',
                                   fontSize: '0.8rem',
@@ -1728,7 +1695,7 @@ export const Returns: React.FC = () => {
                           {!transactionsLoading && filteredTransactions.length === 0 && (
                             <tr>
                               <td
-                                colSpan={5}
+                                colSpan={2}
                                 style={{
                                   padding: '0.75rem 0.75rem',
                                   fontSize: '0.8rem',
@@ -1755,132 +1722,49 @@ export const Returns: React.FC = () => {
                                 <td
                                   style={{
                                     padding: '0.4rem 0.5rem',
-                                    textAlign: 'center',
-                                    verticalAlign: 'middle',
-                                    whiteSpace: 'normal',
-                                    wordBreak: 'break-word',
-                                    overflowWrap: 'break-word',
-                                  }}
-                                >
-                                  {tx.customerName || 'Walk-in Customer'}
-                                </td>
-                                <td
-                                  style={{
-                                    padding: '0.4rem 0.5rem',
-                                    textAlign: 'center',
                                     verticalAlign: 'middle',
                                   }}
                                 >
-                                  {(() => {
-                                    const raw = tx.date || '';
-                                    const parts = raw.split('-'); // expect YYYY-MM-DD
-                                    if (parts.length === 3) {
-                                      const [yyyy, mm, dd] = parts;
-                                      const yy = yyyy.slice(-2);
-                                      return `${dd}/${mm}/${yy}`;
-                                    }
-                                    return raw;
-                                  })()}
-                                </td>
-                                <td
-                                  style={{
-                                    padding: '0.4rem 0.5rem',
-                                    textAlign: 'center',
-                                    verticalAlign: 'middle',
-                                  }}
-                                >
-                                  {(() => {
-                                    const t = (tx.transactionType || '').toLowerCase();
-                                    let label = 'N/A';
-                                    let bg = '#e5e7eb';
-                                    let fg = '#374151';
-
-                                    if (t.includes('parts') && t.includes('service')) {
-                                      label = 'PS';
-                                      bg = '#f3e8ff'; // light purple
-                                      fg = '#7c3aed'; // purple text
-                                    } else if (t.includes('parts')) {
-                                      label = 'P';
-                                      bg = '#dbeafe'; // light blue
-                                      fg = '#1d4ed8'; // blue text
-                                    } else if (t.includes('service')) {
-                                      label = 'S';
-                                      bg = '#dcfce7'; // light green
-                                      fg = '#15803d'; // green text
-                                    }
-
-                                    return (
-                                      <span
-                                        style={{
-                                          display: 'inline-flex',
-                                          alignItems: 'center',
-                                          justifyContent: 'center',
-                                          padding: '0.15rem 0.6rem',
-                                          borderRadius: '9999px',
-                                          fontSize: '0.7rem',
-                                          fontWeight: 600,
-                                          backgroundColor: bg,
-                                          color: fg,
-                                          whiteSpace: 'nowrap',
-                                        }}
-                                      >
-                                        {label}
-                                      </span>
-                                    );
-                                  })()}
+                                  <div style={{ fontWeight: '500', color: '#111827' }}>
+                                    {tx.customerName || 'Walk-in Customer'}
+                                  </div>
+                                  <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.15rem' }}>
+                                    {(() => {
+                                      const raw = tx.date || '';
+                                      const parts = raw.split('-');
+                                      if (parts.length === 3) {
+                                        const [yyyy, mm, dd] = parts;
+                                        const yy = yyyy.slice(-2);
+                                        return `${dd}/${mm}/${yy}`;
+                                      }
+                                      return raw;
+                                    })()} • {(() => {
+                                      const t = (tx.transactionType || '').toLowerCase();
+                                      if (t.includes('parts') && t.includes('service')) return 'Parts & Service';
+                                      if (t.includes('parts')) return 'Parts';
+                                      if (t.includes('service')) return 'Service';
+                                      return 'N/A';
+                                    })()} • {tx.transactionCode}
+                                  </div>
                                 </td>
                                 <td
                                   style={{
                                     padding: '0.4rem 0.5rem',
                                     textAlign: 'right',
                                     verticalAlign: 'middle',
-                                    fontVariantNumeric: 'tabular-nums',
                                   }}
                                 >
-                                  ₱{tx.total.toFixed(2)}
-                                </td>
-                                <td
-                                  style={{
-                                    padding: '0.4rem 0.5rem',
-                                    textAlign: 'center',
-                                    verticalAlign: 'middle',
-                                  }}
-                                >
-                                  {(() => {
-                                    const p = (tx.paymentType || '').toLowerCase();
-                                    let label = 'N/A';
-                                    let bg = '#e5e7eb';
-                                    let fg = '#374151';
-
-                                    if (p === 'cash') {
-                                      label = 'C';
-                                      bg = '#dcfce7'; // light green
-                                      fg = '#15803d'; // green text
-                                    } else if (p === 'gcash') {
-                                      label = 'G';
-                                      bg = '#e0f2fe'; // light gcash-like blue
-                                      fg = '#0369a1'; // blue text
-                                    }
-
-                                    return (
-                                      <span
-                                        style={{
-                                          display: 'inline-flex',
-                                          alignItems: 'center',
-                                          justifyContent: 'center',
-                                          padding: '0.15rem 0.6rem',
-                                          borderRadius: '9999px',
-                                          fontSize: '0.7rem',
-                                          fontWeight: 600,
-                                          backgroundColor: bg,
-                                          color: fg,
-                                          whiteSpace: 'nowrap',
-                                        }}
-                                      >
-                                        {label}
-                                      </span>
-                                    );
-                                  })()}
+                                  <div style={{ fontWeight: '500', color: '#111827', fontVariantNumeric: 'tabular-nums' }}>
+                                    ₱{tx.total.toFixed(2)}
+                                  </div>
+                                  <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.15rem' }}>
+                                    {(() => {
+                                      const p = (tx.paymentType || '').toLowerCase();
+                                      if (p === 'cash') return 'Cash';
+                                      if (p === 'gcash') return 'GCash';
+                                      return 'N/A';
+                                    })()}
+                                  </div>
                                 </td>
                               </tr>
                             ))}

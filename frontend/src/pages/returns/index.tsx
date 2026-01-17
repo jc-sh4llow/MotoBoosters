@@ -1113,27 +1113,33 @@ export const Returns: React.FC = () => {
                       type="button"
                       onClick={() => setIsActionBarExpanded(!isActionBarExpanded)}
                       style={{
-                        width: '100%',
                         display: 'flex',
-                        justifyContent: 'space-between',
                         alignItems: 'center',
-                        backgroundColor: '#1d4ed8',
-                        color: 'white',
-                        padding: '0.75rem 1rem',
-                        borderRadius: '0.375rem',
+                        justifyContent: 'space-between',
+                        width: '100%',
+                        background: 'transparent',
                         border: 'none',
                         cursor: 'pointer',
+                        padding: 0,
+                        marginBottom: isActionBarExpanded ? '1rem' : 0,
+                        fontSize: '1.125rem',
                         fontWeight: 600,
-                        fontSize: '0.9rem',
+                        color: '#1e40af',
+                        textAlign: 'left',
                       }}
                     >
-                      Actions
-                      <FaChevronDown
+                      <span>Action Bar</span>
+                      <span
                         style={{
-                          transform: isActionBarExpanded ? 'rotate(180deg)' : 'rotate(0)',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
                           transition: 'transform 0.2s ease',
+                          transform: isActionBarExpanded ? 'rotate(180deg)' : 'rotate(0)',
                         }}
-                      />
+                      >
+                        <FaChevronDown style={{ fontSize: '0.9em' }} />
+                      </span>
                     </button>
                     {isActionBarExpanded && (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.75rem' }}>

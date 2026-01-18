@@ -410,13 +410,53 @@ export function NewTransaction() {
   const [addCustomerError, setAddCustomerError] = useState<string | null>(null);
 
   const [productSearchTerm, setProductSearchTerm] = useState('');
+  const [debouncedProductSearch, setDebouncedProductSearch] = useState('');
   const [serviceSearchTerm, setServiceSearchTerm] = useState('');
+  const [debouncedServiceSearch, setDebouncedServiceSearch] = useState('');
   const [showAllProducts, setShowAllProducts] = useState(false);
   const [showAllServices, setShowAllServices] = useState(false);
 
   const [expandedCartItemId, setExpandedCartItemId] = useState<string | null>(null);
 
   const MAX_VISIBLE_ROWS = 4;
+
+  // Debounce product search term for highlighting
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedProductSearch(productSearchTerm);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [productSearchTerm]);
+
+  // Debounce service search term for highlighting
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedServiceSearch(serviceSearchTerm);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [serviceSearchTerm]);
+
+  // Helper function to highlight search matches
+  const highlightText = (text: string, highlight: string) => {
+    if (!highlight.trim()) {
+      return text;
+    }
+
+    const parts = text.toString().split(new RegExp(`(${highlight})`, 'gi'));
+    return parts.map((part, index) =>
+      part.toLowerCase() === highlight.toLowerCase() ? (
+        <span key={index} style={{
+          backgroundColor: '#fef3c7',
+          color: '#92400e',
+          fontWeight: '600',
+          padding: '0 2px',
+          borderRadius: '2px'
+        }}>
+          {part}
+        </span>
+      ) : part
+    );
+  };
 
   const normalizeOptionalField = (value: string) => {
     const trimmed = (value ?? '').trim();
@@ -1265,7 +1305,7 @@ export function NewTransaction() {
                                     className="flex flex-col justify-between p-3 rounded-md border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-colors"
                                   >
                                     <div>
-                                      <p className="font-medium text-gray-900 truncate" title={product.name}>{product.name}</p>
+                                      <p className="font-medium text-gray-900 truncate" title={product.name}>{highlightText(product.name, debouncedProductSearch)}</p>
                                       {product.discountAmount > 0 ? (
                                         <p className="text-sm text-gray-600">
                                           <span className="line-through text-gray-400 mr-1">
@@ -1364,7 +1404,7 @@ export function NewTransaction() {
                                     className="flex flex-col justify-between p-3 rounded-md border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-colors"
                                   >
                                     <div>
-                                      <p className="font-medium text-gray-900 truncate" title={service.name}>{service.name}</p>
+                                      <p className="font-medium text-gray-900 truncate" title={service.name}>{highlightText(service.name, debouncedServiceSearch)}</p>
                                       <p className="text-sm text-gray-600">₱{service.price.toFixed(2)}</p>
                                     </div>
                                     <div className="mt-3 flex justify-between gap-2">

@@ -2810,7 +2810,7 @@ export function Services() {
                                       )}
                                     </div>
                                   </td>
-                                  <td style={{ padding: '0.75rem 1rem', color: 'var(--table-row-text)' }}>{service.name}</td>
+                                  <td style={{ padding: '0.75rem 1rem', color: 'var(--table-row-text)' }}>{highlightText(service.name, searchTerm)}</td>
 
                                   {showDescription && (
                                     <td style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>

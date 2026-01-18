@@ -792,7 +792,7 @@ export const Settings: React.FC = () => {
                     }}
                   />
                   <input
-                    type="text"
+                    type="search"
                     placeholder="Search settings..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -804,6 +804,16 @@ export const Settings: React.FC = () => {
                       color: '#1f2937',
                       width: '320px',
                       outline: 'none',
+                      fontSize: '16px',
+                      minHeight: '48px',
+                    }}
+                    onFocus={(e) => {
+                      e.currentTarget.style.border = '2px solid #3b82f6';
+                      e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.border = '1px solid #d1d5db';
+                      e.currentTarget.style.boxShadow = 'none';
                     }}
                   />
                   {searchTerm && (
@@ -1510,9 +1520,18 @@ export const Settings: React.FC = () => {
                                   padding: '0.5rem 0.75rem',
                                   border: qrUrlError ? '1px solid #ef4444' : '1px solid #d1d5db',
                                   borderRadius: '0.375rem',
-                                  fontSize: '0.85rem',
+                                  fontSize: '16px',
+                                  minHeight: '48px',
                                   backgroundColor: '#ffffff',
                                   color: '#111827',
+                                }}
+                                onFocus={(e) => {
+                                  e.currentTarget.style.border = qrUrlError ? '2px solid #ef4444' : '2px solid #3b82f6';
+                                  e.currentTarget.style.boxShadow = qrUrlError ? '0 0 0 3px rgba(239, 68, 68, 0.1)' : '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                                }}
+                                onBlur={(e) => {
+                                  e.currentTarget.style.border = qrUrlError ? '1px solid #ef4444' : '1px solid #d1d5db';
+                                  e.currentTarget.style.boxShadow = 'none';
                                 }}
                               />
                               <button
@@ -2323,11 +2342,20 @@ export const Settings: React.FC = () => {
                                   value={editingVehicleType.name}
                                   onChange={(e) => setEditingVehicleType({ ...editingVehicleType, name: e.target.value })}
                                   style={{
-                                    padding: '0.25rem 0.5rem',
+                                    padding: '0.5rem',
                                     borderRadius: '0.25rem',
                                     border: '1px solid #3b82f6',
-                                    fontSize: '0.8rem',
+                                    fontSize: '16px',
+                                    minHeight: '48px',
                                     width: '120px',
+                                  }}
+                                  onFocus={(e) => {
+                                    e.currentTarget.style.border = '2px solid #3b82f6';
+                                    e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                                  }}
+                                  onBlur={(e) => {
+                                    e.currentTarget.style.border = '1px solid #3b82f6';
+                                    e.currentTarget.style.boxShadow = 'none';
                                   }}
                                   autoFocus
                                 />
@@ -2388,11 +2416,20 @@ export const Settings: React.FC = () => {
                                 onChange={(e) => setNewVehicleTypeName(e.target.value)}
                                 placeholder="Type name"
                                 style={{
-                                  padding: '0.25rem 0.5rem',
+                                  padding: '0.5rem',
                                   borderRadius: '0.25rem',
                                   border: '1px solid #3b82f6',
-                                  fontSize: '0.8rem',
+                                  fontSize: '16px',
+                                  minHeight: '48px',
                                   width: '120px',
+                                }}
+                                onFocus={(e) => {
+                                  e.currentTarget.style.border = '2px solid #3b82f6';
+                                  e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                                }}
+                                onBlur={(e) => {
+                                  e.currentTarget.style.border = '1px solid #3b82f6';
+                                  e.currentTarget.style.boxShadow = 'none';
                                 }}
                                 autoFocus
                               />
@@ -3148,9 +3185,18 @@ export const Settings: React.FC = () => {
                   padding: '0.5rem 0.75rem',
                   borderRadius: '0.375rem',
                   border: '1px solid #d1d5db',
-                  fontSize: '0.875rem',
+                  fontSize: '16px',
+                  minHeight: '48px',
                   backgroundColor: 'white',
                   color: '#111827',
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.border = '2px solid #3b82f6';
+                  e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.border = '1px solid #d1d5db';
+                  e.currentTarget.style.boxShadow = 'none';
                 }}
               />
             </div>
@@ -3285,9 +3331,18 @@ export const Settings: React.FC = () => {
                   padding: '0.5rem 0.75rem',
                   borderRadius: '0.375rem',
                   border: '1px solid #d1d5db',
-                  fontSize: '0.875rem',
+                  fontSize: '16px',
+                  minHeight: '48px',
                   backgroundColor: 'white',
                   color: '#111827',
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.border = '2px solid #3b82f6';
+                  e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.border = '1px solid #d1d5db';
+                  e.currentTarget.style.boxShadow = 'none';
                 }}
               />
             </div>

@@ -723,28 +723,29 @@ export const Settings: React.FC = () => {
                   }}
                 />
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+              {/* Container for title + welcome message (mobile: stacked, desktop: inline) */}
+              <div style={{
+                display: 'flex',
+                flexDirection: isMobile ? 'column' : 'row',
+                alignItems: isMobile ? 'flex-start' : 'baseline',
+                gap: isMobile ? '0.25rem' : '0.75rem'
+              }}>
                 <h1
                   style={{
-                    fontSize: '1.875rem',
+                    fontSize: isMobile ? '1.5rem' : '1.875rem',
                     fontWeight: 'bold',
                     color: 'var(--text-primary)',
                     margin: 0,
+                    lineHeight: isMobile ? '1.75rem' : 'normal',
                   }}
                 >
                   Settings
                 </h1>
-                <span
-                  style={{
-                    color: '#4b5563',
-                    fontSize: '0.9rem',
-                  }}
-                >
-                  Global website configuration
-                </span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginLeft: '1rem' }}>
-                <span style={{ color: '#374151', fontSize: '0.9rem' }}>
+                <span style={{
+                  color: 'var(--text)',
+                  fontSize: isMobile ? '0.75rem' : '0.9rem',
+                  marginLeft: isMobile ? '0' : '1rem',
+                }}>
                   Welcome, {user?.name || 'Guest'}
                 </span>
               </div>
@@ -752,62 +753,65 @@ export const Settings: React.FC = () => {
 
             {/* Right: search bar, Logout, navbar toggle */}
             <div style={{ display: 'flex', alignItems: 'center', marginLeft: 'auto' }}>
-              <div
-                style={{
-                  position: 'relative',
-                  display: 'flex',
-                  alignItems: 'center',
-                  marginRight: '1rem',
-                }}
-              >
-                <FaSearch
+              {/* Search bar - desktop only, hidden on mobile */}
+              {!isMobile && (
+                <div
                   style={{
-                    position: 'absolute',
-                    left: '12px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    color: '#9ca3af',
+                    position: 'relative',
+                    display: 'flex',
+                    alignItems: 'center',
+                    marginRight: '1rem',
                   }}
-                />
-                <input
-                  type="text"
-                  placeholder="Search settings..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  style={{
-                    padding: '0.5rem 2.5rem 0.5rem 2.5rem',
-                    borderRadius: '0.5rem',
-                    border: '1px solid #d1d5db',
-                    backgroundColor: 'rgba(255, 255, 255)',
-                    color: '#1f2937',
-                    width: '320px',
-                    outline: 'none',
-                  }}
-                />
-                {searchTerm && (
-                  <button
-                    onClick={() => setSearchTerm('')}
+                >
+                  <FaSearch
                     style={{
                       position: 'absolute',
-                      right: '8px',
+                      left: '12px',
                       top: '50%',
                       transform: 'translateY(-50%)',
-                      background: 'transparent',
-                      border: 'none',
                       color: '#9ca3af',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      padding: '4px',
                     }}
-                  >
-                    <FaTimes size={14} />
-                  </button>
-                )}
-              </div>
+                  />
+                  <input
+                    type="text"
+                    placeholder="Search settings..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    style={{
+                      padding: '0.5rem 2.5rem 0.5rem 2.5rem',
+                      borderRadius: '0.5rem',
+                      border: '1px solid #d1d5db',
+                      backgroundColor: 'rgba(255, 255, 255)',
+                      color: '#1f2937',
+                      width: '320px',
+                      outline: 'none',
+                    }}
+                  />
+                  {searchTerm && (
+                    <button
+                      onClick={() => setSearchTerm('')}
+                      style={{
+                        position: 'absolute',
+                        right: '8px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#9ca3af',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '4px',
+                      }}
+                    >
+                      <FaTimes size={14} />
+                    </button>
+                  )}
+                </div>
+              )}
 
-              {user && (
+              {user && !isMobile && (
                 <button
                   onClick={() => {
                     logout();
@@ -866,6 +870,14 @@ export const Settings: React.FC = () => {
                 isNavExpanded={isNavExpanded}
                 setIsNavExpanded={setIsNavExpanded}
                 isMobile={isMobile}
+                currentPage="settings"
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+                onLogout={() => {
+                  logout();
+                  navigate('/login');
+                }}
+                userName={user?.name}
                 onMouseEnter={() => {
                   if (!isMobile && closeMenuTimeout) {
                     clearTimeout(closeMenuTimeout);

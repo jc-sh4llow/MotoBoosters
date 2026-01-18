@@ -1589,7 +1589,7 @@ export const Returns: React.FC = () => {
                 fontSize: '0.75rem',
                 fontWeight: 600,
                 boxShadow: '0 4px 10px rgba(15, 23, 42, 0.25)',
-                zIndex: 210,
+                zIndex: isTransactionsPanelOpen ? 208 : 210,
               }}
             >
               Transactions List

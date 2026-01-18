@@ -36,6 +36,17 @@ type TransactionRow = {
 };
 
 export function Transactions() {
+  // Highlight text utility function for search results
+  const highlightText = (text: string, search: string) => {
+    if (!search || !text) return text;
+    const parts = text.split(new RegExp(`(${search})`, 'gi'));
+    return parts.map((part, i) => 
+      part.toLowerCase() === search.toLowerCase() 
+        ? <span key={i} style={{ backgroundColor: '#fef08a', color: '#854d0e', fontWeight: '600' }}>{part}</span>
+        : part
+    );
+  };
+
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
@@ -1833,10 +1844,10 @@ export function Transactions() {
                                       textAlign: 'left'
                                     }}>
                                       <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>
-                                        {tx.customer}
+                                        {highlightText(tx.customer, searchTerm)}
                                       </div>
                                       <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.15rem' }}>
-                                        {tx.transactionCode || tx.id} - {new Date(tx.date).toLocaleDateString()}
+                                        {highlightText(tx.transactionCode || tx.id, searchTerm)} - {new Date(tx.date).toLocaleDateString()}
                                       </div>
                                     </td>
 
@@ -1869,7 +1880,7 @@ export function Transactions() {
                                       whiteSpace: 'nowrap',
                                       textAlign: 'center'
                                     }}>
-                                      {tx.transactionCode || tx.id}
+                                      {highlightText(tx.transactionCode || tx.id, searchTerm)}
                                     </td>
 
                                     {/* Date */}
@@ -1891,7 +1902,7 @@ export function Transactions() {
                                       whiteSpace: 'nowrap',
                                       textAlign: 'left'
                                     }}>
-                                      {tx.customer}
+                                      {highlightText(tx.customer, searchTerm)}
                                     </td>
 
                                     {/* Type */}

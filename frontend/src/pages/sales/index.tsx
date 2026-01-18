@@ -835,7 +835,11 @@ export function Sales() {
                 )}
 
                 {/* Desktop: Horizontal Layout | Mobile: Collapsible Content */}
-                {(!isMobile || isActionBarExpanded) && (
+                <div style={{
+                  maxHeight: (!isMobile || isActionBarExpanded) ? '1000px' : '0',
+                  overflow: 'hidden',
+                  transition: 'max-height 0.3s ease-out'
+                }}>
                   <div style={{
                     display: 'flex',
                     flexDirection: isMobile ? 'column' : 'row',
@@ -959,199 +963,199 @@ export function Sales() {
                       </button>
                     </div>
                   </div>
-                )}
+                </div>
 
-                {showFilters && (
-                  <div ref={filtersRef} style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-                    gap: '1rem',
-                    paddingTop: '1rem',
-                    borderTop: '1px solid #e5e7eb'
-                  }}>
-                    {/* Timeframe Filter */}
-                    <div>
-                      <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'rgb(75, 85, 99)' }}>
-                        Timeframe
-                      </label>
-                      <select
-                        value={timeframe}
-                        onChange={(e) => {
-                          const val = e.target.value as typeof timeframe;
-                          setTimeframe(val);
-                          if (val === 'custom') {
-                            setShowCalendarPicker(true);
-                          } else {
-                            setShowCalendarPicker(false);
-                          }
-                        }}
-                        style={{ width: '100%', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #d1d5db', backgroundColor: 'white', color: '#111827' }}
-                      >
-                        <option value="today">Today</option>
-                        <option value="week">Last 7 Days</option>
-                        <option value="month">Last 30 Days</option>
-                        <option value="year">Last 365 Days</option>
-                        <option value="custom">{customStart && customEnd ? `${customStart} – ${customEnd}` : 'Custom Range'}</option>
-                      </select>
-                    </div>
+                  {showFilters && (
+                    <div ref={filtersRef} style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                      gap: '1rem',
+                      paddingTop: '1rem',
+                      borderTop: '1px solid #e5e7eb'
+                    }}>
+                      {/* Timeframe Filter */}
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'rgb(75, 85, 99)' }}>
+                          Timeframe
+                        </label>
+                        <select
+                          value={timeframe}
+                          onChange={(e) => {
+                            const val = e.target.value as typeof timeframe;
+                            setTimeframe(val);
+                            if (val === 'custom') {
+                              setShowCalendarPicker(true);
+                            } else {
+                              setShowCalendarPicker(false);
+                            }
+                          }}
+                          style={{ width: '100%', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #d1d5db', backgroundColor: 'white', color: '#111827' }}
+                        >
+                          <option value="today">Today</option>
+                          <option value="week">Last 7 Days</option>
+                          <option value="month">Last 30 Days</option>
+                          <option value="year">Last 365 Days</option>
+                          <option value="custom">{customStart && customEnd ? `${customStart} – ${customEnd}` : 'Custom Range'}</option>
+                        </select>
+                      </div>
 
-                    {/* Price Type Filter */}
-                    <div>
-                      <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'rgb(75, 85, 99)' }}>
-                        Price Type
-                      </label>
-                      <select
-                        value={priceType}
-                        onChange={(e) => setPriceType(e.target.value)}
-                        style={{ width: '100%', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #d1d5db', backgroundColor: 'white', color: '#111827' }}
-                      >
-                        <option value="unit">Unit Price</option>
-                        <option value="total">Total Amount</option>
-                      </select>
-                    </div>
+                      {/* Price Type Filter */}
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'rgb(75, 85, 99)' }}>
+                          Price Type
+                        </label>
+                        <select
+                          value={priceType}
+                          onChange={(e) => setPriceType(e.target.value)}
+                          style={{ width: '100%', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #d1d5db', backgroundColor: 'white', color: '#111827' }}
+                        >
+                          <option value="unit">Unit Price</option>
+                          <option value="total">Total Amount</option>
+                        </select>
+                      </div>
 
-                    {/* Price Range Filter */}
-                    <div>
-                      <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'rgb(75, 85, 99)' }}>
-                        Price Range ({priceType === 'unit' ? 'Unit' : 'Total'})
-                      </label>
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.5rem',
-                        height: '40px'
-                      }}>
-                        <input
-                          type="number"
-                          inputMode="decimal"
-                          value={minPrice}
-                          onChange={(e) => setMinPrice(e.target.value)}
-                          style={{
-                            width: '100%',
-                            padding: '0.5rem',
-                            borderRadius: '0.375rem',
-                            border: '1px solid #d1d5db',
-                            backgroundColor: 'white',
-                            color: '#111827',
-                            textAlign: 'center',
-                            height: '100%',
-                            boxSizing: 'border-box',
-                            fontSize: '16px',
-                            minHeight: '48px'
+                      {/* Price Range Filter */}
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'rgb(75, 85, 99)' }}>
+                          Price Range ({priceType === 'unit' ? 'Unit' : 'Total'})
+                        </label>
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          height: '40px'
+                        }}>
+                          <input
+                            type="number"
+                            inputMode="decimal"
+                            value={minPrice}
+                            onChange={(e) => setMinPrice(e.target.value)}
+                            style={{
+                              width: '100%',
+                              padding: '0.5rem',
+                              borderRadius: '0.375rem',
+                              border: '1px solid #d1d5db',
+                              backgroundColor: 'white',
+                              color: '#111827',
+                              textAlign: 'center',
+                              height: '100%',
+                              boxSizing: 'border-box',
+                              fontSize: '16px',
+                              minHeight: '48px'
+                            }}
+                            placeholder="Min"
+                            min="0"
+                            step="0.01"
+                            onFocus={(e) => {
+                              e.currentTarget.style.border = '2px solid #3b82f6';
+                              e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                            }}
+                            onBlur={(e) => {
+                              e.currentTarget.style.border = '1px solid #d1d5db';
+                              e.currentTarget.style.boxShadow = 'none';
+                            }}
+                          />
+                          <span style={{ color: 'rgb(75, 85, 99)' }}>-</span>
+                          <input
+                            type="number"
+                            inputMode="decimal"
+                            value={maxPrice}
+                            onChange={(e) => setMaxPrice(e.target.value)}
+                            style={{
+                              width: '100%',
+                              padding: '0.5rem',
+                              borderRadius: '0.375rem',
+                              border: '1px solid #d1d5db',
+                              backgroundColor: 'white',
+                              color: '#111827',
+                              textAlign: 'center',
+                              height: '100%',
+                              boxSizing: 'border-box',
+                              fontSize: '16px',
+                              minHeight: '48px'
+                            }}
+                            placeholder="Max"
+                            min="0"
+                            step="0.01"
+                            onFocus={(e) => {
+                              e.currentTarget.style.border = '2px solid #3b82f6';
+                              e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                            }}
+                            onBlur={(e) => {
+                              e.currentTarget.style.border = '1px solid #d1d5db';
+                              e.currentTarget.style.boxShadow = 'none';
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Customer Filter */}
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'rgb(75, 85, 99)' }}>
+                          Customer
+                        </label>
+                        <select
+                          value={customerFilterMode}
+                          onChange={(e) => {
+                            const val = e.target.value as 'all' | 'search';
+                            setCustomerFilterMode(val);
+                            if (val === 'all') {
+                              setCustomerFilter('');
+                            } else {
+                              setShowCustomerModal(true);
+                            }
                           }}
-                          placeholder="Min"
-                          min="0"
-                          step="0.01"
-                          onFocus={(e) => {
-                            e.currentTarget.style.border = '2px solid #3b82f6';
-                            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                          style={{ width: '100%', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #d1d5db', backgroundColor: 'white', color: '#111827' }}
+                        >
+                          <option value="all">{customerFilter ? `Selected: ${customerFilter}` : 'All Customers'}</option>
+                          <option value="search">Search Customer...</option>
+                        </select>
+                      </div>
+
+                      {/* Item Filter */}
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'rgb(75, 85, 99)' }}>
+                          Item
+                        </label>
+                        <select
+                          value={itemFilterMode}
+                          onChange={(e) => {
+                            const val = e.target.value as 'all' | 'search';
+                            setItemFilterMode(val);
+                            if (val === 'all') {
+                              setItemFilter('');
+                            } else {
+                              setShowItemModal(true);
+                            }
                           }}
-                          onBlur={(e) => {
-                            e.currentTarget.style.border = '1px solid #d1d5db';
-                            e.currentTarget.style.boxShadow = 'none';
-                          }}
-                        />
-                        <span style={{ color: 'rgb(75, 85, 99)' }}>-</span>
-                        <input
-                          type="number"
-                          inputMode="decimal"
-                          value={maxPrice}
-                          onChange={(e) => setMaxPrice(e.target.value)}
-                          style={{
-                            width: '100%',
-                            padding: '0.5rem',
-                            borderRadius: '0.375rem',
-                            border: '1px solid #d1d5db',
-                            backgroundColor: 'white',
-                            color: '#111827',
-                            textAlign: 'center',
-                            height: '100%',
-                            boxSizing: 'border-box',
-                            fontSize: '16px',
-                            minHeight: '48px'
-                          }}
-                          placeholder="Max"
-                          min="0"
-                          step="0.01"
-                          onFocus={(e) => {
-                            e.currentTarget.style.border = '2px solid #3b82f6';
-                            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
-                          }}
-                          onBlur={(e) => {
-                            e.currentTarget.style.border = '1px solid #d1d5db';
-                            e.currentTarget.style.boxShadow = 'none';
-                          }}
-                        />
+                          style={{ width: '100%', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #d1d5db', backgroundColor: 'white', color: '#111827' }}
+                        >
+                          <option value="all">{itemFilter ? `Selected: ${itemFilter}` : 'All Items'}</option>
+                          <option value="search">Search Item...</option>
+                        </select>
+                      </div>
+
+                      {/* Sort By Filter */}
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'rgb(75, 85, 99)' }}>
+                          Sort By
+                        </label>
+                        <select
+                          value={sortBy}
+                          onChange={(e) => setSortBy(e.target.value)}
+                          style={{ width: '100%', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #d1d5db', backgroundColor: 'white', color: '#111827' }}
+                        >
+                          <option value="date-desc">Date (Newest First)</option>
+                          <option value="date-asc">Date (Oldest First)</option>
+                          <option value="totalAmount-desc">Total Amount (High to Low)</option>
+                          <option value="totalAmount-asc">Total Amount (Low to High)</option>
+                          <option value="itemName-asc">Item Name (A-Z)</option>
+                          <option value="itemName-desc">Item Name (Z-A)</option>
+                        </select>
                       </div>
                     </div>
-
-                    {/* Customer Filter */}
-                    <div>
-                      <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'rgb(75, 85, 99)' }}>
-                        Customer
-                      </label>
-                      <select
-                        value={customerFilterMode}
-                        onChange={(e) => {
-                          const val = e.target.value as 'all' | 'search';
-                          setCustomerFilterMode(val);
-                          if (val === 'all') {
-                            setCustomerFilter('');
-                          } else {
-                            setShowCustomerModal(true);
-                          }
-                        }}
-                        style={{ width: '100%', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #d1d5db', backgroundColor: 'white', color: '#111827' }}
-                      >
-                        <option value="all">{customerFilter ? `Selected: ${customerFilter}` : 'All Customers'}</option>
-                        <option value="search">Search Customer...</option>
-                      </select>
-                    </div>
-
-                    {/* Item Filter */}
-                    <div>
-                      <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'rgb(75, 85, 99)' }}>
-                        Item
-                      </label>
-                      <select
-                        value={itemFilterMode}
-                        onChange={(e) => {
-                          const val = e.target.value as 'all' | 'search';
-                          setItemFilterMode(val);
-                          if (val === 'all') {
-                            setItemFilter('');
-                          } else {
-                            setShowItemModal(true);
-                          }
-                        }}
-                        style={{ width: '100%', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #d1d5db', backgroundColor: 'white', color: '#111827' }}
-                      >
-                        <option value="all">{itemFilter ? `Selected: ${itemFilter}` : 'All Items'}</option>
-                        <option value="search">Search Item...</option>
-                      </select>
-                    </div>
-
-                    {/* Sort By Filter */}
-                    <div>
-                      <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'rgb(75, 85, 99)' }}>
-                        Sort By
-                      </label>
-                      <select
-                        value={sortBy}
-                        onChange={(e) => setSortBy(e.target.value)}
-                        style={{ width: '100%', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #d1d5db', backgroundColor: 'white', color: '#111827' }}
-                      >
-                        <option value="date-desc">Date (Newest First)</option>
-                        <option value="date-asc">Date (Oldest First)</option>
-                        <option value="totalAmount-desc">Total Amount (High to Low)</option>
-                        <option value="totalAmount-asc">Total Amount (Low to High)</option>
-                        <option value="itemName-asc">Item Name (A-Z)</option>
-                        <option value="itemName-desc">Item Name (Z-A)</option>
-                      </select>
-                    </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
             </section>
             <section>
 

@@ -2776,7 +2776,7 @@ export function Services() {
                                           {service.status}
                                         </span>
                                       )}
-                                      {service.name}
+                                      {highlightText(service.name, searchTerm)}
                                     </div>
                                     {!showVehicleTypes && (
                                       <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
@@ -2804,7 +2804,7 @@ export function Services() {
                                   )}
                                   <td style={{ padding: '0.75rem 1rem', color: 'var(--table-row-text)' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                      {service.serviceId}
+                                      {highlightText(service.serviceId, searchTerm)}
                                       {service.archived && (
                                         <span style={{ backgroundColor: '#fef3c7', color: '#92400e', padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.65rem', fontWeight: 600 }}>Archived</span>
                                       )}

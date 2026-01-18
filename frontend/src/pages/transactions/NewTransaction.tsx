@@ -1326,6 +1326,47 @@ export function NewTransaction() {
                 <div className="space-y-6">
                   <div className="flex items-center justify-between mb-2">
                     <h2 className="text-lg font-semibold" style={{ color: '#1e40af' }}>Add Items</h2>
+                    {isMobile && (
+                      <button
+                        type="button"
+                        onClick={handleToggleCartPanel}
+                        style={{
+                          position: 'relative',
+                          padding: '0.5rem',
+                          borderRadius: '0.5rem',
+                          border: 'none',
+                          backgroundColor: '#2563eb',
+                          color: 'white',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          minWidth: '48px',
+                          minHeight: '48px',
+                        }}
+                      >
+                        <FaShoppingCart size={20} />
+                        {cart.length > 0 && (
+                          <span style={{
+                            position: 'absolute',
+                            top: '-4px',
+                            right: '-4px',
+                            backgroundColor: '#dc2626',
+                            color: 'white',
+                            borderRadius: '50%',
+                            width: '20px',
+                            height: '20px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '0.75rem',
+                            fontWeight: '600',
+                          }}>
+                            {cart.length}
+                          </span>
+                        )}
+                      </button>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-2">
@@ -1516,8 +1557,10 @@ export function NewTransaction() {
                       </div>
                     </div>
 
-                    {/* Right: Order Summary */}
-                    <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm flex flex-col">
+                    {/* Right: Order Summary - Hidden on mobile, shown in slide panel */}
+                    <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm flex flex-col" style={{
+                      display: isMobile ? 'none' : 'flex',
+                    }}>
                       <h3 className="font-medium text-gray-800 mb-3">Order Summary</h3>
                       {cart.length === 0 ? (
                         <p className="text-gray-500 text-center py-6 text-sm">No items added yet. Use the Add buttons on the left.</p>

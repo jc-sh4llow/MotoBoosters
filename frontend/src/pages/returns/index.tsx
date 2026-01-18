@@ -29,6 +29,9 @@ export const Returns: React.FC = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [isNavExpanded, setIsNavExpanded] = useState(false);
   let closeMenuTimeout: number | undefined;
+  const tableScrollRef = useRef<HTMLDivElement | null>(null);
+  const [showLeftScrollIndicator, setShowLeftScrollIndicator] = useState(false);
+  const [showRightScrollIndicator, setShowRightScrollIndicator] = useState(false);
 
   useEffect(() => {
     const handleResize = () => {
@@ -734,6 +737,26 @@ export const Returns: React.FC = () => {
 
     loadEmployees();
   }, [handledBy, user]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const el = tableScrollRef.current;
+      if (!el || !isMobile) {
+        setShowLeftScrollIndicator(false);
+        setShowRightScrollIndicator(false);
+        return;
+      }
+      const { scrollLeft, scrollWidth, clientWidth } = el;
+      setShowLeftScrollIndicator(scrollLeft > 10);
+      setShowRightScrollIndicator(scrollLeft < scrollWidth - clientWidth - 10);
+    };
+    const el = tableScrollRef.current;
+    if (el && isMobile) {
+      handleScroll();
+      el.addEventListener('scroll', handleScroll);
+      return () => el.removeEventListener('scroll', handleScroll);
+    }
+  }, [isMobile, globalReturns]);
 
   useEffect(() => {
     const loadTransactions = async () => {
@@ -1830,15 +1853,42 @@ export const Returns: React.FC = () => {
                       flexDirection: 'column',
                     }}
                   >
-                    <div
-                      style={{
-                        maxHeight: '100%',
-                        overflowY: 'auto',
-                        overflowX: 'auto',
-                        scrollbarWidth: 'thin',
-                        scrollbarColor: '#d1d5db #f3f4f6',
-                      }}
-                    >
+                    <div style={{ position: 'relative', height: '100%' }}>
+                      {isMobile && showLeftScrollIndicator && (
+                        <div style={{
+                          position: 'absolute',
+                          left: 0,
+                          top: 0,
+                          bottom: 0,
+                          width: '20px',
+                          background: 'linear-gradient(to right, rgba(0,0,0,0.1), transparent)',
+                          pointerEvents: 'none',
+                          zIndex: 10,
+                        }} />
+                      )}
+                      {isMobile && showRightScrollIndicator && (
+                        <div style={{
+                          position: 'absolute',
+                          right: 0,
+                          top: 0,
+                          bottom: 0,
+                          width: '20px',
+                          background: 'linear-gradient(to left, rgba(0,0,0,0.1), transparent)',
+                          pointerEvents: 'none',
+                          zIndex: 10,
+                        }} />
+                      )}
+                      <div
+                        ref={tableScrollRef}
+                        style={{
+                          maxHeight: '100%',
+                          overflowY: 'auto',
+                          overflowX: 'auto',
+                          scrollbarWidth: 'thin',
+                          scrollbarColor: '#d1d5db #f3f4f6',
+                          WebkitOverflowScrolling: 'touch',
+                        }}
+                      >
                       <table
                         style={{
                           width: '100%',
@@ -1971,6 +2021,7 @@ export const Returns: React.FC = () => {
                             ))}
                         </tbody>
                       </table>
+                      </div>
                     </div>
                   </div>
                 </>

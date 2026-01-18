@@ -3146,10 +3146,10 @@ export const Returns: React.FC = () => {
                               </>
                             ) : (
                               <>
-                                <td style={{ padding: '0.6rem 1rem' }}>{ret.id}</td>
+                                <td style={{ padding: '0.6rem 1rem' }}>{highlightText(ret.id, searchTerm)}</td>
                                 <td style={{ padding: '0.6rem 1rem' }}>{ret.date}</td>
-                                <td style={{ padding: '0.6rem 1rem' }}>{ret.customerName || 'Walk-in Customer'}</td>
-                                <td style={{ padding: '0.6rem 1rem' }}>{ret.transactionCode}</td>
+                                <td style={{ padding: '0.6rem 1rem' }}>{highlightText(ret.customerName || 'Walk-in Customer', searchTerm)}</td>
+                                <td style={{ padding: '0.6rem 1rem' }}>{highlightText(ret.transactionCode, searchTerm)}</td>
                                 <td style={{ padding: '0.6rem 1rem' }}>
                                   {ret.itemsReturned} item{ret.itemsReturned === 1 ? '' : 's'}
                                 </td>

@@ -33,6 +33,17 @@ type FirestoreServiceData = {
 };
 
 export function Services() {
+  // Highlight text utility function for search results
+  const highlightText = (text: string, search: string) => {
+    if (!search || !text) return text;
+    const parts = text.split(new RegExp(`(${search})`, 'gi'));
+    return parts.map((part, i) => 
+      part.toLowerCase() === search.toLowerCase() 
+        ? <span key={i} style={{ backgroundColor: '#fef08a', color: '#854d0e', fontWeight: '600' }}>{part}</span>
+        : part
+    );
+  };
+
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
@@ -2745,7 +2756,7 @@ export function Services() {
                                   )}
                                   <td style={{ padding: '0.75rem 1rem', verticalAlign: 'top' }}>
                                     <div style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--table-row-text)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                      {service.serviceId}
+                                      {highlightText(service.serviceId, searchTerm)}
                                       {service.archived && (
                                         <span style={{ backgroundColor: '#fef3c7', color: '#92400e', padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.65rem', fontWeight: 600 }}>Archived</span>
                                       )}

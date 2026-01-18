@@ -2361,7 +2361,9 @@ export function Inventory() {
                             borderRadius: '0.375rem',
                             border: '1px solid #d1d5db',
                             backgroundColor: 'var(--surface-elevated)',
-                            color: '#111827'
+                            color: '#111827',
+                            fontSize: '16px',
+                            minHeight: '48px'
                           }}
                           disabled={!isEditMode || !canEditInventory}
                         />
@@ -2380,6 +2382,7 @@ export function Inventory() {
                         </label>
                         <input
                           type="number"
+                          inputMode="numeric"
                           min="0"
                           placeholder="e.g. 10"
                           value={formItem.restockLevel}

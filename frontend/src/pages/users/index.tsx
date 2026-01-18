@@ -1142,9 +1142,18 @@ export function Users() {
                       </label>
                       <input
                         type="tel"
+                        inputMode="tel"
                         name="contactNumber"
                         value={formData.contactNumber}
                         onChange={handleInputChange}
+                        onFocus={(e) => {
+                          e.currentTarget.style.border = '2px solid #3b82f6';
+                          e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                        }}
+                        onBlur={(e) => {
+                          e.currentTarget.style.border = '1px solid #d1d5db';
+                          e.currentTarget.style.boxShadow = 'none';
+                        }}
                         disabled={!canEditUserDetails}
                         style={{
                           width: '100%',

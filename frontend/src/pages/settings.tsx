@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaBars, FaSearch, FaTimes, FaPlus as FaPlusIcon, FaTrash, FaEdit, FaChevronDown } from 'react-icons/fa';
+import { FaBars, FaSearch, FaTimes, FaPlus as FaPlusIcon, FaTrash, FaEdit, FaChevronDown, FaArrowUp, FaArrowDown } from 'react-icons/fa';
 import { useAuth } from '../contexts/AuthContext';
 import logo from '../assets/logo.png';
 import { can, permissionGroups, DEVELOPER_ROLE_ID, STAFF_ROLE_ID, type PermissionKey, type Role } from '../config/permissions';
@@ -1090,14 +1090,67 @@ export const Settings: React.FC = () => {
                                 style={{
                                   display: 'flex',
                                   alignItems: 'center',
-                                  justifyContent: 'space-between',
+                                  gap: '0.75rem',
                                   padding: '1rem',
                                   backgroundColor: '#f9fafb',
                                   borderRadius: '0.5rem',
                                   border: '1px solid #e5e7eb',
                                 }}
                               >
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                {/* Arrow buttons on the left */}
+                                {canEditRoles && !role.isProtected && (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleMoveRole(role.id, 'up')}
+                                      disabled={index === 0 || arr[index - 1]?.isProtected}
+                                      style={{
+                                        padding: '0.25rem',
+                                        borderRadius: '0.25rem',
+                                        border: '1px solid #d1d5db',
+                                        backgroundColor: 'white',
+                                        color: '#374151',
+                                        fontSize: '0.75rem',
+                                        cursor: index === 0 || arr[index - 1]?.isProtected ? 'not-allowed' : 'pointer',
+                                        opacity: index === 0 || arr[index - 1]?.isProtected ? 0.5 : 1,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        width: '24px',
+                                        height: '24px',
+                                      }}
+                                      title="Move up"
+                                    >
+                                      <FaArrowUp />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleMoveRole(role.id, 'down')}
+                                      disabled={index === arr.length - 1 || arr[index + 1]?.isProtected}
+                                      style={{
+                                        padding: '0.25rem',
+                                        borderRadius: '0.25rem',
+                                        border: '1px solid #d1d5db',
+                                        backgroundColor: 'white',
+                                        color: '#374151',
+                                        fontSize: '0.75rem',
+                                        cursor: index === arr.length - 1 || arr[index + 1]?.isProtected ? 'not-allowed' : 'pointer',
+                                        opacity: index === arr.length - 1 || arr[index + 1]?.isProtected ? 0.5 : 1,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        width: '24px',
+                                        height: '24px',
+                                      }}
+                                      title="Move down"
+                                    >
+                                      <FaArrowDown />
+                                    </button>
+                                  </div>
+                                )}
+                                
+                                {/* Role badge and info */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1 }}>
                                   <RoleBadge role={role} />
                                   <div>
                                     <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>
@@ -1107,89 +1160,28 @@ export const Settings: React.FC = () => {
                                     </span>
                                   </div>
                                 </div>
-                                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                  {canEditRoles && !role.isProtected && (
-                                    <>
-                                      <button
-                                        type="button"
-                                        onClick={() => handleMoveRole(role.id, 'up')}
-                                        disabled={index === 0 || arr[index - 1]?.isProtected}
-                                        style={{
-                                          padding: '0.35rem 0.6rem',
-                                          borderRadius: '0.25rem',
-                                          border: '1px solid #d1d5db',
-                                          backgroundColor: 'white',
-                                          color: '#374151',
-                                          fontSize: '0.8rem',
-                                          cursor: index === 0 || arr[index - 1]?.isProtected ? 'not-allowed' : 'pointer',
-                                          opacity: index === 0 || arr[index - 1]?.isProtected ? 0.5 : 1,
-                                        }}
-                                      >
-                                        Up
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => handleMoveRole(role.id, 'down')}
-                                        disabled={index === arr.length - 1 || arr[index + 1]?.isProtected}
-                                        style={{
-                                          padding: '0.35rem 0.6rem',
-                                          borderRadius: '0.25rem',
-                                          border: '1px solid #d1d5db',
-                                          backgroundColor: 'white',
-                                          color: '#374151',
-                                          fontSize: '0.8rem',
-                                          cursor: index === arr.length - 1 || arr[index + 1]?.isProtected ? 'not-allowed' : 'pointer',
-                                          opacity: index === arr.length - 1 || arr[index + 1]?.isProtected ? 0.5 : 1,
-                                        }}
-                                      >
-                                        Down
-                                      </button>
-                                    </>
-                                  )}
-                                  {canEditRoles && !role.isProtected && (
-                                    <button
-                                      type="button"
-                                      onClick={() => setEditingRole(role)}
-                                      style={{
-                                        padding: '0.35rem 0.75rem',
-                                        borderRadius: '0.25rem',
-                                        border: '1px solid #d1d5db',
-                                        backgroundColor: 'white',
-                                        color: '#374151',
-                                        fontSize: '0.8rem',
-                                        cursor: 'pointer',
-                                      }}
-                                    >
-                                      <FaEdit /> Edit
-                                    </button>
-                                  )}
-                                  {canDeleteRoles && !role.isProtected && !role.isDefault && (
-                                    <button
-                                      type="button"
-                                      onClick={async () => {
-                                        if (confirm(`Are you sure you want to delete the "${role.name}" role?`)) {
-                                          try {
-                                            await deleteDoc(doc(db, 'roles', role.id));
-                                            await refreshRoles();
-                                          } catch (err) {
-                                            console.error('Failed to delete role', err);
-                                          }
-                                        }
-                                      }}
-                                      style={{
-                                        padding: '0.35rem 0.75rem',
-                                        borderRadius: '0.25rem',
-                                        border: '1px solid #fca5a5',
-                                        backgroundColor: '#fef2f2',
-                                        color: '#b91c1c',
-                                        fontSize: '0.8rem',
-                                        cursor: 'pointer',
-                                      }}
-                                    >
-                                      <FaTrash /> Delete
-                                    </button>
-                                  )}
-                                </div>
+                                
+                                {/* Edit button on the right */}
+                                {canEditRoles && !role.isProtected && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditingRole(role)}
+                                    style={{
+                                      padding: isMobile ? '0.5rem' : '0.35rem 0.75rem',
+                                      borderRadius: '0.25rem',
+                                      border: '1px solid #d1d5db',
+                                      backgroundColor: 'white',
+                                      color: '#374151',
+                                      fontSize: '0.8rem',
+                                      cursor: 'pointer',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '0.35rem',
+                                    }}
+                                  >
+                                    <FaEdit /> {!isMobile && 'Edit'}
+                                  </button>
+                                )}
                               </div>
                             ))}
                         </div>

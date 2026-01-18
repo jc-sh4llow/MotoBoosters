@@ -1621,11 +1621,20 @@ export function Customers() {
                         </label>
                         <input
                           type="text"
+                          inputMode="tel"
                           placeholder="09xxxxxxxxx"
                           value={customerForm.contact}
                           onChange={(e) => {
                             setCustomerForm(prev => ({ ...prev, contact: e.target.value }));
                             setCustomerHasUnsavedChanges(true);
+                          }}
+                          onFocus={(e) => {
+                            e.currentTarget.style.border = '2px solid #3b82f6';
+                            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                          }}
+                          onBlur={(e) => {
+                            e.currentTarget.style.border = '1px solid #d1d5db';
+                            e.currentTarget.style.boxShadow = 'none';
                           }}
                           disabled={!canEditCustomers}
                           style={{

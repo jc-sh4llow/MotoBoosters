@@ -1783,6 +1783,496 @@ export function NewTransaction() {
                 </div>
               )}
 
+              {/* Mobile Cart Slide Panel - Only visible on mobile when step === 2 */}
+              {isMobile && step === 2 && isCartPanelOpen && (
+                <>
+                  {/* Overlay backdrop */}
+                  <div
+                    onClick={handleToggleCartPanel}
+                    style={{
+                      position: 'fixed',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                      zIndex: 998,
+                      transition: 'opacity 0.2s ease',
+                    }}
+                  />
+
+                  {/* Slide panel from left */}
+                  <div
+                    style={{
+                      position: 'fixed',
+                      top: 0,
+                      left: 0,
+                      bottom: 0,
+                      width: '80%',
+                      maxWidth: '400px',
+                      backgroundColor: 'white',
+                      boxShadow: '4px 0 12px rgba(0, 0, 0, 0.15)',
+                      zIndex: 999,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      transform: isCartPanelOpen ? 'translateX(0)' : 'translateX(-100%)',
+                      transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                    }}
+                  >
+                    {showCartContent && (
+                      <>
+                        {/* Panel Header */}
+                        <div style={{
+                          padding: '1rem',
+                          borderBottom: '1px solid #e5e7eb',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                        }}>
+                          <h3 style={{
+                            fontSize: '1.125rem',
+                            fontWeight: '600',
+                            color: '#111827',
+                            margin: 0,
+                          }}>
+                            Cart ({cart.length})
+                          </h3>
+                          <button
+                            type="button"
+                            onClick={handleToggleCartPanel}
+                            style={{
+                              padding: '0.5rem',
+                              border: 'none',
+                              backgroundColor: 'transparent',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: '#6b7280',
+                            }}
+                          >
+                            <FaTimes size={20} />
+                          </button>
+                        </div>
+
+                        {/* Panel Content - Cart Items */}
+                        <div style={{
+                          flex: 1,
+                          overflowY: 'auto',
+                          padding: '1rem',
+                        }}>
+                          {cart.length === 0 ? (
+                            <p style={{
+                              color: '#6b7280',
+                              textAlign: 'center',
+                              padding: '2rem 0',
+                              fontSize: '0.875rem',
+                            }}>
+                              No items in cart
+                            </p>
+                          ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                              {cart.map(item => {
+                                const isExpanded = expandedCartItemId === item.id;
+                                const specialUnits = item.specialUnits ?? 0;
+                                const adjustmentType = item.adjustmentType ?? 'none';
+                                const adjustmentPerUnit = item.adjustmentPerUnit ?? 0;
+
+                                const handleUpdateItem = (updater: (current: CartItem) => CartItem) => {
+                                  setCart(prev => prev.map(ci => {
+                                    if (ci.id !== item.id) return ci;
+                                    const updated = updater(ci);
+                                    return { ...updated, subtotal: computeItemSubtotal(updated) };
+                                  }));
+                                };
+
+                                return (
+                                  <div
+                                    key={item.id}
+                                    style={{
+                                      borderBottom: '1px solid #f3f4f6',
+                                      paddingBottom: '0.75rem',
+                                    }}
+                                  >
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                      <div style={{ flex: 1, paddingRight: '0.5rem' }}>
+                                        <p style={{
+                                          fontWeight: '500',
+                                          color: '#111827',
+                                          fontSize: '0.875rem',
+                                          margin: '0 0 0.25rem 0',
+                                        }}>
+                                          {item.name}
+                                        </p>
+                                        <p style={{
+                                          fontSize: '0.75rem',
+                                          color: '#6b7280',
+                                          textTransform: 'capitalize',
+                                          margin: '0 0 0.25rem 0',
+                                        }}>
+                                          {item.type}
+                                        </p>
+                                        {item.type === 'product' && item.basePrice !== undefined && item.discountAmount && item.discountAmount > 0 ? (
+                                          <p style={{
+                                            fontSize: '0.75rem',
+                                            color: '#374151',
+                                            margin: '0',
+                                          }}>
+                                            <span style={{
+                                              textDecoration: 'line-through',
+                                              color: '#9ca3af',
+                                              marginRight: '0.25rem',
+                                            }}>
+                                              ₱{item.basePrice.toFixed(2)}
+                                            </span>
+                                            <span>₱{item.price.toFixed(2)} each</span>
+                                          </p>
+                                        ) : (
+                                          <p style={{
+                                            fontSize: '0.75rem',
+                                            color: '#374151',
+                                            margin: '0',
+                                          }}>
+                                            ₱{item.price.toFixed(2)} each
+                                          </p>
+                                        )}
+                                        {adjustmentType !== 'none' && adjustmentPerUnit > 0 && specialUnits > 0 && (
+                                          <p style={{
+                                            marginTop: '0.25rem',
+                                            fontSize: '0.6875rem',
+                                            color: '#2563eb',
+                                            margin: '0.25rem 0 0 0',
+                                          }}>
+                                            {specialUnits} unit{specialUnits !== 1 ? 's' : ''} with
+                                            {adjustmentType === 'discount' ? ' discount' : ' markup'} of ₱{adjustmentPerUnit.toFixed(2)} each
+                                          </p>
+                                        )}
+                                      </div>
+                                      <div style={{
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: 'flex-end',
+                                        gap: '0.5rem',
+                                      }}>
+                                        <div style={{
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          gap: '0.5rem',
+                                        }}>
+                                          <button
+                                            type="button"
+                                            onClick={() => updateQuantity(item.id, -1)}
+                                            style={{
+                                              padding: '0.25rem',
+                                              color: '#6b7280',
+                                              border: '1px solid #d1d5db',
+                                              borderRadius: '0.25rem',
+                                              backgroundColor: 'white',
+                                              cursor: 'pointer',
+                                              display: 'flex',
+                                              alignItems: 'center',
+                                              justifyContent: 'center',
+                                              minWidth: '28px',
+                                              minHeight: '28px',
+                                            }}
+                                          >
+                                            <FaMinus size={10} />
+                                          </button>
+                                          <span style={{
+                                            fontSize: '0.875rem',
+                                            fontWeight: '500',
+                                            color: '#111827',
+                                            minWidth: '1.5rem',
+                                            textAlign: 'center',
+                                          }}>
+                                            {item.quantity}
+                                          </span>
+                                          <button
+                                            type="button"
+                                            onClick={() => updateQuantity(item.id, 1)}
+                                            style={{
+                                              padding: '0.25rem',
+                                              color: '#6b7280',
+                                              border: '1px solid #d1d5db',
+                                              borderRadius: '0.25rem',
+                                              backgroundColor: 'white',
+                                              cursor: 'pointer',
+                                              display: 'flex',
+                                              alignItems: 'center',
+                                              justifyContent: 'center',
+                                              minWidth: '28px',
+                                              minHeight: '28px',
+                                            }}
+                                          >
+                                            <FaPlus size={10} />
+                                          </button>
+                                        </div>
+                                        <div style={{
+                                          fontSize: '0.875rem',
+                                          fontWeight: '600',
+                                          color: '#111827',
+                                        }}>
+                                          ₱{item.subtotal.toFixed(2)}
+                                        </div>
+                                        <button
+                                          type="button"
+                                          onClick={() => updateQuantity(item.id, -item.quantity)}
+                                          style={{
+                                            fontSize: '0.75rem',
+                                            color: '#dc2626',
+                                            border: 'none',
+                                            backgroundColor: 'transparent',
+                                            cursor: 'pointer',
+                                            padding: '0',
+                                          }}
+                                        >
+                                          Remove
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => setExpandedCartItemId(isExpanded ? null : item.id)}
+                                          style={{
+                                            fontSize: '0.6875rem',
+                                            color: '#2563eb',
+                                            border: 'none',
+                                            backgroundColor: 'transparent',
+                                            cursor: 'pointer',
+                                            padding: '0',
+                                            marginTop: '0.25rem',
+                                            whiteSpace: 'nowrap',
+                                          }}
+                                        >
+                                          {isExpanded ? 'Hide discount / markup ▲' : 'Discount / Markup ▼'}
+                                        </button>
+                                      </div>
+                                    </div>
+
+                                    {isExpanded && (
+                                      <div style={{
+                                        marginTop: '0.5rem',
+                                        borderRadius: '0.375rem',
+                                        backgroundColor: '#f9fafb',
+                                        padding: '0.5rem',
+                                        fontSize: '0.6875rem',
+                                        color: '#111827',
+                                      }}>
+                                        <div style={{
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'space-between',
+                                          gap: '0.5rem',
+                                          marginBottom: '0.5rem',
+                                        }}>
+                                          <span style={{ whiteSpace: 'nowrap' }}>Units with special price</span>
+                                          <div style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '0.25rem',
+                                          }}>
+                                            <button
+                                              type="button"
+                                              onClick={() =>
+                                                handleUpdateItem(current => {
+                                                  const qty = current.quantity || 0;
+                                                  const next = Math.max(Math.min((current.specialUnits ?? 0) - 1, qty), 0);
+                                                  return { ...current, specialUnits: next };
+                                                })
+                                              }
+                                              style={{
+                                                padding: '0.125rem 0.25rem',
+                                                border: '1px solid #d1d5db',
+                                                borderRadius: '0.25rem',
+                                                color: '#6b7280',
+                                                backgroundColor: 'white',
+                                                cursor: 'pointer',
+                                              }}
+                                            >
+                                              -
+                                            </button>
+                                            <span style={{
+                                              minWidth: '1.5rem',
+                                              textAlign: 'center',
+                                              fontSize: '0.75rem',
+                                              fontWeight: '500',
+                                            }}>
+                                              {specialUnits}
+                                            </span>
+                                            <button
+                                              type="button"
+                                              onClick={() =>
+                                                handleUpdateItem(current => {
+                                                  const qty = current.quantity || 0;
+                                                  const next = Math.min((current.specialUnits ?? 0) + 1, qty);
+                                                  return { ...current, specialUnits: next };
+                                                })
+                                              }
+                                              style={{
+                                                padding: '0.125rem 0.25rem',
+                                                border: '1px solid #d1d5db',
+                                                borderRadius: '0.25rem',
+                                                color: '#6b7280',
+                                                backgroundColor: 'white',
+                                                cursor: 'pointer',
+                                              }}
+                                            >
+                                              +
+                                            </button>
+                                            <span style={{
+                                              fontSize: '0.625rem',
+                                              color: '#6b7280',
+                                            }}>
+                                              / {item.quantity}
+                                            </span>
+                                          </div>
+                                        </div>
+
+                                        <div style={{
+                                          display: 'grid',
+                                          gridTemplateColumns: '1fr 1fr',
+                                          gap: '0.5rem',
+                                          marginBottom: '0.5rem',
+                                        }}>
+                                          <div>
+                                            <label style={{
+                                              display: 'block',
+                                              marginBottom: '0.125rem',
+                                              fontSize: '0.625rem',
+                                              color: '#6b7280',
+                                            }}>
+                                              Discount per unit (₱)
+                                            </label>
+                                            <input
+                                              type="number"
+                                              min={0}
+                                              step={0.01}
+                                              value={adjustmentType === 'discount' ? adjustmentPerUnit || '' : ''}
+                                              onChange={e => {
+                                                const value = parseFloat(e.target.value || '0');
+                                                handleUpdateItem(current => ({
+                                                  ...current,
+                                                  adjustmentType: value > 0 ? 'discount' : 'none',
+                                                  adjustmentPerUnit: value > 0 ? value : 0,
+                                                }));
+                                              }}
+                                              style={{
+                                                width: '100%',
+                                                border: '1px solid #d1d5db',
+                                                borderRadius: '0.25rem',
+                                                padding: '0.125rem 0.25rem',
+                                                fontSize: '0.6875rem',
+                                                backgroundColor: 'white',
+                                              }}
+                                            />
+                                          </div>
+                                          <div>
+                                            <label style={{
+                                              display: 'block',
+                                              marginBottom: '0.125rem',
+                                              fontSize: '0.625rem',
+                                              color: '#6b7280',
+                                            }}>
+                                              Markup per unit (₱)
+                                            </label>
+                                            <input
+                                              type="number"
+                                              min={0}
+                                              step={0.01}
+                                              value={adjustmentType === 'markup' ? adjustmentPerUnit || '' : ''}
+                                              onChange={e => {
+                                                const value = parseFloat(e.target.value || '0');
+                                                handleUpdateItem(current => ({
+                                                  ...current,
+                                                  adjustmentType: value > 0 ? 'markup' : 'none',
+                                                  adjustmentPerUnit: value > 0 ? value : 0,
+                                                }));
+                                              }}
+                                              style={{
+                                                width: '100%',
+                                                border: '1px solid #d1d5db',
+                                                borderRadius: '0.25rem',
+                                                padding: '0.125rem 0.25rem',
+                                                fontSize: '0.6875rem',
+                                                backgroundColor: 'white',
+                                              }}
+                                            />
+                                          </div>
+                                        </div>
+
+                                        <div>
+                                          <label style={{
+                                            display: 'block',
+                                            marginBottom: '0.125rem',
+                                            fontSize: '0.625rem',
+                                            color: '#6b7280',
+                                          }}>
+                                            Reason
+                                          </label>
+                                          <input
+                                            type="text"
+                                            value={item.adjustmentReason ?? ''}
+                                            onChange={e =>
+                                              handleUpdateItem(current => ({
+                                                ...current,
+                                                adjustmentReason: e.target.value,
+                                              }))
+                                            }
+                                            placeholder="e.g. Loyal customer discount"
+                                            style={{
+                                              width: '100%',
+                                              border: '1px solid #d1d5db',
+                                              borderRadius: '0.25rem',
+                                              padding: '0.125rem 0.25rem',
+                                              fontSize: '0.6875rem',
+                                              backgroundColor: 'white',
+                                            }}
+                                          />
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Panel Footer - Total */}
+                        {cart.length > 0 && (
+                          <div style={{
+                            padding: '1rem',
+                            borderTop: '1px solid #e5e7eb',
+                            backgroundColor: '#f9fafb',
+                          }}>
+                            <div style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              marginBottom: '0.5rem',
+                              fontSize: '0.875rem',
+                              color: '#6b7280',
+                            }}>
+                              <span>Items</span>
+                              <span>{cart.reduce((sum, i) => sum + i.quantity, 0)}</span>
+                            </div>
+                            <div style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              fontSize: '1.125rem',
+                              fontWeight: '600',
+                              color: '#111827',
+                            }}>
+                              <span>Total</span>
+                              <span>₱{calculateTotal().toFixed(2)}</span>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </>
+              )}
+
               {step === 3 && (
                 <div className="space-y-6">
                   <h2 className="text-lg font-semibold" style={{ color: '#1e40af' }}>Review & Payment</h2>

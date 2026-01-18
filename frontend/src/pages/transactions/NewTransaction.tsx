@@ -1014,16 +1014,40 @@ export function NewTransaction() {
           }}>
 
             {/* Progress Steps */}
-            <div className="flex justify-between mb-8">
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              marginBottom: isMobile ? '1.5rem' : '2rem',
+              gap: isMobile ? '0.5rem' : '1rem',
+            }}>
               {[1, 2, 3].map((stepNum) => (
-                <div key={stepNum} className="flex-1">
-                  <div className={`flex flex-col items-center ${step === stepNum ? 'text-blue-600' : step > stepNum ? 'text-green-600' : 'text-gray-400'
-                    }`}>
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 ${step === stepNum ? 'bg-blue-100' : step > stepNum ? 'bg-green-100' : 'bg-gray-100'
-                      }`}>
+                <div key={stepNum} style={{ flex: 1 }}>
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    color: step === stepNum ? '#2563eb' : step > stepNum ? '#10b981' : '#9ca3af',
+                  }}>
+                    <div style={{
+                      width: isMobile ? '48px' : '40px',
+                      height: isMobile ? '48px' : '40px',
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginBottom: '0.5rem',
+                      backgroundColor: step === stepNum ? '#dbeafe' : step > stepNum ? '#d1fae5' : '#f3f4f6',
+                      fontSize: isMobile ? '1.125rem' : '1rem',
+                      fontWeight: '600',
+                      transition: 'all 0.2s ease',
+                    }}>
                       {step > stepNum ? '✓' : stepNum}
                     </div>
-                    <span className="text-sm font-medium">
+                    <span style={{
+                      fontSize: isMobile ? '0.75rem' : '0.875rem',
+                      fontWeight: '500',
+                      textAlign: 'center',
+                    }}>
                       {stepNum === 1 ? 'Customer' : stepNum === 2 ? 'Items' : 'Payment'}
                     </span>
                   </div>

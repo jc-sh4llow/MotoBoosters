@@ -135,6 +135,11 @@ export function Inventory() {
   const itemDetailsToggleRef = useRef<HTMLButtonElement | null>(null);
   const [hoveredStatusDocId, setHoveredStatusDocId] = useState<string | null>(null);
 
+  // Mobile table scroll indicators
+  const tableScrollRef = useRef<HTMLDivElement | null>(null);
+  const [showLeftScrollIndicator, setShowLeftScrollIndicator] = useState(false);
+  const [showRightScrollIndicator, setShowRightScrollIndicator] = useState(false);
+
   const showType = viewportWidth >= 992; // Hide on tablet and below (768-991px)
   const showPurchasePrice = canViewPurchasePrice && viewportWidth >= 992; // Hide on tablet and below
   const showSold = viewportWidth >= 1200; // Hide on small desktop and below (992-1199px)
@@ -505,6 +510,29 @@ export function Inventory() {
     loadMeta();
     loadInventory();
   }, []);
+
+  // Mobile table scroll detection
+  useEffect(() => {
+    const handleScroll = () => {
+      const el = tableScrollRef.current;
+      if (!el || !isMobile) {
+        setShowLeftScrollIndicator(false);
+        setShowRightScrollIndicator(false);
+        return;
+      }
+      
+      const { scrollLeft, scrollWidth, clientWidth } = el;
+      setShowLeftScrollIndicator(scrollLeft > 10);
+      setShowRightScrollIndicator(scrollLeft < scrollWidth - clientWidth - 10);
+    };
+
+    const el = tableScrollRef.current;
+    if (el && isMobile) {
+      handleScroll();
+      el.addEventListener('scroll', handleScroll);
+      return () => el.removeEventListener('scroll', handleScroll);
+    }
+  }, [isMobile, firestoreItems]);
 
   // Load required fields settings from Firestore
   useEffect(() => {
@@ -3728,7 +3756,41 @@ export function Inventory() {
                 )}
 
                 {/* Your existing table component goes here */}
-                <div style={{ overflowX: 'auto' }}>
+                <div style={{ position: 'relative' }}>
+                  {/* Left scroll indicator */}
+                  {isMobile && showLeftScrollIndicator && (
+                    <div style={{
+                      position: 'absolute',
+                      left: 0,
+                      top: 0,
+                      bottom: 0,
+                      width: '20px',
+                      background: 'linear-gradient(to right, rgba(0,0,0,0.1), transparent)',
+                      // For more prominent: 'linear-gradient(to right, rgba(0,0,0,0.2), transparent)'
+                      pointerEvents: 'none',
+                      zIndex: 10,
+                      borderTopLeftRadius: '1rem',
+                      borderBottomLeftRadius: '1rem',
+                    }} />
+                  )}
+                  
+                  {/* Right scroll indicator */}
+                  {isMobile && showRightScrollIndicator && (
+                    <div style={{
+                      position: 'absolute',
+                      right: 0,
+                      top: 0,
+                      bottom: 0,
+                      width: '20px',
+                      background: 'linear-gradient(to left, rgba(0,0,0,0.1), transparent)',
+                      // For more prominent: 'linear-gradient(to left, rgba(0,0,0,0.2), transparent)'
+                      pointerEvents: 'none',
+                      zIndex: 10,
+                      borderTopRightRadius: '1rem',
+                      borderBottomRightRadius: '1rem',
+                    }} />
+                  )}
+                  
                   <div style={{
                     backgroundColor: 'var(--table-bg)',
                     backdropFilter: 'blur(12px)',
@@ -3737,7 +3799,13 @@ export function Inventory() {
                     border: '1px solid var(--table-border)',
                     overflow: 'hidden'
                   }}>
-                    <div style={{ overflowX: 'auto' }}>
+                    <div 
+                      ref={tableScrollRef}
+                      style={{ 
+                        overflowX: 'auto',
+                        WebkitOverflowScrolling: 'touch',
+                      }}
+                    >
                       <table style={{
                         width: '100%',
                         borderCollapse: 'collapse',

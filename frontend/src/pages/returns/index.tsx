@@ -1569,55 +1569,53 @@ export const Returns: React.FC = () => {
                 )}
               </div>
             </section>
-            {/* Slide-out Transactions List panel */}
+            {/* Fixed Transactions List button */}
+            <button
+              type="button"
+              onClick={handleToggleTransactionsPanel}
+              style={{
+                position: 'absolute',
+                left: 0,
+                top: '1rem',
+                padding: '0.5rem 0.4rem',
+                borderRadius: '0 0.75rem 0.75rem 0',
+                border: '1px solid #e5e7eb',
+                borderLeft: 'none',
+                backgroundColor: '#1d4ed8',
+                color: 'white',
+                cursor: 'pointer',
+                writingMode: 'vertical-rl',
+                textOrientation: 'mixed',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                boxShadow: '0 4px 10px rgba(15, 23, 42, 0.25)',
+                zIndex: 210,
+              }}
+            >
+              Transactions List
+            </button>
+
+            {/* Transactions List overlay panel */}
+            {isTransactionsPanelOpen && (
             <section
               ref={transactionsPanelRef}
               style={{
-                backgroundColor: isTransactionsPanelOpen ? 'white' : 'transparent',
-                borderRadius: isTransactionsPanelOpen ? '0 0.75rem 0.75rem 0' : '0.75rem 0 0 0.75rem',
-                padding: isTransactionsPanelOpen ? '1.25rem 1.5rem' : '0',
-                border: isTransactionsPanelOpen ? '1px solid #e5e7eb' : 'none',
-                boxShadow: isTransactionsPanelOpen ? '0 8px 20px rgba(15, 23, 42, 0.2)' : 'none',
+                backgroundColor: 'white',
+                borderRadius: '0 0.75rem 0.75rem 0',
+                padding: '1.25rem 1.5rem',
+                border: '1px solid #e5e7eb',
+                boxShadow: '0 8px 20px rgba(15, 23, 42, 0.2)',
                 maxHeight: '70vh',
-                height: isTransactionsPanelOpen ? 'auto' : '70vh',
                 overflow: 'visible',
                 display: 'flex',
                 flexDirection: 'column',
                 position: 'absolute',
                 top: '1rem',
                 left: 0,
-                transform: 'none',
-                width: isMobile ? 'calc(100vw - 80px)' : (isTransactionsPanelOpen ? 480 : 40),
-                maxWidth: isMobile ? 'none' : 'none',
-                zIndex: 210,
-                transition: 'width 0.3s ease, border-radius 0.3s ease, background-color 0.2s ease, left 0.3s ease, transform 0.3s ease',
+                width: isMobile ? 'calc(100vw - 80px)' : 480,
+                zIndex: 209,
               }}
             >
-              {/* Vertical tab toggle */}
-              <button
-                type="button"
-                onClick={handleToggleTransactionsPanel}
-                style={{
-                  position: 'absolute',
-                  right: isTransactionsPanelOpen ? -32 : 8,
-                  top: '0.75rem',
-                  transform: 'none',
-                  padding: '0.5rem 0.4rem',
-                  borderRadius: '0 0.75rem 0.75rem 0',
-                  border: '1px solid #e5e7eb',
-                  borderLeft: 'none',
-                  backgroundColor: '#1d4ed8',
-                  color: 'white',
-                  cursor: 'pointer',
-                  writingMode: 'vertical-rl',
-                  textOrientation: 'mixed',
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  boxShadow: '0 4px 10px rgba(15, 23, 42, 0.25)',
-                }}
-              >
-                {isTransactionsPanelOpen ? 'Hide Transactions' : 'Transactions List'}
-              </button>
               {showTransactionsContent && (
                 <>
                   <div
@@ -1978,6 +1976,7 @@ export const Returns: React.FC = () => {
                 </>
               )}
             </section>
+            )}
 
             <div
               style={{

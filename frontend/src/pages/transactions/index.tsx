@@ -42,6 +42,9 @@ export function Transactions() {
   const [isNavExpanded, setIsNavExpanded] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [viewportWidth, setViewportWidth] = useState(window.innerWidth);
+  const tableScrollRef = useRef<HTMLDivElement | null>(null);
+  const [showLeftScrollIndicator, setShowLeftScrollIndicator] = useState(false);
+  const [showRightScrollIndicator, setShowRightScrollIndicator] = useState(false);
 
   let closeMenuTimeout: number | undefined;
   const [searchTerm, setSearchTerm] = useState('');
@@ -277,6 +280,26 @@ export function Transactions() {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showFilters, isActionBarExpanded, isMobile, isSelectMode, isModalOpen]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const el = tableScrollRef.current;
+      if (!el || !isMobile) {
+        setShowLeftScrollIndicator(false);
+        setShowRightScrollIndicator(false);
+        return;
+      }
+      const { scrollLeft, scrollWidth, clientWidth } = el;
+      setShowLeftScrollIndicator(scrollLeft > 10);
+      setShowRightScrollIndicator(scrollLeft < scrollWidth - clientWidth - 10);
+    };
+    const el = tableScrollRef.current;
+    if (el && isMobile) {
+      handleScroll();
+      el.addEventListener('scroll', handleScroll);
+      return () => el.removeEventListener('scroll', handleScroll);
+    }
+  }, [isMobile, transactions]);
 
   // Calculate summary data - filtered by active tab
   const getSummaryData = () => {

@@ -143,6 +143,9 @@ export function Users() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [viewportWidth, setViewportWidth] = useState(window.innerWidth);
   const [isNavExpanded, setIsNavExpanded] = useState(false);
+  const tableScrollRef = useRef<HTMLDivElement | null>(null);
+  const [showLeftScrollIndicator, setShowLeftScrollIndicator] = useState(false);
+  const [showRightScrollIndicator, setShowRightScrollIndicator] = useState(false);
   const [isUserSettingsOpen, setIsUserSettingsOpen] = useState(false);
   let closeMenuTimeout: number | undefined;
   const [searchTerm, setSearchTerm] = useState('');
@@ -413,6 +416,26 @@ export function Users() {
   useEffect(() => {
     loadUsers();
   }, [rolesLoading, loadUsers]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const el = tableScrollRef.current;
+      if (!el || !isMobile) {
+        setShowLeftScrollIndicator(false);
+        setShowRightScrollIndicator(false);
+        return;
+      }
+      const { scrollLeft, scrollWidth, clientWidth } = el;
+      setShowLeftScrollIndicator(scrollLeft > 10);
+      setShowRightScrollIndicator(scrollLeft < scrollWidth - clientWidth - 10);
+    };
+    const el = tableScrollRef.current;
+    if (el && isMobile) {
+      handleScroll();
+      el.addEventListener('scroll', handleScroll);
+      return () => el.removeEventListener('scroll', handleScroll);
+    }
+  }, [isMobile, users]);
 
   // Track viewport width for responsive breakpoints
   useEffect(() => {
@@ -2014,419 +2037,451 @@ export function Users() {
                 })()}
               </div>
 
-              <div style={{
-                overflowX: 'auto',
-                backgroundColor: 'white',
-                borderRadius: '0.5rem',
-                boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
-              }}>
-                <table style={{
-                  width: '100%',
-                  borderCollapse: 'collapse',
-                  minWidth: isMobile ? '290px' : '800px'
+              <div style={{ position: 'relative' }}>
+                {isMobile && showLeftScrollIndicator && (
+                  <div style={{
+                    position: 'absolute',
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: '20px',
+                    background: 'linear-gradient(to right, rgba(0,0,0,0.1), transparent)',
+                    pointerEvents: 'none',
+                    zIndex: 10,
+                    borderTopLeftRadius: '0.5rem',
+                    borderBottomLeftRadius: '0.5rem',
+                  }} />
+                )}
+                {isMobile && showRightScrollIndicator && (
+                  <div style={{
+                    position: 'absolute',
+                    right: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: '20px',
+                    background: 'linear-gradient(to left, rgba(0,0,0,0.1), transparent)',
+                    pointerEvents: 'none',
+                    zIndex: 10,
+                    borderTopRightRadius: '0.5rem',
+                    borderBottomRightRadius: '0.5rem',
+                  }} />
+                )}
+                <div style={{
+                  backgroundColor: 'white',
+                  borderRadius: '0.5rem',
+                  boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+                  overflow: 'hidden'
                 }}>
-                  <thead>
-                    <tr style={{
-                      backgroundColor: '#f3f4f6',
-                      borderBottom: '1px solid #e5e7eb'
+                  <div ref={tableScrollRef} style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                    <table style={{
+                      width: '100%',
+                      borderCollapse: 'collapse',
+                      minWidth: isMobile ? '290px' : '800px'
                     }}>
-                      {isSelectMode && (
-                        <th style={{ padding: '0.75rem 0.5rem', width: '40px' }}>
-                          <input
-                            type="checkbox"
-                            checked={selectedItems.size === getFilteredAndSortedUsers().length && getFilteredAndSortedUsers().length > 0}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedItems(new Set(getFilteredAndSortedUsers().map(u => u.id)));
-                              } else {
-                                setSelectedItems(new Set());
-                              }
-                            }}
-                            style={{ width: '1rem', height: '1rem', cursor: 'pointer' }}
-                          />
-                        </th>
-                      )}
-                      <th
-                        onClick={() => handleHeaderSort('id')}
-                        style={{
-                          padding: '0.75rem 1rem',
-                          textAlign: 'left',
-                          fontSize: '0.75rem',
-                          fontWeight: '600',
-                          color: '#4b5563',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.05em',
-                          cursor: 'pointer',
-                          userSelect: 'none',
-                        }}
-                      >
-                        ID {sortBy.startsWith('id-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
-                      </th>
-                      {showUsername && (
-                        <th
-                          onClick={() => handleHeaderSort('username')}
-                          style={{
-                            padding: '0.75rem 1rem',
-                            textAlign: 'left',
-                            fontSize: '0.75rem',
-                            fontWeight: '600',
-                            color: '#4b5563',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em',
-                            cursor: 'pointer',
-                            userSelect: 'none',
-                          }}
-                        >
-                          Username {sortBy.startsWith('username-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
-                        </th>
-                      )}
-                      <th
-                        onClick={() => handleHeaderSort('fullName')}
-                        style={{
-                          padding: '0.75rem 1rem',
-                          textAlign: 'left',
-                          fontSize: '0.75rem',
-                          fontWeight: '600',
-                          color: '#4b5563',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.05em',
-                          cursor: 'pointer',
-                          userSelect: 'none',
-                        }}
-                      >
-                        Full Name {sortBy.startsWith('fullName-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
-                      </th>
-                      {showEmail && (
-                        <th
-                          onClick={() => handleHeaderSort('email')}
-                          style={{
-                            padding: '0.75rem 1rem',
-                            textAlign: 'left',
-                            fontSize: '0.75rem',
-                            fontWeight: '600',
-                            color: '#4b5563',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em',
-                            cursor: 'pointer',
-                            userSelect: 'none',
-                          }}
-                        >
-                          Email {sortBy.startsWith('email-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
-                        </th>
-                      )}
-                      {showRole && (
-                        <th
-                          onClick={() => handleHeaderSort('role')}
-                          style={{
-                            padding: '0.75rem 1rem',
-                            textAlign: 'left',
-                            fontSize: '0.75rem',
-                            fontWeight: '600',
-                            color: '#4b5563',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em',
-                            cursor: 'pointer',
-                            userSelect: 'none',
-                          }}
-                        >
-                          Role {sortBy.startsWith('role-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
-                        </th>
-                      )}
-                      {showStatus && (
-                        <th
-                          onClick={() => handleHeaderSort('status')}
-                          style={{
-                            padding: '0.75rem 1rem',
-                            textAlign: 'left',
-                            fontSize: '0.75rem',
-                            fontWeight: '600',
-                            color: '#4b5563',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em',
-                            cursor: 'pointer',
-                            userSelect: 'none',
-                          }}
-                        >
-                          Status {sortBy.startsWith('status-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
-                        </th>
-                      )}
-                      {showLastLogin && (
-                        <th
-                          onClick={() => handleHeaderSort('lastLogin')}
-                          style={{
-                            padding: '0.75rem 1rem',
-                            textAlign: 'left',
-                            fontSize: '0.75rem',
-                            fontWeight: '600',
-                            color: '#4b5563',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em',
-                            cursor: 'pointer',
-                            userSelect: 'none',
-                          }}
-                        >
-                          Last Login {sortBy.startsWith('lastLogin-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
-                        </th>
-                      )}
-                      {showRowActions && (
-                        <th
-                          style={{
-                            padding: '0.75rem 1rem',
-                            textAlign: 'left',
-                            fontSize: '0.75rem',
-                            fontWeight: '600',
-                            color: '#4b5563',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em',
-                          }}
-                        >
-                          Actions
-                        </th>
-                      )}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {getFilteredAndSortedUsers().map((user, index) => (
-                      <tr
-                        key={user.id}
-                        onClick={() => isSelectMode ? null : handleSelectUser(user)}
-                        style={{
-                          borderBottom: index === getFilteredAndSortedUsers().length - 1 ? 'none' : '1px solid #e5e7eb',
-                          backgroundColor: selectedItems.has(user.id) ? '#dbeafe' : (index % 2 === 0 ? 'white' : '#f9fafb'),
-                          cursor: isSelectMode ? 'default' : 'pointer'
-                        }}
-                      >
-                        {isSelectMode && (
-                          <td style={{ padding: '1rem 0.5rem', width: '40px' }} onClick={e => e.stopPropagation()}>
-                            <input
-                              type="checkbox"
-                              checked={selectedItems.has(user.id)}
-                              onChange={(e) => {
-                                const newSet = new Set(selectedItems);
-                                if (e.target.checked) {
-                                  newSet.add(user.id);
-                                } else {
-                                  newSet.delete(user.id);
-                                }
-                                setSelectedItems(newSet);
-                              }}
-                              style={{ width: '1rem', height: '1rem', cursor: 'pointer' }}
-                            />
-                          </td>
-                        )}
-                        <td style={{
-                          padding: '1rem',
-                          fontSize: '0.875rem',
-                          color: '#111827',
-                          whiteSpace: 'nowrap'
+                      <thead>
+                        <tr style={{
+                          backgroundColor: '#f3f4f6',
+                          borderBottom: '1px solid #e5e7eb'
                         }}>
-                          {user.displayId}
-                        </td>
-
-                        {showUsername && (
-                          <td style={{
-                            padding: '1rem',
-                            fontSize: '0.875rem',
-                            color: '#111827',
-                            whiteSpace: 'nowrap'
-                          }}>
-                            {user.username}
-                          </td>
-                        )}
-                        <td style={{
-                          padding: '1rem',
-                          fontSize: '0.875rem',
-                          color: '#111827',
-                          whiteSpace: 'nowrap'
-                        }}>
-                          {user.fullName}
-                        </td>
-                        {showEmail && (
-                          <td style={{
-                            padding: '1rem',
-                            fontSize: '0.875rem',
-                            color: '#111827',
-                            whiteSpace: 'nowrap'
-                          }}>
-                            {user.email}
-                          </td>
-                        )}
-                        {showRole && (
-                          <td style={{
-                            padding: '1rem',
-                            fontSize: '0.875rem',
-                            color: '#111827',
-                            whiteSpace: 'nowrap',
-                          }}>
-                            <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
-                              {(user.roles || [user.role]).filter(Boolean).map(roleId => {
-                                const roleData = firestoreRoles.find(r => r.id === roleId || r.name.toLowerCase() === roleId.toLowerCase());
-                                return (
-                                  <RoleBadge
-                                    key={roleId}
-                                    role={roleData || { id: roleId, name: roleId, color: '#6b7280', position: 999, permissions: {}, isDefault: false, isProtected: false, createdAt: new Date() }}
-                                  />
-                                );
-                              })}
-                            </div>
-                          </td>
-                        )}
-                        {showStatus && (
-                          <td
+                          {isSelectMode && (
+                            <th style={{ padding: '0.75rem 0.5rem', width: '40px' }}>
+                              <input
+                                type="checkbox"
+                                checked={selectedItems.size === getFilteredAndSortedUsers().length && getFilteredAndSortedUsers().length > 0}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedItems(new Set(getFilteredAndSortedUsers().map(u => u.id)));
+                                  } else {
+                                    setSelectedItems(new Set());
+                                  }
+                                }}
+                                style={{ width: '1rem', height: '1rem', cursor: 'pointer' }}
+                              />
+                            </th>
+                          )}
+                          <th
+                            onClick={() => handleHeaderSort('id')}
                             style={{
+                              padding: '0.75rem 1rem',
+                              textAlign: 'left',
+                              fontSize: '0.75rem',
+                              fontWeight: '600',
+                              color: '#4b5563',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.05em',
+                              cursor: 'pointer',
+                              userSelect: 'none',
+                            }}
+                          >
+                            ID {sortBy.startsWith('id-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                          </th>
+                          {showUsername && (
+                            <th
+                              onClick={() => handleHeaderSort('username')}
+                              style={{
+                                padding: '0.75rem 1rem',
+                                textAlign: 'left',
+                                fontSize: '0.75rem',
+                                fontWeight: '600',
+                                color: '#4b5563',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.05em',
+                                cursor: 'pointer',
+                                userSelect: 'none',
+                              }}
+                            >
+                              Username {sortBy.startsWith('username-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                            </th>
+                          )}
+                          <th
+                            onClick={() => handleHeaderSort('fullName')}
+                            style={{
+                              padding: '0.75rem 1rem',
+                              textAlign: 'left',
+                              fontSize: '0.75rem',
+                              fontWeight: '600',
+                              color: '#4b5563',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.05em',
+                              cursor: 'pointer',
+                              userSelect: 'none',
+                            }}
+                          >
+                            Full Name {sortBy.startsWith('fullName-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                          </th>
+                          {showEmail && (
+                            <th
+                              onClick={() => handleHeaderSort('email')}
+                              style={{
+                                padding: '0.75rem 1rem',
+                                textAlign: 'left',
+                                fontSize: '0.75rem',
+                                fontWeight: '600',
+                                color: '#4b5563',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.05em',
+                                cursor: 'pointer',
+                                userSelect: 'none',
+                              }}
+                            >
+                              Email {sortBy.startsWith('email-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                            </th>
+                          )}
+                          {showRole && (
+                            <th
+                              onClick={() => handleHeaderSort('role')}
+                              style={{
+                                padding: '0.75rem 1rem',
+                                textAlign: 'left',
+                                fontSize: '0.75rem',
+                                fontWeight: '600',
+                                color: '#4b5563',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.05em',
+                                cursor: 'pointer',
+                                userSelect: 'none',
+                              }}
+                            >
+                              Role {sortBy.startsWith('role-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                            </th>
+                          )}
+                          {showStatus && (
+                            <th
+                              onClick={() => handleHeaderSort('status')}
+                              style={{
+                                padding: '0.75rem 1rem',
+                                textAlign: 'left',
+                                fontSize: '0.75rem',
+                                fontWeight: '600',
+                                color: '#4b5563',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.05em',
+                                cursor: 'pointer',
+                                userSelect: 'none',
+                              }}
+                            >
+                              Status {sortBy.startsWith('status-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                            </th>
+                          )}
+                          {showLastLogin && (
+                            <th
+                              onClick={() => handleHeaderSort('lastLogin')}
+                              style={{
+                                padding: '0.75rem 1rem',
+                                textAlign: 'left',
+                                fontSize: '0.75rem',
+                                fontWeight: '600',
+                                color: '#4b5563',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.05em',
+                                cursor: 'pointer',
+                                userSelect: 'none',
+                              }}
+                            >
+                              Last Login {sortBy.startsWith('lastLogin-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                            </th>
+                          )}
+                          {showRowActions && (
+                            <th
+                              style={{
+                                padding: '0.75rem 1rem',
+                                textAlign: 'left',
+                                fontSize: '0.75rem',
+                                fontWeight: '600',
+                                color: '#4b5563',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.05em',
+                              }}
+                            >
+                              Actions
+                            </th>
+                          )}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {getFilteredAndSortedUsers().map((user, index) => (
+                          <tr
+                            key={user.id}
+                            onClick={() => isSelectMode ? null : handleSelectUser(user)}
+                            style={{
+                              borderBottom: index === getFilteredAndSortedUsers().length - 1 ? 'none' : '1px solid #e5e7eb',
+                              backgroundColor: selectedItems.has(user.id) ? '#dbeafe' : (index % 2 === 0 ? 'white' : '#f9fafb'),
+                              cursor: isSelectMode ? 'default' : 'pointer'
+                            }}
+                          >
+                            {isSelectMode && (
+                              <td style={{ padding: '1rem 0.5rem', width: '40px' }} onClick={e => e.stopPropagation()}>
+                                <input
+                                  type="checkbox"
+                                  checked={selectedItems.has(user.id)}
+                                  onChange={(e) => {
+                                    const newSet = new Set(selectedItems);
+                                    if (e.target.checked) {
+                                      newSet.add(user.id);
+                                    } else {
+                                      newSet.delete(user.id);
+                                    }
+                                    setSelectedItems(newSet);
+                                  }}
+                                  style={{ width: '1rem', height: '1rem', cursor: 'pointer' }}
+                                />
+                              </td>
+                            )}
+                            <td style={{
                               padding: '1rem',
                               fontSize: '0.875rem',
+                              color: '#111827',
                               whiteSpace: 'nowrap'
-                            }}
-                            onClick={e => e.stopPropagation()}
-                          >
-                            {(() => {
-                              const norm = (user.status || '').toString().trim().toLowerCase();
-                              const isActive = norm === 'active';
-                              const label = isActive ? 'Active' : 'Inactive';
-                              const bg = isActive ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)';
-                              const color = isActive ? '#047857' : '#b91c1c';
+                            }}>
+                              {user.displayId}
+                            </td>
 
-                              return (
-                                <button
-                                  type="button"
-                                  disabled={!can(effectiveRoleIds, 'users.edit.any')}
-                                  onClick={() => {
-                                    setStatusConfirmState({
-                                      mode: 'table',
-                                      userId: user.id,
-                                      nextStatus: isActive ? 'Inactive' : 'Active',
-                                    });
-                                  }}
-                                  style={{
-                                    padding: '0.15rem 0.6rem',
-                                    borderRadius: '9999px',
-                                    border: 'none',
-                                    backgroundColor: bg,
-                                    color,
-                                    fontSize: '0.75rem',
-                                    fontWeight: 600,
-                                    cursor: can(effectiveRoleIds, 'users.edit.any') ? 'pointer' : 'default',
-                                    textTransform: 'none',
-                                    minWidth: '72px',
-                                  }}
-                                >
-                                  {label}
-                                </button>
-                              );
-                            })()}
-                          </td>
-                        )}
-                        {showLastLogin && (
-                          <td style={{
-                            padding: '1rem',
-                            fontSize: '0.875rem',
-                            color: '#4b5563',
-                            whiteSpace: 'nowrap'
-                          }}>
-                            {user.lastLogin}
-                          </td>
-                        )}
-                        {showRowActions && (
-                          <td style={{
-                            padding: '1rem',
-                            fontSize: '0.875rem',
-                            whiteSpace: 'nowrap'
-                          }}>
-                            {/* Users with edit.any permission: can edit/archive any user (subject to existing filters) */}
-                            {can(effectiveRoleIds, 'users.edit.any') && (
-                              <>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleSelectUser(user);
-                                    setIsEditing(true);
-                                  }}
-                                  style={{
-                                    padding: '0.25rem 0.75rem',
-                                    borderRadius: '999px',
-                                    border: '1px solid #bfdbfe',
-                                    backgroundColor: '#dbeafe',
-                                    color: '#1d4ed8',
-                                    fontSize: '0.75rem',
-                                    cursor: 'pointer',
-                                    fontWeight: 500,
-                                    marginRight: '0.5rem'
-                                  }}
-                                >
-                                  Edit
-                                </button>
-                                {can(effectiveRoleIds, 'users.archive') && (
+                            {showUsername && (
+                              <td style={{
+                                padding: '1rem',
+                                fontSize: '0.875rem',
+                                color: '#111827',
+                                whiteSpace: 'nowrap'
+                              }}>
+                                {user.username}
+                              </td>
+                            )}
+                            <td style={{
+                              padding: '1rem',
+                              fontSize: '0.875rem',
+                              color: '#111827',
+                              whiteSpace: 'nowrap'
+                            }}>
+                              {user.fullName}
+                            </td>
+                            {showEmail && (
+                              <td style={{
+                                padding: '1rem',
+                                fontSize: '0.875rem',
+                                color: '#111827',
+                                whiteSpace: 'nowrap'
+                              }}>
+                                {user.email}
+                              </td>
+                            )}
+                            {showRole && (
+                              <td style={{
+                                padding: '1rem',
+                                fontSize: '0.875rem',
+                                color: '#111827',
+                                whiteSpace: 'nowrap',
+                              }}>
+                                <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
+                                  {(user.roles || [user.role]).filter(Boolean).map(roleId => {
+                                    const roleData = firestoreRoles.find(r => r.id === roleId || r.name.toLowerCase() === roleId.toLowerCase());
+                                    return (
+                                      <RoleBadge
+                                        key={roleId}
+                                        role={roleData || { id: roleId, name: roleId, color: '#6b7280', position: 999, permissions: {}, isDefault: false, isProtected: false, createdAt: new Date() }}
+                                      />
+                                    );
+                                  })}
+                                </div>
+                              </td>
+                            )}
+                            {showStatus && (
+                              <td
+                                style={{
+                                  padding: '1rem',
+                                  fontSize: '0.875rem',
+                                  whiteSpace: 'nowrap'
+                                }}
+                                onClick={e => e.stopPropagation()}
+                              >
+                                {(() => {
+                                  const norm = (user.status || '').toString().trim().toLowerCase();
+                                  const isActive = norm === 'active';
+                                  const label = isActive ? 'Active' : 'Inactive';
+                                  const bg = isActive ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)';
+                                  const color = isActive ? '#047857' : '#b91c1c';
+
+                                  return (
+                                    <button
+                                      type="button"
+                                      disabled={!can(effectiveRoleIds, 'users.edit.any')}
+                                      onClick={() => {
+                                        setStatusConfirmState({
+                                          mode: 'table',
+                                          userId: user.id,
+                                          nextStatus: isActive ? 'Inactive' : 'Active',
+                                        });
+                                      }}
+                                      style={{
+                                        padding: '0.15rem 0.6rem',
+                                        borderRadius: '9999px',
+                                        border: 'none',
+                                        backgroundColor: bg,
+                                        color,
+                                        fontSize: '0.75rem',
+                                        fontWeight: 600,
+                                        cursor: can(effectiveRoleIds, 'users.edit.any') ? 'pointer' : 'default',
+                                        textTransform: 'none',
+                                        minWidth: '72px',
+                                      }}
+                                    >
+                                      {label}
+                                    </button>
+                                  );
+                                })()}
+                              </td>
+                            )}
+                            {showLastLogin && (
+                              <td style={{
+                                padding: '1rem',
+                                fontSize: '0.875rem',
+                                color: '#4b5563',
+                                whiteSpace: 'nowrap'
+                              }}>
+                                {user.lastLogin}
+                              </td>
+                            )}
+                            {showRowActions && (
+                              <td style={{
+                                padding: '1rem',
+                                fontSize: '0.875rem',
+                                whiteSpace: 'nowrap'
+                              }}>
+                                {/* Users with edit.any permission: can edit/archive any user (subject to existing filters) */}
+                                {can(effectiveRoleIds, 'users.edit.any') && (
+                                  <>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleSelectUser(user);
+                                        setIsEditing(true);
+                                      }}
+                                      style={{
+                                        padding: '0.25rem 0.75rem',
+                                        borderRadius: '999px',
+                                        border: '1px solid #bfdbfe',
+                                        backgroundColor: '#dbeafe',
+                                        color: '#1d4ed8',
+                                        fontSize: '0.75rem',
+                                        cursor: 'pointer',
+                                        fontWeight: 500,
+                                        marginRight: '0.5rem'
+                                      }}
+                                    >
+                                      Edit
+                                    </button>
+                                    {can(effectiveRoleIds, 'users.archive') && (
+                                      <button
+                                        onClick={async (e) => {
+                                          e.stopPropagation();
+                                          const userRef = doc(db, 'users', user.id);
+                                          await updateDoc(userRef, { archived: true, archivedAt: new Date().toISOString() });
+                                          setUsers((prev) =>
+                                            prev.map((row) =>
+                                              row.id === user.id
+                                                ? { ...row, status: 'archived' }
+                                                : row,
+                                            ),
+                                          );
+                                        }}
+                                        style={{
+                                          padding: '0.25rem 0.75rem',
+                                          borderRadius: '999px',
+                                          border: '1px solid #fecaca',
+                                          backgroundColor: '#fee2e2',
+                                          color: '#b91c1c',
+                                          fontSize: '0.75rem',
+                                          cursor: 'pointer',
+                                          fontWeight: 500
+                                        }}
+                                      >
+                                        Archive
+                                      </button>
+                                    )}
+                                  </>
+                                )}
+
+                                {/* Non-admin roles: can only edit their own row, no delete */}
+                                {!can(effectiveRoleIds, 'users.edit.any') && (user.username === currentUsername || user.fullName === currentUsername) && (
                                   <button
-                                    onClick={async (e) => {
+                                    onClick={(e) => {
                                       e.stopPropagation();
-                                      const userRef = doc(db, 'users', user.id);
-                                      await updateDoc(userRef, { archived: true, archivedAt: new Date().toISOString() });
-                                      setUsers((prev) =>
-                                        prev.map((row) =>
-                                          row.id === user.id
-                                            ? { ...row, status: 'archived' }
-                                            : row,
-                                        ),
-                                      );
+                                      handleSelectUser(user);
+                                      setIsEditing(true);
                                     }}
                                     style={{
                                       padding: '0.25rem 0.75rem',
                                       borderRadius: '999px',
-                                      border: '1px solid #fecaca',
-                                      backgroundColor: '#fee2e2',
-                                      color: '#b91c1c',
+                                      border: '1px solid #bfdbfe',
+                                      backgroundColor: '#dbeafe',
+                                      color: '#1d4ed8',
                                       fontSize: '0.75rem',
                                       cursor: 'pointer',
                                       fontWeight: 500
                                     }}
                                   >
-                                    Archive
+                                    Edit
                                   </button>
                                 )}
-                              </>
+                              </td>
                             )}
-
-                            {/* Non-admin roles: can only edit their own row, no delete */}
-                            {!can(effectiveRoleIds, 'users.edit.any') && (user.username === currentUsername || user.fullName === currentUsername) && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleSelectUser(user);
-                                  setIsEditing(true);
-                                }}
-                                style={{
-                                  padding: '0.25rem 0.75rem',
-                                  borderRadius: '999px',
-                                  border: '1px solid #bfdbfe',
-                                  backgroundColor: '#dbeafe',
-                                  color: '#1d4ed8',
-                                  fontSize: '0.75rem',
-                                  cursor: 'pointer',
-                                  fontWeight: 500
-                                }}
-                              >
-                                Edit
-                              </button>
-                            )}
-                          </td>
+                          </tr>
+                        ))}
+                        {getFilteredAndSortedUsers().length === 0 && (
+                          <tr>
+                            <td colSpan={8} style={{
+                              padding: '2rem',
+                              textAlign: 'center',
+                              color: '#6b7280',
+                              fontStyle: 'italic'
+                            }}>
+                              No users found
+                            </td>
+                          </tr>
                         )}
-                      </tr>
-                    ))}
-                    {getFilteredAndSortedUsers().length === 0 && (
-                      <tr>
-                        <td colSpan={8} style={{
-                          padding: '2rem',
-                          textAlign: 'center',
-                          color: '#6b7280',
-                          fontStyle: 'italic'
-                        }}>
-                          No users found
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
             </section>
           </div>

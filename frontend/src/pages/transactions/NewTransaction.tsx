@@ -2318,25 +2318,46 @@ export function NewTransaction() {
                   {/* Payment Method */}
                   <div className="space-y-3">
                     <h3 className="font-medium text-gray-700">Payment Method</h3>
-                    <div className="grid grid-cols-2 gap-3"
-                      style={{
-                        width: '100%',
-                        padding: '0.5rem 0.75rem',
-                        borderRadius: '0.375rem',
-                        border: '1px solid #d1d5db',
-                        backgroundColor: '#f9fafb',
-                      }}>
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)',
+                      gap: '0.75rem',
+                      width: '100%',
+                      padding: '0.5rem 0.75rem',
+                      borderRadius: '0.375rem',
+                      border: '1px solid #d1d5db',
+                      backgroundColor: '#f9fafb',
+                    }}>
                       {['Cash', 'GCash'].map(method => (
-                        <label key={method} className="flex items-center space-x-2 p-3 border rounded-md hover:bg-gray-50">
+                        <label key={method} style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          padding: isMobile ? '1rem 0.75rem' : '0.75rem',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '0.375rem',
+                          backgroundColor: 'white',
+                          cursor: 'pointer',
+                          minHeight: isMobile ? '56px' : 'auto',
+                        }}
+                        className="hover:bg-gray-50">
                           <input
                             type="radio"
                             name="type"
                             value={method.toLowerCase()}
                             checked={payment.type === method.toLowerCase()}
                             onChange={handlePaymentChange}
-                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                            style={{
+                              width: isMobile ? '20px' : '16px',
+                              height: isMobile ? '20px' : '16px',
+                            }}
+                            className="text-blue-600 focus:ring-blue-500 border-gray-300"
                           />
-                          <span style={{ color: '#111827' }}>{method}</span>
+                          <span style={{
+                            color: '#111827',
+                            fontSize: isMobile ? '1rem' : '0.875rem',
+                            fontWeight: isMobile ? '500' : 'normal',
+                          }}>{method}</span>
                         </label>
                       ))}
                     </div>

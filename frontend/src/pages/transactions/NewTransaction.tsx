@@ -1243,9 +1243,10 @@ export function NewTransaction() {
                           const filteredProducts = products.filter(p =>
                             p.name.toLowerCase().includes(productSearchTerm.toLowerCase())
                           );
+                          const mobileLimit = isMobile ? 2 : MAX_VISIBLE_ROWS;
                           const visibleProducts = showAllProducts
                             ? filteredProducts
-                            : filteredProducts.slice(0, MAX_VISIBLE_ROWS);
+                            : filteredProducts.slice(0, mobileLimit);
 
                           if (filteredProducts.length === 0) {
                             return <p className="text-sm text-gray-500 text-center py-2">No matching products.</p>;
@@ -1253,7 +1254,11 @@ export function NewTransaction() {
 
                           return (
                             <>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <div style={{
+                                display: 'grid',
+                                gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)',
+                                gap: '0.75rem',
+                              }}>
                                 {visibleProducts.map(product => (
                                   <div
                                     key={product.id}
@@ -1337,9 +1342,10 @@ export function NewTransaction() {
                           const filteredServices = services.filter(s =>
                             s.name.toLowerCase().includes(serviceSearchTerm.toLowerCase())
                           );
+                          const mobileLimit = isMobile ? 2 : MAX_VISIBLE_ROWS;
                           const visibleServices = showAllServices
                             ? filteredServices
-                            : filteredServices.slice(0, MAX_VISIBLE_ROWS);
+                            : filteredServices.slice(0, mobileLimit);
 
                           if (filteredServices.length === 0) {
                             return <p className="text-sm text-gray-500 text-center py-2">No matching services.</p>;
@@ -1347,7 +1353,11 @@ export function NewTransaction() {
 
                           return (
                             <>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <div style={{
+                                display: 'grid',
+                                gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)',
+                                gap: '0.75rem',
+                              }}>
                                 {visibleServices.map(service => (
                                   <div
                                     key={service.id}

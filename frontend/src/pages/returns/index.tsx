@@ -1636,6 +1636,27 @@ export const Returns: React.FC = () => {
             </button>
 
             {/* Transactions List overlay panel */}
+            {/* 
+              ANIMATION OPTIONS:
+              
+              1. CURRENT (DEFAULT) - Simple fade-in with timing delays:
+                 - No explicit CSS animation
+                 - Controlled by showTransactionsContent state with setTimeout delays
+                 - Opening: 180ms delay before content shows
+                 - Closing: 220ms delay before content hides
+              
+              2. ENHANCED - Smooth slide-in from left with opacity fade:
+                 Add to style object:
+                 transform: showTransactionsContent ? 'translateX(0)' : 'translateX(-100%)',
+                 opacity: showTransactionsContent ? 1 : 0,
+                 transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease-out',
+              
+              3. BOUNCY - Spring-like animation with overshoot:
+                 Add to style object:
+                 transform: showTransactionsContent ? 'translateX(0) scale(1)' : 'translateX(-100%) scale(0.95)',
+                 opacity: showTransactionsContent ? 1 : 0,
+                 transition: 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease-out',
+            */}
             {isTransactionsPanelOpen && (
               <section
                 ref={transactionsPanelRef}
@@ -1654,6 +1675,15 @@ export const Returns: React.FC = () => {
                   left: 0,
                   width: isMobile ? 'calc(100vw - 80px)' : 480,
                   zIndex: 209,
+                  // CURRENT ANIMATION: No explicit CSS animation (default)
+                  // ENHANCED ANIMATION: Uncomment lines below to enable
+                  // transform: showTransactionsContent ? 'translateX(0)' : 'translateX(-100%)',
+                  // opacity: showTransactionsContent ? 1 : 0,
+                  // transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease-out',
+                  // BOUNCY ANIMATION: Uncomment lines below to enable (comment out ENHANCED if using this)
+                  // transform: showTransactionsContent ? 'translateX(0) scale(1)' : 'translateX(-100%) scale(0.95)',
+                  // opacity: showTransactionsContent ? 1 : 0,
+                  // transition: 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease-out',
                 }}
               >
                 {showTransactionsContent && (

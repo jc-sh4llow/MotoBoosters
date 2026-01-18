@@ -559,7 +559,7 @@ export function Users() {
   // Permission checks for Users page
   const canArchiveUsers = can(effectiveRoleIds, 'users.archive');
   const canDeleteUsers = can(effectiveRoleIds, 'users.delete');
-  const canExportUsers = isAdminLike; // Export is admin-only for now
+  const canExportUsers = can(effectiveRoleIds, 'users.export');
   const canViewArchived = can(effectiveRoleIds, 'users.view.archived');
 
   // Get filtered users based on search and filters

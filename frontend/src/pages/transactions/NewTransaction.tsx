@@ -1142,6 +1142,7 @@ export function NewTransaction() {
                         <input
                           placeholder="Andres Bonifacio"
                           type="text"
+                          inputMode="text"
                           value={customer.name}
                           onChange={(e) => setCustomer({ ...customer, name: e.target.value })}
                           style={{
@@ -1192,6 +1193,7 @@ export function NewTransaction() {
                       <input
                         placeholder="09123456789"
                         type="tel"
+                        inputMode="tel"
                         value={customer.contact}
                         onChange={(e) => setCustomer({ ...customer, contact: e.target.value })}
                         style={{

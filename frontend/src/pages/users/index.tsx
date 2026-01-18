@@ -78,6 +78,16 @@ type UserUpdateData = {
 };
 
 export function Users() {
+  // Highlight text utility function for search results
+  const highlightText = (text: string, search: string) => {
+    if (!search || !text) return text;
+    const parts = text.split(new RegExp(`(${search})`, 'gi'));
+    return parts.map((part, i) => 
+      part.toLowerCase() === search.toLowerCase() 
+        ? <span key={i} style={{ backgroundColor: '#fef08a', color: '#854d0e', fontWeight: '600' }}>{part}</span>
+        : part
+    );
+  };
 
   const [isUserDetailsExpanded, setIsUserDetailsExpanded] = useState(false);
   const userDetailsRef = useRef<HTMLDivElement | null>(null);
@@ -2284,7 +2294,7 @@ export function Users() {
                               color: '#111827',
                               whiteSpace: 'nowrap'
                             }}>
-                              {user.displayId}
+                              {highlightText(user.displayId, searchTerm)}
                             </td>
 
                             {showUsername && (
@@ -2294,7 +2304,7 @@ export function Users() {
                                 color: '#111827',
                                 whiteSpace: 'nowrap'
                               }}>
-                                {user.username}
+                                {highlightText(user.username, searchTerm)}
                               </td>
                             )}
                             <td style={{
@@ -2303,7 +2313,7 @@ export function Users() {
                               color: '#111827',
                               whiteSpace: 'nowrap'
                             }}>
-                              {user.fullName}
+                              {highlightText(user.fullName, searchTerm)}
                             </td>
                             {showEmail && (
                               <td style={{

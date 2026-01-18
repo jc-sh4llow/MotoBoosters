@@ -2833,19 +2833,32 @@ export function NewTransaction() {
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 2300,
+          padding: isMobile ? '1rem' : '0',
         }}>
           <div style={{
             backgroundColor: 'white',
-            borderRadius: '0.75rem',
-            padding: '1.5rem 2rem',
+            borderRadius: isMobile ? '0.5rem' : '0.75rem',
+            padding: isMobile ? '1rem' : '1.5rem 2rem',
             maxWidth: '900px',
             width: '100%',
-            maxHeight: '85vh',
+            maxHeight: isMobile ? '95vh' : '85vh',
             overflowY: 'auto',
             boxShadow: '0 10px 30px rgba(0,0,0,0.3)',
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h2 style={{ fontSize: '1.4rem', fontWeight: 600, margin: 0, color: '#111827' }}>
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center', 
+              marginBottom: isMobile ? '0.75rem' : '1rem',
+              paddingBottom: isMobile ? '0.75rem' : '0',
+              borderBottom: isMobile ? '1px solid #e5e7eb' : 'none',
+            }}>
+              <h2 style={{ 
+                fontSize: isMobile ? '1.125rem' : '1.4rem', 
+                fontWeight: 600, 
+                margin: 0, 
+                color: '#111827' 
+              }}>
                 Transaction Summary
               </h2>
               <button
@@ -2855,8 +2868,14 @@ export function NewTransaction() {
                   border: 'none',
                   background: 'transparent',
                   cursor: 'pointer',
-                  fontSize: '1.25rem',
+                  fontSize: isMobile ? '1.5rem' : '1.25rem',
                   color: '#6b7280',
+                  padding: isMobile ? '0.5rem' : '0',
+                  minWidth: isMobile ? '44px' : 'auto',
+                  minHeight: isMobile ? '44px' : 'auto',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                 }}
               >
                 <FaTimes />

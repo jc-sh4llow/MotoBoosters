@@ -1081,10 +1081,10 @@ export function Sales() {
               <div style={{
                 display: 'grid',
                 gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(200px, 1fr))',
-                gap: '1rem',
+                gap: isMobile ? '1.5rem' : '1rem',
                 marginBottom: '1.5rem'
               }}>
-                {[
+                { [
                   { title: 'Total Transactions', value: summaryData.totalTransactions, color: '#3b82f6' },
                   { title: 'Items Sold', value: summaryData.itemsSold, color: '#10b981' },
                   { title: 'Average Sale', value: `₱${summaryData.averageSale.toFixed(2)}`, color: '#f59e0b' },
@@ -1093,32 +1093,50 @@ export function Sales() {
                   <div key={index} style={{
                     backgroundColor: 'var(--surface-elevated)',
                     borderRadius: '0.5rem',
-                    padding: '1.25rem',
+                    padding: isMobile ? '1.5rem' : '1.25rem',
                     boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                    borderLeft: `4px solid ${item.color}`
+                    borderLeft: `4px solid ${item.color}`,
+                    minHeight: isMobile ? '80px' : 'auto',
+                    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                    cursor: 'default'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isMobile) {
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                      e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.15)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isMobile) {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)';
+                    }
                   }}>
                     <p style={{
-                      fontSize: '0.875rem',
+                      fontSize: isMobile ? '0.9rem' : '0.875rem',
                       color: 'var(--field-label-text)',
-                      margin: '0 0 0.5rem 0'
+                      margin: '0 0 0.5rem 0',
+                      fontWeight: isMobile ? '500' : '400'
                     }}>
                       {item.title}
                     </p>
                     <p style={{
-                      fontSize: '1.5rem',
+                      fontSize: isMobile ? '1.75rem' : '1.5rem',
                       fontWeight: '600',
                       color: 'var(--text-primary)',
-                      margin: 0
+                      margin: 0,
+                      lineHeight: 1.2
                     }}>
                       {item.value}
                     </p>
                   </div>
 
-                ))}
+                )) }
               </div>
             </section>
 
             <section>
+{{ ... }
               <h2 style={{
                 fontSize: '1.25rem',
                 fontWeight: '600',

@@ -4069,10 +4069,10 @@ export function Inventory() {
                                   {showItemNameColumn && (
                                     <td style={{ padding: '1rem 1.5rem' }}>
                                       <div>
-                                        <div>{item.itemName}</div>
+                                        <div>{highlightText(item.itemName, searchTerm)}</div>
                                         {isMobile && (
                                           <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
-                                            {item.brand}
+                                            {highlightText(item.brand, searchTerm)}
                                           </div>
                                         )}
                                       </div>

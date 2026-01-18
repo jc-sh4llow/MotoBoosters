@@ -7,7 +7,8 @@ import {
   FaSearch,
   FaSave,
   FaBars,
-  FaTimes
+  FaTimes,
+  FaShoppingCart
 } from 'react-icons/fa';
 import { Footer } from '../../components/Footer';
 import { useAuth } from '../../contexts/AuthContext';
@@ -418,6 +419,10 @@ export function NewTransaction() {
 
   const [expandedCartItemId, setExpandedCartItemId] = useState<string | null>(null);
 
+  // Mobile cart panel state
+  const [isCartPanelOpen, setIsCartPanelOpen] = useState(false);
+  const [showCartContent, setShowCartContent] = useState(false);
+
   const MAX_VISIBLE_ROWS = 4;
 
   // Debounce product search term for highlighting
@@ -435,6 +440,29 @@ export function NewTransaction() {
     }, 300);
     return () => clearTimeout(timer);
   }, [serviceSearchTerm]);
+
+  // Reset cart panel when changing steps
+  useEffect(() => {
+    setIsCartPanelOpen(false);
+    setShowCartContent(false);
+  }, [step]);
+
+  // Cart panel toggle handler with enhanced animation
+  const handleToggleCartPanel = () => {
+    if (!isCartPanelOpen) {
+      // Opening: expand panel first, then show content
+      setIsCartPanelOpen(true);
+      setTimeout(() => {
+        setShowCartContent(true);
+      }, 150);
+    } else {
+      // Closing: hide content first, then collapse panel
+      setShowCartContent(false);
+      setTimeout(() => {
+        setIsCartPanelOpen(false);
+      }, 200);
+    }
+  };
 
   // Helper function to highlight search matches
   const highlightText = (text: string, highlight: string) => {

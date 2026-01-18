@@ -2450,13 +2450,15 @@ export const Returns: React.FC = () => {
                                         padding: '0.4rem',
                                         border: '1px solid #d1d5db',
                                         borderRadius: '0.375rem',
-                                        fontSize: '0.875rem',
+                                        fontSize: '16px',
+                                        minHeight: '48px',
                                         backgroundColor: line.maxReturn <= 0 ? '#f9fafb' : 'white',
                                         color: line.maxReturn <= 0 ? '#9ca3af' : '#111827',
                                       }}
                                     />
                                     <input
                                       type="text"
+                                      inputMode="text"
                                       placeholder="Reason (optional)"
                                       disabled={line.maxReturn <= 0}
                                       value={line.reason}

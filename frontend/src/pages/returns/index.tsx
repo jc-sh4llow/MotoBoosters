@@ -131,6 +131,7 @@ export const Returns: React.FC = () => {
       itemsReturned: number;
       returnedTotal: number;
       status?: string;
+      handledBy?: string;
     }>
   >([]);
 
@@ -619,6 +620,7 @@ export const Returns: React.FC = () => {
           itemsReturned: number;
           returnedTotal: number;
           status?: string;
+          handledBy?: string;
         }> = [];
 
         returnsSnap.forEach((docSnap) => {
@@ -629,6 +631,7 @@ export const Returns: React.FC = () => {
           const transactionCode = String(data.transactionCode ?? '');
           const code = String(data.returnCode ?? docId);
           const status = String(data.status ?? 'active');
+          const handledBy = String(data.handledBy ?? '');
           const bucket = itemsByReturn[docId] || { itemsReturned: 0, returnedTotal: 0 };
           rows.push({
             id: code,
@@ -639,6 +642,7 @@ export const Returns: React.FC = () => {
             itemsReturned: bucket.itemsReturned,
             returnedTotal: bucket.returnedTotal,
             status,
+            handledBy,
           });
         });
 
@@ -3182,6 +3186,10 @@ export const Returns: React.FC = () => {
               <div style={{ marginBottom: '0.75rem', display: 'flex', gap: '0.5rem' }}>
                 <strong style={{ color: '#374151', minWidth: '140px' }}>Transaction ID:</strong>
                 <span style={{ color: '#111827' }}>{selectedReturnForModal.transactionCode}</span>
+              </div>
+              <div style={{ marginBottom: '0.75rem', display: 'flex', gap: '0.5rem' }}>
+                <strong style={{ color: '#374151', minWidth: '140px' }}>Handled By:</strong>
+                <span style={{ color: '#111827' }}>{selectedReturnForModal.handledBy || 'Unknown Employee'}</span>
               </div>
               <div style={{ marginBottom: '0.75rem', display: 'flex', gap: '0.5rem' }}>
                 <strong style={{ color: '#374151', minWidth: '140px' }}>Items Returned:</strong>

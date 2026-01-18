@@ -32,6 +32,7 @@ export function Customers() {
   const canEditCustomers = can(effectiveRoleIds, 'customers.edit');
   const canArchiveCustomers = can(effectiveRoleIds, 'customers.archive');
   const canDeleteCustomers = can(effectiveRoleIds, 'customers.delete');
+  const canExportCustomers = can(effectiveRoleIds, 'customers.export');
 
 
 
@@ -850,7 +851,7 @@ export function Customers() {
               <div style={{ backgroundColor: 'var(--surface-elevated)', borderRadius: '0.5rem', padding: '1rem', border: '1px solid var(--border)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: showFilters ? '1rem' : 0 }}>
                   <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                    {canEditCustomers && (
+                    {canExportCustomers && (
                       <button type="button" onClick={() => {
                         const rows = filteredCustomers;
                         if (!rows.length) return;
@@ -1191,7 +1192,7 @@ export function Customers() {
                     )}
 
                     {/* Export to CSV */}
-                    {canEditCustomers && (
+                    {canExportCustomers && (
                       <button type="button" onClick={() => {
                         const rows = filteredCustomers;
                         if (!rows.length) return;

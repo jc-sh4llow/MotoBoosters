@@ -120,6 +120,7 @@ export const Returns: React.FC = () => {
   const [cashConfirmed, setCashConfirmed] = useState(false);
   const [gcashRef, setGcashRef] = useState('');
   const [isProcessingReturn, setIsProcessingReturn] = useState(false);
+  const [migrationBackup, setMigrationBackup] = useState<Array<{ id: string; handledBy: string }> | null>(null);
   const [previousReturns, setPreviousReturns] = useState<
     Array<{
       id: string; // display id (returnCode or doc id)
@@ -397,11 +398,15 @@ export const Returns: React.FC = () => {
       const seqStr = String(nextSeq).padStart(4, '0');
       const returnCode = `${prefix}${seqStr}`;
 
+      // Find employee name from employees array
+      const handlerEmployee = employees.find((e) => e.id === handledBy);
+      const handledByName = handlerEmployee ? handlerEmployee.name : 'Unknown Employee';
+
       const returnPayload: any = {
         transactionId: selectedTransactionId,
         transactionCode: selectedTransaction.transactionCode,
         customerName: selectedTransaction.customerName,
-        handledBy,
+        handledBy: handledByName,
         originalTotal: selectedTransaction.total,
         returnDate,
         returnCode,
@@ -869,7 +874,77 @@ export const Returns: React.FC = () => {
     }
   };
 
+  // Migration handler to convert handledBy from ID to name
+  const handleMigrateHandledBy = async () => {
+    try {
+      console.log('Starting handledBy migration...');
+      const returnsSnap = await getDocs(collection(db, 'returns'));
+      const backup: Array<{ id: string; handledBy: string }> = [];
+      const updates: Array<Promise<void>> = [];
 
+      returnsSnap.forEach((docSnap) => {
+        const data = docSnap.data() as any;
+        const currentHandledBy = data.handledBy;
+        
+        // Store backup
+        backup.push({ id: docSnap.id, handledBy: currentHandledBy });
+
+        // Check if handledBy is an ID (exists in employees array)
+        const employee = employees.find((e) => e.id === currentHandledBy);
+        
+        if (employee) {
+          // It's an ID, convert to name
+          const handledByName = employee.name;
+          console.log(`Migrating return ${docSnap.id}: "${currentHandledBy}" -> "${handledByName}"`);
+          const retRef = doc(db, 'returns', docSnap.id);
+          updates.push(updateDoc(retRef, { handledBy: handledByName }));
+        } else {
+          // Already a name or unknown, check if it's unknown
+          if (!currentHandledBy || currentHandledBy === '') {
+            console.log(`Setting unknown employee for return ${docSnap.id}`);
+            const retRef = doc(db, 'returns', docSnap.id);
+            updates.push(updateDoc(retRef, { handledBy: 'Unknown Employee' }));
+          } else {
+            console.log(`Return ${docSnap.id} already has name: "${currentHandledBy}"`);
+          }
+        }
+      });
+
+      // Save backup
+      setMigrationBackup(backup);
+
+      // Execute updates
+      await Promise.all(updates);
+      
+      console.log(`Migration complete! Updated ${updates.length} returns.`);
+      console.log('Backup saved. Click "Restore Migration" to undo.');
+    } catch (err) {
+      console.error('Migration failed:', err);
+    }
+  };
+
+  // Restore migration from backup
+  const handleRestoreMigration = async () => {
+    if (!migrationBackup) {
+      console.log('No backup available to restore.');
+      return;
+    }
+
+    try {
+      console.log('Restoring migration from backup...');
+      const updates = migrationBackup.map((item) => {
+        const retRef = doc(db, 'returns', item.id);
+        return updateDoc(retRef, { handledBy: item.handledBy });
+      });
+
+      await Promise.all(updates);
+      
+      console.log(`Restore complete! Restored ${updates.length} returns.`);
+      setMigrationBackup(null);
+    } catch (err) {
+      console.error('Restore failed:', err);
+    }
+  };
 
   return (
     <div
@@ -1238,6 +1313,15 @@ export const Returns: React.FC = () => {
                         <button type="button" onClick={() => { setDateFilter('all'); setShowArchived(false); setSortBy('date-desc'); }} style={{ backgroundColor: '#6b7280', color: 'white', padding: '0.75rem 1rem', borderRadius: '0.375rem', border: 'none', cursor: 'pointer', fontWeight: 500, fontSize: '0.875rem' }}>
                           Clear Filters
                         </button>
+                        {/* DEV ONLY: Migration buttons */}
+                        <button type="button" onClick={handleMigrateHandledBy} style={{ backgroundColor: '#8b5cf6', color: 'white', padding: '0.75rem 1rem', borderRadius: '0.375rem', border: 'none', cursor: 'pointer', fontWeight: 500, fontSize: '0.875rem' }}>
+                          Migrate Handled By
+                        </button>
+                        {migrationBackup && (
+                          <button type="button" onClick={handleRestoreMigration} style={{ backgroundColor: '#f59e0b', color: 'white', padding: '0.75rem 1rem', borderRadius: '0.375rem', border: 'none', cursor: 'pointer', fontWeight: 500, fontSize: '0.875rem' }}>
+                            Restore Migration
+                          </button>
+                        )}
                         {isSelectMode && selectedItems.size > 0 && (() => {
                           const selectedRets = previousReturns.filter(ret => selectedItems.has(ret.returnDocId));
                           const hasUnarchived = selectedRets.some(ret => ret.status !== 'archived');
@@ -1404,6 +1488,15 @@ export const Returns: React.FC = () => {
                     <button type="button" onClick={() => { setDateFilter('all'); setShowArchived(false); setSortBy('date-desc'); }} style={{ backgroundColor: '#6b7280', color: 'white', padding: '0.5rem 1rem', borderRadius: '0.375rem', border: 'none', cursor: 'pointer', fontWeight: 500, fontSize: '0.875rem', height: '40px' }}>
                       Clear Filters
                     </button>
+                    {/* DEV ONLY: Migration buttons */}
+                    <button type="button" onClick={handleMigrateHandledBy} style={{ backgroundColor: '#8b5cf6', color: 'white', padding: '0.5rem 1rem', borderRadius: '0.375rem', border: 'none', cursor: 'pointer', fontWeight: 500, fontSize: '0.875rem', height: '40px' }}>
+                      Migrate Handled By
+                    </button>
+                    {migrationBackup && (
+                      <button type="button" onClick={handleRestoreMigration} style={{ backgroundColor: '#f59e0b', color: 'white', padding: '0.5rem 1rem', borderRadius: '0.375rem', border: 'none', cursor: 'pointer', fontWeight: 500, fontSize: '0.875rem', height: '40px' }}>
+                        Restore Migration
+                      </button>
+                    )}
                   </div>
                 </div>
                 )}

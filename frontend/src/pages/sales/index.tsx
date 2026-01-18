@@ -1149,7 +1149,9 @@ export function Sales() {
                 overflowX: 'auto',
                 backgroundColor: 'var(--surface-elevated)',
                 borderRadius: '0.5rem',
-                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                WebkitOverflowScrolling: 'touch',
+                position: 'relative'
               }}>
                 <table style={{
                   width: '100%',
@@ -1326,6 +1328,17 @@ export function Sales() {
                                 : '1px solid var(--table-border)',
                             backgroundColor: rowBg,
                             cursor: isMobile ? 'pointer' : 'default',
+                            transition: isMobile ? 'background-color 0.15s ease' : 'none'
+                          }}
+                          onTouchStart={(e) => {
+                            if (isMobile) {
+                              e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+                            }
+                          }}
+                          onTouchEnd={(e) => {
+                            if (isMobile) {
+                              e.currentTarget.style.backgroundColor = rowBg;
+                            }
                           }}
                         >
                           {showTransactionId && (

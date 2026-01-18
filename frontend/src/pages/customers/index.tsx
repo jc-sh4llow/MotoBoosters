@@ -2710,7 +2710,7 @@ export function Customers() {
                                           whiteSpace: 'nowrap',
                                         }}
                                       >
-                                        {customer.customerId || '-'}
+                                        {highlightText(customer.customerId || '-', searchTerm)}
                                       </td>
                                       <td
                                         style={{
@@ -2720,7 +2720,7 @@ export function Customers() {
                                           borderBottom: '1px solid #e5e7eb',
                                         }}
                                       >
-                                        {customer.name || '-'}
+                                        {highlightText(customer.name || '-', searchTerm)}
                                       </td>
                                     </>
                                   )}

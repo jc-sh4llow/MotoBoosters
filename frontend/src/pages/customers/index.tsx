@@ -1644,6 +1644,8 @@ export function Customers() {
                             border: '1px solid #d1d5db',
                             backgroundColor: 'var(--surface-elevated)',
                             color: 'var(--text-primary)',
+                            fontSize: '16px',
+                            minHeight: '48px'
                           }}
                         />
                       </div>
@@ -1663,6 +1665,7 @@ export function Customers() {
                         </label>
                         <input
                           type="email"
+                          inputMode="email"
                           placeholder="customer@example.com"
                           value={customerForm.email}
                           onChange={(e) => {

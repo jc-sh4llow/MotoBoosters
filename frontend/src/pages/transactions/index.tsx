@@ -1649,362 +1649,343 @@ export function Transactions() {
                 )}
               </div>
 
-              <div style={{
-                overflowX: 'auto',
-                backgroundColor: 'var(--surface-elevated)',
-                borderRadius: '0.5rem',
-                boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
-              }}>
-                <table style={{
-                  width: '100%',
-                  borderCollapse: 'collapse',
-                  minWidth: isMobile ? '200px' : '800px'
+              <div style={{ position: 'relative' }}>
+                {isMobile && showLeftScrollIndicator && (
+                  <div style={{
+                    position: 'absolute',
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: '20px',
+                    background: 'linear-gradient(to right, rgba(0,0,0,0.1), transparent)',
+                    pointerEvents: 'none',
+                    zIndex: 10,
+                    borderTopLeftRadius: '0.5rem',
+                    borderBottomLeftRadius: '0.5rem',
+                  }} />
+                )}
+                {isMobile && showRightScrollIndicator && (
+                  <div style={{
+                    position: 'absolute',
+                    right: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: '20px',
+                    background: 'linear-gradient(to left, rgba(0,0,0,0.1), transparent)',
+                    pointerEvents: 'none',
+                    zIndex: 10,
+                    borderTopRightRadius: '0.5rem',
+                    borderBottomRightRadius: '0.5rem',
+                  }} />
+                )}
+                <div style={{
+                  backgroundColor: 'var(--surface-elevated)',
+                  borderRadius: '0.5rem',
+                  boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+                  overflow: 'hidden'
                 }}>
-                  <thead>
-                    <tr style={{
-                      backgroundColor: 'var(--table-header-bg)',
-                      borderBottom: '1px solid var(--table-border)'
+                  <div ref={tableScrollRef} style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                    <table style={{
+                      width: '100%',
+                      borderCollapse: 'collapse',
+                      minWidth: isMobile ? '200px' : '800px'
                     }}>
-                      {isSelectMode && (
-                        <th style={{ padding: '0.75rem 0.5rem', textAlign: 'center', width: '40px' }}>
-                          <input
-                            type="checkbox"
-                            checked={selectedItems.size === getFilteredTransactionsForTable().length && getFilteredTransactionsForTable().length > 0}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedItems(new Set(getFilteredTransactionsForTable().map(tx => tx.id)));
-                              } else {
-                                setSelectedItems(new Set());
-                              }
-                            }}
-                            style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-                          />
-                        </th>
-                      )}
-                      {isMobile ? (
-                        /* Mobile: 2 columns */
-                        <>
-                          <th onClick={() => handleHeaderSort('customer')} style={{ padding: '0.75rem 1.5rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: '600', color: 'var(--table-header-text)', textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer', userSelect: 'none' }}>
-                            Customer {sortBy.startsWith('customer-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
-                          </th>
-                          <th onClick={() => handleHeaderSort('total')} style={{ padding: '0.75rem 1.5rem', textAlign: 'right', fontSize: '0.75rem', fontWeight: '600', color: 'var(--table-header-text)', textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer', userSelect: 'none' }}>
-                            Grand Total {sortBy.startsWith('total-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
-                          </th>
-                        </>
-                      ) : (
-                        /* Desktop: All columns */
-                        <>
-                          <th onClick={() => handleHeaderSort('id')} style={{ padding: '0.75rem 1.5rem', textAlign: 'center', fontSize: '0.75rem', fontWeight: '600', color: 'var(--table-header-text)', textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer', userSelect: 'none' }}>
-                            Transaction ID {sortBy.startsWith('id-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
-                          </th>
-                          <th onClick={() => handleHeaderSort('date')} style={{ padding: '0.75rem 1.5rem', textAlign: 'center', fontSize: '0.75rem', fontWeight: '600', color: 'var(--table-header-text)', textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer', userSelect: 'none' }}>
-                            Date {sortBy.startsWith('date-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
-                          </th>
-                          <th onClick={() => handleHeaderSort('customer')} style={{ padding: '0.75rem 1.5rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: '600', color: 'var(--table-header-text)', textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer', userSelect: 'none' }}>
-                            Customer {sortBy.startsWith('customer-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
-                          </th>
-                          <th onClick={() => handleHeaderSort('type')} style={{ padding: '0.75rem 1.5rem', textAlign: 'center', fontSize: '0.75rem', fontWeight: '600', color: 'var(--table-header-text)', textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer', userSelect: 'none' }}>
-                            Type {sortBy.startsWith('type-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
-                          </th>
-                          <th onClick={() => handleHeaderSort('items')} style={{ padding: '0.75rem 1.5rem', textAlign: 'center', fontSize: '0.75rem', fontWeight: '600', color: 'var(--table-header-text)', textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer', userSelect: 'none' }}>
-                            Items {sortBy.startsWith('items-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
-                          </th>
-                          <th onClick={() => handleHeaderSort('total')} style={{ padding: '0.75rem 1.5rem', textAlign: 'right', fontSize: '0.75rem', fontWeight: '600', color: 'var(--table-header-text)', textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer', userSelect: 'none' }}>
-                            Grand Total {sortBy.startsWith('total-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
-                          </th>
-                          <th onClick={() => handleHeaderSort('payment')} style={{ padding: '0.75rem 1.5rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: '600', color: 'var(--table-header-text)', textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer', userSelect: 'none' }}>
-                            Payment Type {sortBy.startsWith('payment-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
-                          </th>
-                          <th onClick={() => handleHeaderSort('status')} style={{ padding: '0.75rem 1.5rem', textAlign: 'center', fontSize: '0.75rem', fontWeight: '600', color: 'var(--table-header-text)', textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer', userSelect: 'none' }}>
-                            Status {sortBy.startsWith('status-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
-                          </th>
-                        </>
-                      )}
-                      {!isMobile && (
-                        <th style={{ padding: '0.75rem 1.5rem', textAlign: 'center', fontSize: '0.75rem', fontWeight: '600', color: 'var(--table-header-text)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                          Actions
-                        </th>
-                      )}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {getFilteredTransactionsForTable()
-                      .map((tx, index) => {
-                        // Calculate discount/markup for mobile display
-                        const adjustments = (tx.items || []).filter(item =>
-                          (item.adjustmentType === 'discount' || item.adjustmentType === 'markup') &&
-                          (item.adjustmentPerUnit || 0) > 0 &&
-                          (item.specialUnits || 0) > 0,
-                        );
-                        const totalAdjAmount = adjustments.reduce((sum, it) => {
-                          const qty = it.specialUnits || 0;
-                          const per = it.adjustmentPerUnit || 0;
-                          return sum + qty * per;
-                        }, 0);
+                      <thead>
+                        <tr style={{
+                          backgroundColor: 'var(--table-header-bg)',
+                          borderBottom: '1px solid var(--table-border)'
+                        }}>
+                          {isSelectMode && (
+                            <th style={{ padding: '0.75rem 0.5rem', textAlign: 'center', width: '40px' }}>
+                              <input
+                                type="checkbox"
+                                checked={selectedItems.size === getFilteredTransactionsForTable().length && getFilteredTransactionsForTable().length > 0}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedItems(new Set(getFilteredTransactionsForTable().map(tx => tx.id)));
+                                  } else {
+                                    setSelectedItems(new Set());
+                                  }
+                                }}
+                                style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                              />
+                            </th>
+                          )}
+                          {isMobile ? (
+                            /* Mobile: 2 columns */
+                            <>
+                              <th onClick={() => handleHeaderSort('customer')} style={{ padding: '0.75rem 1.5rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: '600', color: 'var(--table-header-text)', textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer', userSelect: 'none' }}>
+                                Customer {sortBy.startsWith('customer-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                              </th>
+                              <th onClick={() => handleHeaderSort('total')} style={{ padding: '0.75rem 1.5rem', textAlign: 'right', fontSize: '0.75rem', fontWeight: '600', color: 'var(--table-header-text)', textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer', userSelect: 'none' }}>
+                                Grand Total {sortBy.startsWith('total-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                              </th>
+                            </>
+                          ) : (
+                            /* Desktop: All columns */
+                            <>
+                              <th onClick={() => handleHeaderSort('id')} style={{ padding: '0.75rem 1.5rem', textAlign: 'center', fontSize: '0.75rem', fontWeight: '600', color: 'var(--table-header-text)', textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer', userSelect: 'none' }}>
+                                Transaction ID {sortBy.startsWith('id-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                              </th>
+                              <th onClick={() => handleHeaderSort('date')} style={{ padding: '0.75rem 1.5rem', textAlign: 'center', fontSize: '0.75rem', fontWeight: '600', color: 'var(--table-header-text)', textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer', userSelect: 'none' }}>
+                                Date {sortBy.startsWith('date-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                              </th>
+                              <th onClick={() => handleHeaderSort('customer')} style={{ padding: '0.75rem 1.5rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: '600', color: 'var(--table-header-text)', textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer', userSelect: 'none' }}>
+                                Customer {sortBy.startsWith('customer-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                              </th>
+                              <th onClick={() => handleHeaderSort('type')} style={{ padding: '0.75rem 1.5rem', textAlign: 'center', fontSize: '0.75rem', fontWeight: '600', color: 'var(--table-header-text)', textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer', userSelect: 'none' }}>
+                                Type {sortBy.startsWith('type-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                              </th>
+                              <th onClick={() => handleHeaderSort('items')} style={{ padding: '0.75rem 1.5rem', textAlign: 'center', fontSize: '0.75rem', fontWeight: '600', color: 'var(--table-header-text)', textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer', userSelect: 'none' }}>
+                                Items {sortBy.startsWith('items-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                              </th>
+                              <th onClick={() => handleHeaderSort('total')} style={{ padding: '0.75rem 1.5rem', textAlign: 'right', fontSize: '0.75rem', fontWeight: '600', color: 'var(--table-header-text)', textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer', userSelect: 'none' }}>
+                                Grand Total {sortBy.startsWith('total-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                              </th>
+                              <th onClick={() => handleHeaderSort('payment')} style={{ padding: '0.75rem 1.5rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: '600', color: 'var(--table-header-text)', textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer', userSelect: 'none' }}>
+                                Payment Type {sortBy.startsWith('payment-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                              </th>
+                              <th onClick={() => handleHeaderSort('status')} style={{ padding: '0.75rem 1.5rem', textAlign: 'center', fontSize: '0.75rem', fontWeight: '600', color: 'var(--table-header-text)', textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer', userSelect: 'none' }}>
+                                Status {sortBy.startsWith('status-') ? (sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
+                              </th>
+                            </>
+                          )}
+                          {!isMobile && (
+                            <th style={{ padding: '0.75rem 1.5rem', textAlign: 'center', fontSize: '0.75rem', fontWeight: '600', color: 'var(--table-header-text)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                              Actions
+                            </th>
+                          )}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {getFilteredTransactionsForTable()
+                          .map((tx, index) => {
+                            // Calculate discount/markup for mobile display
+                            const adjustments = (tx.items || []).filter(item =>
+                              (item.adjustmentType === 'discount' || item.adjustmentType === 'markup') &&
+                              (item.adjustmentPerUnit || 0) > 0 &&
+                              (item.specialUnits || 0) > 0,
+                            );
+                            const totalAdjAmount = adjustments.reduce((sum, it) => {
+                              const qty = it.specialUnits || 0;
+                              const per = it.adjustmentPerUnit || 0;
+                              return sum + qty * per;
+                            }, 0);
 
-                        // Type abbreviation for mobile
-                        const typeAbbrev = tx.type === 'Parts Only' ? 'P' : tx.type === 'Service Only' ? 'S' : 'PS';
+                            // Type abbreviation for mobile
+                            const typeAbbrev = tx.type === 'Parts Only' ? 'P' : tx.type === 'Service Only' ? 'S' : 'PS';
 
-                        return (
-                          <tr
-                            key={tx.id}
-                            style={{
-                              backgroundColor: index % 2 === 0 ? 'var(--table-row-bg)' : 'var(--table-row-alt-bg)',
-                              borderBottom: index === transactions.length - 1 ? 'none' : '1px solid var(--table-border)',
-                              transition: 'background-color 0.2s',
-                              cursor: 'pointer'
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.backgroundColor = 'var(--table-row-hover-bg)';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.backgroundColor = index % 2 === 0 ? 'var(--table-row-bg)' : 'var(--table-row-alt-bg)';
-                            }}
-                            onClick={() => {
-                              if (isSelectMode) {
-                                const newSet = new Set(selectedItems);
-                                if (newSet.has(tx.id)) {
-                                  newSet.delete(tx.id);
-                                } else {
-                                  newSet.add(tx.id);
-                                }
-                                setSelectedItems(newSet);
-                              } else {
-                                setSelectedTransaction(tx);
-                                setIsModalOpen(true);
-                              }
-                            }}
-                          >
-                            {/* Select Mode Checkbox */}
-                            {isSelectMode && (
-                              <td style={{ padding: '1rem 0.5rem', textAlign: 'center' }}>
-                                <input
-                                  type="checkbox"
-                                  checked={selectedItems.has(tx.id)}
-                                  onChange={() => { }}
-                                  onClick={(e) => e.stopPropagation()}
-                                  style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-                                />
-                              </td>
-                            )}
+                            return (
+                              <tr
+                                key={tx.id}
+                                style={{
+                                  backgroundColor: index % 2 === 0 ? 'var(--table-row-bg)' : 'var(--table-row-alt-bg)',
+                                  borderBottom: index === transactions.length - 1 ? 'none' : '1px solid var(--table-border)',
+                                  transition: 'background-color 0.2s',
+                                  cursor: 'pointer'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.backgroundColor = 'var(--table-row-hover-bg)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.backgroundColor = index % 2 === 0 ? 'var(--table-row-bg)' : 'var(--table-row-alt-bg)';
+                                }}
+                                onClick={() => {
+                                  if (isSelectMode) {
+                                    const newSet = new Set(selectedItems);
+                                    if (newSet.has(tx.id)) {
+                                      newSet.delete(tx.id);
+                                    } else {
+                                      newSet.add(tx.id);
+                                    }
+                                    setSelectedItems(newSet);
+                                  } else {
+                                    setSelectedTransaction(tx);
+                                    setIsModalOpen(true);
+                                  }
+                                }}
+                              >
+                                {/* Select Mode Checkbox */}
+                                {isSelectMode && (
+                                  <td style={{ padding: '1rem 0.5rem', textAlign: 'center' }}>
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedItems.has(tx.id)}
+                                      onChange={() => { }}
+                                      onClick={(e) => e.stopPropagation()}
+                                      style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                                    />
+                                  </td>
+                                )}
 
-                            {/* Mobile Layout: 2 columns */}
-                            {isMobile ? (
-                              <>
-                                {/* Column 1: Customer with Transaction ID - Date below */}
-                                <td style={{
-                                  padding: '1rem 1.5rem',
-                                  fontSize: '0.875rem',
-                                  color: 'var(--table-row-text)',
-                                  textAlign: 'left'
-                                }}>
-                                  <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>
-                                    {tx.customer}
-                                  </div>
-                                  <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.15rem' }}>
-                                    {tx.transactionCode || tx.id} - {new Date(tx.date).toLocaleDateString()}
-                                  </div>
-                                </td>
-
-                                {/* Column 2: Grand Total with Payment Type - Discount/Markup - Type below */}
-                                <td style={{
-                                  padding: '1rem 1.5rem',
-                                  fontSize: '0.875rem',
-                                  textAlign: 'right'
-                                }}>
-                                  <div style={{ fontWeight: '600', color: 'var(--table-row-text)', marginBottom: '0.25rem' }}>
-                                    ₱{tx.grandTotal.toLocaleString()}
-                                  </div>
-                                  <div style={{
-                                    fontSize: '0.75rem',
-                                    color: '#6b7280',
-                                    marginTop: '0.15rem'
-                                  }}>
-                                    {tx.paymentType}{adjustments.length > 0 ? ` - ${adjustments[0].adjustmentType === 'markup' ? '+' : '-'}₱${totalAdjAmount.toFixed(2)}` : ''} - {typeAbbrev}
-                                  </div>
-                                </td>
-                              </>
-                            ) : (
-                              /* Desktop Layout: All columns */
-                              <>
-                                {/* Transaction ID */}
-                                <td style={{
-                                  padding: '1rem 1.5rem',
-                                  fontSize: '0.875rem',
-                                  color: 'var(--table-row-text)',
-                                  whiteSpace: 'nowrap',
-                                  textAlign: 'center'
-                                }}>
-                                  {tx.transactionCode || tx.id}
-                                </td>
-
-                                {/* Date */}
-                                <td style={{
-                                  padding: '1rem 1.5rem',
-                                  fontSize: '0.875rem',
-                                  color: 'var(--table-header-text)',
-                                  whiteSpace: 'nowrap',
-                                  textAlign: 'center'
-                                }}>
-                                  {new Date(tx.date).toLocaleDateString()}
-                                </td>
-
-                                {/* Customer */}
-                                <td style={{
-                                  padding: '1rem 1.5rem',
-                                  fontSize: '0.875rem',
-                                  color: 'var(--table-row-text)',
-                                  whiteSpace: 'nowrap',
-                                  textAlign: 'left'
-                                }}>
-                                  {tx.customer}
-                                </td>
-
-                                {/* Type */}
-                                <td style={{
-                                  padding: '1rem 1.5rem',
-                                  fontSize: '0.875rem'
-                                }}>
-                                  <span style={{
-                                    display: 'inline-block',
-                                    padding: '0.25rem 0.75rem',
-                                    borderRadius: '9999px',
-                                    fontSize: '0.75rem',
-                                    fontWeight: '600',
-                                    backgroundColor:
-                                      tx.type === 'Parts Only' ? '#dbeafe' :
-                                        tx.type === 'Service Only' ? '#d1fae5' : '#ede9fe',
-                                    color:
-                                      tx.type === 'Parts Only' ? '#1e40af' :
-                                        tx.type === 'Service Only' ? '#065f46' : '#5b21b6'
-                                  }}>
-                                    {tx.type}
-                                  </span>
-                                </td>
-
-                                {/* Items */}
-                                <td style={{
-                                  padding: '1rem 1.5rem',
-                                  fontSize: '0.875rem',
-                                  textAlign: 'center',
-                                  color: 'var(--table-row-text)'
-                                }}>
-                                  {tx.itemCount}
-                                </td>
-
-                                {/* Grand Total */}
-                                <td style={{
-                                  padding: '1rem 1.5rem',
-                                  fontSize: '0.875rem',
-                                  fontWeight: '600',
-                                  color: 'var(--table-row-text)',
-                                  textAlign: 'right',
-                                  whiteSpace: 'nowrap'
-                                }}>
-                                  <div>
-                                    ₱{tx.grandTotal.toLocaleString()}
-                                  </div>
-                                  {adjustments.length > 0 && (
-                                    <div style={{
-                                      fontSize: '0.75rem',
-                                      fontWeight: 400,
+                                {/* Mobile Layout: 2 columns */}
+                                {isMobile ? (
+                                  <>
+                                    {/* Column 1: Customer with Transaction ID - Date below */}
+                                    <td style={{
+                                      padding: '1rem 1.5rem',
+                                      fontSize: '0.875rem',
                                       color: 'var(--table-row-text)',
-                                      marginTop: '0.15rem'
+                                      textAlign: 'left'
                                     }}>
-                                      Discount/Markup: ₱{totalAdjAmount.toFixed(2)}
-                                    </div>
-                                  )}
-                                </td>
+                                      <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>
+                                        {tx.customer}
+                                      </div>
+                                      <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.15rem' }}>
+                                        {tx.transactionCode || tx.id} - {new Date(tx.date).toLocaleDateString()}
+                                      </div>
+                                    </td>
 
-                                {/* Payment Type */}
-                                <td style={{
-                                  padding: '1rem 1.5rem',
-                                  fontSize: '0.875rem',
-                                  color: 'var(--table-header-text)',
-                                  textAlign: 'left'
-                                }}>
-                                  {tx.paymentType}
-                                </td>
-
-                                {/* Status */}
-                                <td style={{
-                                  padding: '1rem 1.5rem',
-                                  fontSize: '0.875rem'
-                                }}>
-                                  <span style={{
-                                    display: 'inline-block',
-                                    padding: '0.25rem 0.75rem',
-                                    borderRadius: '9999px',
-                                    fontSize: '0.75rem',
-                                    fontWeight: '600',
-                                    backgroundColor:
-                                      tx.status === 'Completed' ? '#d1fae5' :
-                                        tx.status === 'Pending' ? '#fef3c7' : '#fee2e2',
-                                    color:
-                                      tx.status === 'Completed' ? '#065f46' :
-                                        tx.status === 'Pending' ? '#92400e' : '#991b1b'
-                                  }}>
-                                    {tx.status}
-                                  </span>
-                                </td>
-
-                                {/* Actions */}
-                                <td style={{
-                                  padding: '1rem 1.5rem',
-                                  fontSize: '0.875rem',
-                                  textAlign: 'center',
-                                  whiteSpace: 'nowrap'
-                                }}>
-                                  {tx.status === 'Pending' && !tx.archived && (
-                                    <button
-                                      style={{
-                                        padding: '0.25rem 0.75rem',
+                                    {/* Column 2: Grand Total with Payment Type - Discount/Markup - Type below */}
+                                    <td style={{
+                                      padding: '1rem 1.5rem',
+                                      fontSize: '0.875rem',
+                                      textAlign: 'right'
+                                    }}>
+                                      <div style={{ fontWeight: '600', color: 'var(--table-row-text)', marginBottom: '0.25rem' }}>
+                                        ₱{tx.grandTotal.toLocaleString()}
+                                      </div>
+                                      <div style={{
                                         fontSize: '0.75rem',
-                                        borderRadius: '9999px',
-                                        border: 'none',
-                                        cursor: 'pointer',
-                                        backgroundColor: '#10b981',
-                                        color: 'white',
-                                        marginRight: canDeleteTransactions ? '0.5rem' : 0
-                                      }}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        openPaymentReview(tx);
-                                      }}
-                                    >
-                                      Mark as Complete
-                                    </button>
-                                  )}
-                                  {canArchiveTransactions && !tx.archived && (
-                                    <button
-                                      style={{
-                                        padding: '0.25rem 0.75rem',
-                                        fontSize: '0.75rem',
-                                        borderRadius: '9999px',
-                                        border: 'none',
-                                        cursor: 'pointer',
-                                        backgroundColor: '#f59e0b',
-                                        color: 'white'
-                                      }}
-                                      onClick={async (e) => {
-                                        e.stopPropagation();
-                                        const txRef = doc(db, 'transactions', tx.id);
-                                        await updateDoc(txRef, { archived: true });
-                                      }}
-                                    >
-                                      Archive
-                                    </button>
-                                  )}
-                                  {tx.archived && (
-                                    <>
-                                      <span style={{
-                                        fontSize: '0.75rem',
-                                        color: '#9ca3af',
-                                        marginRight: canUnarchiveTransactions ? '0.5rem' : 0
+                                        color: '#6b7280',
+                                        marginTop: '0.15rem'
                                       }}>
-                                        Archived
+                                        {tx.paymentType}{adjustments.length > 0 ? ` - ${adjustments[0].adjustmentType === 'markup' ? '+' : '-'}₱${totalAdjAmount.toFixed(2)}` : ''} - {typeAbbrev}
+                                      </div>
+                                    </td>
+                                  </>
+                                ) : (
+                                  /* Desktop Layout: All columns */
+                                  <>
+                                    {/* Transaction ID */}
+                                    <td style={{
+                                      padding: '1rem 1.5rem',
+                                      fontSize: '0.875rem',
+                                      color: 'var(--table-row-text)',
+                                      whiteSpace: 'nowrap',
+                                      textAlign: 'center'
+                                    }}>
+                                      {tx.transactionCode || tx.id}
+                                    </td>
+
+                                    {/* Date */}
+                                    <td style={{
+                                      padding: '1rem 1.5rem',
+                                      fontSize: '0.875rem',
+                                      color: 'var(--table-header-text)',
+                                      whiteSpace: 'nowrap',
+                                      textAlign: 'center'
+                                    }}>
+                                      {new Date(tx.date).toLocaleDateString()}
+                                    </td>
+
+                                    {/* Customer */}
+                                    <td style={{
+                                      padding: '1rem 1.5rem',
+                                      fontSize: '0.875rem',
+                                      color: 'var(--table-row-text)',
+                                      whiteSpace: 'nowrap',
+                                      textAlign: 'left'
+                                    }}>
+                                      {tx.customer}
+                                    </td>
+
+                                    {/* Type */}
+                                    <td style={{
+                                      padding: '1rem 1.5rem',
+                                      fontSize: '0.875rem'
+                                    }}>
+                                      <span style={{
+                                        display: 'inline-block',
+                                        padding: '0.25rem 0.75rem',
+                                        borderRadius: '9999px',
+                                        fontSize: '0.75rem',
+                                        fontWeight: '600',
+                                        backgroundColor:
+                                          tx.type === 'Parts Only' ? '#dbeafe' :
+                                            tx.type === 'Service Only' ? '#d1fae5' : '#ede9fe',
+                                        color:
+                                          tx.type === 'Parts Only' ? '#1e40af' :
+                                            tx.type === 'Service Only' ? '#065f46' : '#5b21b6'
+                                      }}>
+                                        {tx.type}
                                       </span>
-                                      {canUnarchiveTransactions && (
+                                    </td>
+
+                                    {/* Items */}
+                                    <td style={{
+                                      padding: '1rem 1.5rem',
+                                      fontSize: '0.875rem',
+                                      textAlign: 'center',
+                                      color: 'var(--table-row-text)'
+                                    }}>
+                                      {tx.itemCount}
+                                    </td>
+
+                                    {/* Grand Total */}
+                                    <td style={{
+                                      padding: '1rem 1.5rem',
+                                      fontSize: '0.875rem',
+                                      fontWeight: '600',
+                                      color: 'var(--table-row-text)',
+                                      textAlign: 'right',
+                                      whiteSpace: 'nowrap'
+                                    }}>
+                                      <div>
+                                        ₱{tx.grandTotal.toLocaleString()}
+                                      </div>
+                                      {adjustments.length > 0 && (
+                                        <div style={{
+                                          fontSize: '0.75rem',
+                                          fontWeight: 400,
+                                          color: 'var(--table-row-text)',
+                                          marginTop: '0.15rem'
+                                        }}>
+                                          Discount/Markup: ₱{totalAdjAmount.toFixed(2)}
+                                        </div>
+                                      )}
+                                    </td>
+
+                                    {/* Payment Type */}
+                                    <td style={{
+                                      padding: '1rem 1.5rem',
+                                      fontSize: '0.875rem',
+                                      color: 'var(--table-header-text)',
+                                      textAlign: 'left'
+                                    }}>
+                                      {tx.paymentType}
+                                    </td>
+
+                                    {/* Status */}
+                                    <td style={{
+                                      padding: '1rem 1.5rem',
+                                      fontSize: '0.875rem'
+                                    }}>
+                                      <span style={{
+                                        display: 'inline-block',
+                                        padding: '0.25rem 0.75rem',
+                                        borderRadius: '9999px',
+                                        fontSize: '0.75rem',
+                                        fontWeight: '600',
+                                        backgroundColor:
+                                          tx.status === 'Completed' ? '#d1fae5' :
+                                            tx.status === 'Pending' ? '#fef3c7' : '#fee2e2',
+                                        color:
+                                          tx.status === 'Completed' ? '#065f46' :
+                                            tx.status === 'Pending' ? '#92400e' : '#991b1b'
+                                      }}>
+                                        {tx.status}
+                                      </span>
+                                    </td>
+
+                                    {/* Actions */}
+                                    <td style={{
+                                      padding: '1rem 1.5rem',
+                                      fontSize: '0.875rem',
+                                      textAlign: 'center',
+                                      whiteSpace: 'nowrap'
+                                    }}>
+                                      {tx.status === 'Pending' && !tx.archived && (
                                         <button
                                           style={{
                                             padding: '0.25rem 0.75rem',
@@ -2012,63 +1993,114 @@ export function Transactions() {
                                             borderRadius: '9999px',
                                             border: 'none',
                                             cursor: 'pointer',
-                                            backgroundColor: '#3b82f6',
+                                            backgroundColor: '#10b981',
                                             color: 'white',
                                             marginRight: canDeleteTransactions ? '0.5rem' : 0
+                                          }}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            openPaymentReview(tx);
+                                          }}
+                                        >
+                                          Mark as Complete
+                                        </button>
+                                      )}
+                                      {canArchiveTransactions && !tx.archived && (
+                                        <button
+                                          style={{
+                                            padding: '0.25rem 0.75rem',
+                                            fontSize: '0.75rem',
+                                            borderRadius: '9999px',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            backgroundColor: '#f59e0b',
+                                            color: 'white'
                                           }}
                                           onClick={async (e) => {
                                             e.stopPropagation();
                                             const txRef = doc(db, 'transactions', tx.id);
-                                            await updateDoc(txRef, { archived: false });
+                                            await updateDoc(txRef, { archived: true });
                                           }}
                                         >
-                                          Unarchive
+                                          Archive
                                         </button>
                                       )}
-                                      {canDeleteTransactions && (
-                                        <button
-                                          style={{
-                                            padding: '0.25rem 0.75rem',
+                                      {tx.archived && (
+                                        <>
+                                          <span style={{
                                             fontSize: '0.75rem',
-                                            borderRadius: '9999px',
-                                            border: 'none',
-                                            cursor: 'pointer',
-                                            backgroundColor: '#ef4444',
-                                            color: 'white'
-                                          }}
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            setActionConfirm({ mode: 'delete', transaction: tx });
-                                          }}
-                                        >
-                                          Delete
-                                        </button>
+                                            color: '#9ca3af',
+                                            marginRight: canUnarchiveTransactions ? '0.5rem' : 0
+                                          }}>
+                                            Archived
+                                          </span>
+                                          {canUnarchiveTransactions && (
+                                            <button
+                                              style={{
+                                                padding: '0.25rem 0.75rem',
+                                                fontSize: '0.75rem',
+                                                borderRadius: '9999px',
+                                                border: 'none',
+                                                cursor: 'pointer',
+                                                backgroundColor: '#3b82f6',
+                                                color: 'white',
+                                                marginRight: canDeleteTransactions ? '0.5rem' : 0
+                                              }}
+                                              onClick={async (e) => {
+                                                e.stopPropagation();
+                                                const txRef = doc(db, 'transactions', tx.id);
+                                                await updateDoc(txRef, { archived: false });
+                                              }}
+                                            >
+                                              Unarchive
+                                            </button>
+                                          )}
+                                          {canDeleteTransactions && (
+                                            <button
+                                              style={{
+                                                padding: '0.25rem 0.75rem',
+                                                fontSize: '0.75rem',
+                                                borderRadius: '9999px',
+                                                border: 'none',
+                                                cursor: 'pointer',
+                                                backgroundColor: '#ef4444',
+                                                color: 'white'
+                                              }}
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setActionConfirm({ mode: 'delete', transaction: tx });
+                                              }}
+                                            >
+                                              Delete
+                                            </button>
+                                          )}
+                                        </>
                                       )}
-                                    </>
-                                  )}
-                                </td>
-                              </>
-                            )}
+                                    </td>
+                                  </>
+                                )}
+                              </tr>
+                            );
+                          })}
+                        {transactions.length === 0 && (
+                          <tr>
+                            <td
+                              colSpan={9}
+                              style={{
+                                padding: '2rem',
+                                textAlign: 'center',
+                                color: '#6b7280',
+                                fontStyle: 'italic'
+                              }}
+                            >
+                              No transactions found.
+                            </td>
                           </tr>
-                        );
-                      })}
-                    {transactions.length === 0 && (
-                      <tr>
-                        <td
-                          colSpan={9}
-                          style={{
-                            padding: '2rem',
-                            textAlign: 'center',
-                            color: '#6b7280',
-                            fontStyle: 'italic'
-                          }}
-                        >
-                          No transactions found.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
                 {isModalOpen && selectedTransaction && (
                   <div style={{
                     position: 'fixed',
@@ -2115,12 +2147,12 @@ export function Transactions() {
                       </div>
 
                       {/* Basic info */}
-                      <div style={{ 
-                        display: 'grid', 
-                        gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, minmax(0, 1fr))', 
-                        gap: isMobile ? '0.5rem' : '0.75rem', 
-                        marginBottom: '1rem', 
-                        color: 'var(--text-primary)' 
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, minmax(0, 1fr))',
+                        gap: isMobile ? '0.5rem' : '0.75rem',
+                        marginBottom: '1rem',
+                        color: 'var(--text-primary)'
                       }}>
                         <div>
                           <div style={{ fontSize: '0.75rem', color: 'var(--field-label-text)' }}>Date</div>
@@ -2209,9 +2241,9 @@ export function Transactions() {
 
                       {/* Action Buttons - Mobile Only */}
                       {isMobile && (
-                        <div style={{ 
-                          marginTop: '1.5rem', 
-                          paddingTop: '1rem', 
+                        <div style={{
+                          marginTop: '1.5rem',
+                          paddingTop: '1rem',
                           borderTop: '1px solid #e5e7eb',
                           display: 'flex',
                           flexDirection: 'column',

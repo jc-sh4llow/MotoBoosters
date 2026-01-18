@@ -2228,6 +2228,7 @@ export function Inventory() {
                         </label>
                         <input
                           type="number"
+                          inputMode="decimal"
                           placeholder="0.00"
                           step="0.01"
                           min="0"
@@ -2236,13 +2237,23 @@ export function Inventory() {
                             setFormItem(prev => ({ ...prev, purchasePrice: e.target.value }));
                             setHasUnsavedChanges(true);
                           }}
+                          onFocus={(e) => {
+                            e.currentTarget.style.border = '2px solid #3b82f6';
+                            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                          }}
+                          onBlur={(e) => {
+                            e.currentTarget.style.border = '1px solid #d1d5db';
+                            e.currentTarget.style.boxShadow = 'none';
+                          }}
                           style={{
                             width: '100%',
                             padding: '0.5rem 0.75rem',
                             borderRadius: '0.375rem',
                             border: '1px solid #d1d5db',
                             backgroundColor: '#f9fafb',
-                            color: '#111827'
+                            color: '#111827',
+                            fontSize: '16px',
+                            minHeight: '48px'
                           }}
                           disabled={!isEditMode || !canEditInventory}
                         />

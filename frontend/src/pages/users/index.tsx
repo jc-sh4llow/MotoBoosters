@@ -1161,7 +1161,9 @@ export function Users() {
                           borderRadius: '0.375rem',
                           border: '1px solid #d1d5db',
                           backgroundColor: '#fff',
-                          color: '#111827'
+                          color: '#111827',
+                          fontSize: '16px',
+                          minHeight: '48px'
                         }}
                       />
                     </div>

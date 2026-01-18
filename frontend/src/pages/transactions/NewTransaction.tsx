@@ -2370,6 +2370,7 @@ export function NewTransaction() {
                         <label className="block text-sm font-medium text-gray-700">Amount Paid</label>
                         <input
                           type="number"
+                          inputMode="decimal"
                           name="amountPaid"
                           value={payment.amountPaid || ''}
                           onChange={handlePaymentChange}
@@ -2381,8 +2382,18 @@ export function NewTransaction() {
                             border: '1px solid #d1d5db',
                             backgroundColor: '#f9fafb',
                             color: '#111827',
+                            fontSize: '16px',
+                            minHeight: '48px',
                           }}
                           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                          onFocus={(e) => {
+                            e.currentTarget.style.border = '2px solid #3b82f6';
+                            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                          }}
+                          onBlur={(e) => {
+                            e.currentTarget.style.border = '1px solid #d1d5db';
+                            e.currentTarget.style.boxShadow = 'none';
+                          }}
                         />
                       </div>
                       <div className="text-sm flex justify-between">
@@ -2425,6 +2436,7 @@ export function NewTransaction() {
                         <label className="block text-sm font-medium text-gray-700">GCash Reference Number</label>
                         <input
                           type="text"
+                          inputMode="numeric"
                           value={gcashReference}
                           onChange={(e) => setGcashReference(e.target.value)}
                           style={{
@@ -2437,6 +2449,14 @@ export function NewTransaction() {
                           }}
                           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                           placeholder="Enter GCash reference number"
+                          onFocus={(e) => {
+                            e.currentTarget.style.border = '2px solid #3b82f6';
+                            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                          }}
+                          onBlur={(e) => {
+                            e.currentTarget.style.border = '1px solid #d1d5db';
+                            e.currentTarget.style.boxShadow = 'none';
+                          }}
                         />
                       </div>
                     </div>

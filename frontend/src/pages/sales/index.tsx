@@ -71,6 +71,7 @@ export function Sales() {
   const [itemSearchTerm, setItemSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('date-desc');
   const [isActionBarExpanded, setIsActionBarExpanded] = useState(false);
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const filtersRef = useRef<HTMLDivElement>(null);
   const actionBarRef = useRef<HTMLDivElement>(null);
   const [firestoreSales, setFirestoreSales] = useState<SaleItem[]>([]);
@@ -437,6 +438,15 @@ export function Sales() {
       }
     };
 
+    // Debounce search term for performance
+    useEffect(() => {
+      const timer = setTimeout(() => {
+        setDebouncedSearchTerm(searchTerm);
+      }, 300);
+
+      return () => clearTimeout(timer);
+    }, [searchTerm]);
+
     checkScrollable();
     window.addEventListener('resize', checkScrollable);
     return () => window.removeEventListener('resize', checkScrollable);
@@ -506,6 +516,27 @@ export function Sales() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+  };
+
+  const highlightText = (text: string, highlight: string) => {
+    if (!highlight.trim()) {
+      return text;
+    }
+
+    const parts = text.toString().split(new RegExp(`(${highlight})`, 'gi'));
+    return parts.map((part, index) =>
+      part.toLowerCase() === highlight.toLowerCase() ? (
+        <span key={index} style={{
+          backgroundColor: '#fef3c7',
+          color: '#92400e',
+          fontWeight: '600',
+          padding: '0 2px',
+          borderRadius: '2px'
+        }}>
+          {part}
+        </span>
+      ) : part
+    );
   };
 
   return (
@@ -626,7 +657,7 @@ export function Sales() {
                     color: '#9ca3af'
                   }} />
                   <input
-                    type="text"
+                    type="search"
                     placeholder="Search sales..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -637,7 +668,17 @@ export function Sales() {
                       backgroundColor: 'rgba(255, 255, 255)',
                       color: '#1f2937',
                       width: '320px',
-                      outline: 'none'
+                      outline: 'none',
+                      fontSize: '16px',
+                      minHeight: '48px'
+                    }}
+                    onFocus={(e) => {
+                      e.currentTarget.style.border = '2px solid #3b82f6';
+                      e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.border = '1px solid #d1d5db';
+                      e.currentTarget.style.boxShadow = 'none';
                     }}
                   />
                   {searchTerm && (
@@ -982,6 +1023,7 @@ export function Sales() {
                       }}>
                         <input
                           type="number"
+                          inputMode="decimal"
                           value={minPrice}
                           onChange={(e) => setMinPrice(e.target.value)}
                           style={{
@@ -993,13 +1035,26 @@ export function Sales() {
                             color: '#111827',
                             textAlign: 'center',
                             height: '100%',
-                            boxSizing: 'border-box'
+                            boxSizing: 'border-box',
+                            fontSize: '16px',
+                            minHeight: '48px'
                           }}
                           placeholder="Min"
+                          min="0"
+                          step="0.01"
+                          onFocus={(e) => {
+                            e.currentTarget.style.border = '2px solid #3b82f6';
+                            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                          }}
+                          onBlur={(e) => {
+                            e.currentTarget.style.border = '1px solid #d1d5db';
+                            e.currentTarget.style.boxShadow = 'none';
+                          }}
                         />
                         <span style={{ color: 'rgb(75, 85, 99)' }}>-</span>
                         <input
                           type="number"
+                          inputMode="decimal"
                           value={maxPrice}
                           onChange={(e) => setMaxPrice(e.target.value)}
                           style={{
@@ -1011,9 +1066,21 @@ export function Sales() {
                             color: '#111827',
                             textAlign: 'center',
                             height: '100%',
-                            boxSizing: 'border-box'
+                            boxSizing: 'border-box',
+                            fontSize: '16px',
+                            minHeight: '48px'
                           }}
                           placeholder="Max"
+                          min="0"
+                          step="0.01"
+                          onFocus={(e) => {
+                            e.currentTarget.style.border = '2px solid #3b82f6';
+                            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                          }}
+                          onBlur={(e) => {
+                            e.currentTarget.style.border = '1px solid #d1d5db';
+                            e.currentTarget.style.boxShadow = 'none';
+                          }}
                         />
                       </div>
                     </div>
@@ -1118,18 +1185,18 @@ export function Sales() {
                     transition: 'transform 0.2s ease, box-shadow 0.2s ease',
                     cursor: 'default'
                   }}
-                  onMouseEnter={(e) => {
-                    if (!isMobile) {
-                      e.currentTarget.style.transform = 'translateY(-2px)';
-                      e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.15)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isMobile) {
-                      e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)';
-                    }
-                  }}
+                    onMouseEnter={(e) => {
+                      if (!isMobile) {
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.15)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isMobile) {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)';
+                      }
+                    }}
                   >
                     <p style={{
                       fontSize: isMobile ? '0.9rem' : '0.875rem',
@@ -1395,7 +1462,7 @@ export function Sales() {
                                 whiteSpace: 'nowrap',
                               }}
                             >
-                              {sale.transactionCode || sale.id}
+                              {highlightText(sale.transactionCode || sale.id, debouncedSearchTerm)}
                             </td>
                           )}
                           {showDate && (
@@ -1419,7 +1486,7 @@ export function Sales() {
                                 whiteSpace: 'nowrap',
                               }}
                             >
-                              {sale.itemId}
+                              {highlightText(sale.itemId || '', debouncedSearchTerm)}
                             </td>
                           )}
                           <td
@@ -1432,16 +1499,16 @@ export function Sales() {
                             }}
                           >
                             {showItemCode ? (
-                              sale.itemName
+                              highlightText(sale.itemName || '', debouncedSearchTerm)
                             ) : (
                               <div>
-                                <div>{sale.itemId || sale.itemCode}</div>
+                                <div>{highlightText(sale.itemId || sale.itemCode || '', debouncedSearchTerm)}</div>
                                 <div style={{
                                   fontSize: '0.75rem',
                                   color: 'var(--field-label-text)',
                                   marginTop: '0.25rem'
                                 }}>
-                                  {sale.itemName}
+                                  {highlightText(sale.itemName || '', debouncedSearchTerm)}
                                 </div>
                               </div>
                             )}
@@ -1473,7 +1540,7 @@ export function Sales() {
                                 const hasItemDiscount = sale.discount && sale.discount > 0;
                                 const hasItemMarkup = sale.markup && sale.markup > 0;
                                 const currentPrice = sale.unitPrice ?? 0;
-                                
+
                                 if (hasItemDiscount) {
                                   const originalPrice = currentPrice / (1 - sale.discount / 100);
                                   return (
@@ -1519,7 +1586,7 @@ export function Sales() {
                                 const hasOverallDiscount = sale.overallDiscount && sale.overallDiscount > 0;
                                 const hasOverallMarkup = sale.overallMarkup && sale.overallMarkup > 0;
                                 const currentTotal = sale.totalAmount ?? 0;
-                                
+
                                 if (showQuantity && showUnitPrice) {
                                   // Desktop view with all columns
                                   if (hasOverallDiscount) {
@@ -1552,7 +1619,7 @@ export function Sales() {
                                   // Mobile/tablet view
                                   const displayPrice = priceType === 'unit' ? (sale.unitPrice ?? 0) : currentTotal;
                                   let priceDisplay;
-                                  
+
                                   if (hasOverallDiscount) {
                                     const originalPrice = displayPrice / (1 - sale.overallDiscount / 100);
                                     priceDisplay = (
@@ -1587,7 +1654,7 @@ export function Sales() {
                                       </span>
                                     );
                                   }
-                                  
+
                                   return (
                                     <div>
                                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.25rem' }}>
@@ -1621,7 +1688,7 @@ export function Sales() {
                                 whiteSpace: 'nowrap',
                               }}
                             >
-                              {sale.customer}
+                              {highlightText(sale.customer || '', debouncedSearchTerm)}
                             </td>
                           )}
                         </tr>
@@ -1802,7 +1869,7 @@ export function Sales() {
                 borderRadius: '0.375rem'
               }}>
                 {itemOptions
-                  .filter(item => 
+                  .filter(item =>
                     item.id.toLowerCase().includes(itemSearchTerm.toLowerCase()) ||
                     item.name.toLowerCase().includes(itemSearchTerm.toLowerCase())
                   )
@@ -1835,14 +1902,14 @@ export function Sales() {
                       </div>
                     </div>
                   ))}
-                {itemOptions.filter(item => 
+                {itemOptions.filter(item =>
                   item.id.toLowerCase().includes(itemSearchTerm.toLowerCase()) ||
                   item.name.toLowerCase().includes(itemSearchTerm.toLowerCase())
                 ).length === 0 && (
-                  <div style={{ padding: '1rem', textAlign: 'center', color: '#6b7280', fontStyle: 'italic' }}>
-                    No items found
-                  </div>
-                )}
+                    <div style={{ padding: '1rem', textAlign: 'center', color: '#6b7280', fontStyle: 'italic' }}>
+                      No items found
+                    </div>
+                  )}
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '1rem' }}>
                 <button

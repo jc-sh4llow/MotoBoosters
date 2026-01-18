@@ -13,6 +13,17 @@ import { HeaderDropdown } from '../../components/HeaderDropdown';
 import Switch from '../../components/ui/Switch';
 
 export function Inventory() {
+  // Highlight text utility function for search results
+  const highlightText = (text: string, search: string) => {
+    if (!search || !text) return text;
+    const parts = text.split(new RegExp(`(${search})`, 'gi'));
+    return parts.map((part, i) => 
+      part.toLowerCase() === search.toLowerCase() 
+        ? <span key={i} style={{ backgroundColor: '#fef08a', color: '#854d0e', fontWeight: '600' }}>{part}</span>
+        : part
+    );
+  };
+
   // Sample data - replace with actual data from your backend
   const inventoryItems: any[] = [];
 
@@ -4052,7 +4063,7 @@ export function Inventory() {
                                 <>
                                   {/* Brand column - desktop only */}
                                   {showBrandColumn && (
-                                    <td style={{ padding: '1rem 1.5rem' }}>{item.brand}</td>
+                                    <td style={{ padding: '1rem 1.5rem' }}>{highlightText(item.brand, searchTerm)}</td>
                                   )}
                                   {/* Item Name column - with brand subscript on mobile */}
                                   {showItemNameColumn && (

@@ -102,6 +102,9 @@ export const Returns: React.FC = () => {
   const actionBarRef = useRef<HTMLDivElement | null>(null);
   const [showReturnDetailsModal, setShowReturnDetailsModal] = useState(false);
   const [selectedReturnForModal, setSelectedReturnForModal] = useState<any>(null);
+  const [modalReturnItems, setModalReturnItems] = useState<any[]>([]);
+  const [modalReturnItemsLoading, setModalReturnItemsLoading] = useState(false);
+  const [returnItemsCache, setReturnItemsCache] = useState<Record<string, any[]>>({});
   const [sortBy, setSortBy] = useState('date-desc');
   const [toast, setToast] = useState({ message: '', type: '', visible: false });
 
@@ -577,6 +580,47 @@ export const Returns: React.FC = () => {
     if (isSearchExpanded) document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isSearchExpanded]);
+
+  // Fetch return items when modal opens
+  useEffect(() => {
+    const fetchReturnItems = async () => {
+      if (!showReturnDetailsModal || !selectedReturnForModal) {
+        setModalReturnItems([]);
+        return;
+      }
+
+      const returnId = selectedReturnForModal.returnDocId;
+
+      // Check cache first
+      if (returnItemsCache[returnId]) {
+        setModalReturnItems(returnItemsCache[returnId]);
+        return;
+      }
+
+      // Fetch from Firestore
+      setModalReturnItemsLoading(true);
+      try {
+        const itemsSnap = await getDocs(
+          query(collection(db, 'returnItems'), where('returnId', '==', returnId))
+        );
+        const items: any[] = [];
+        itemsSnap.forEach((docSnap) => {
+          items.push({ id: docSnap.id, ...docSnap.data() });
+        });
+
+        // Cache the results
+        setReturnItemsCache((prev) => ({ ...prev, [returnId]: items }));
+        setModalReturnItems(items);
+      } catch (err) {
+        console.error('Error fetching return items:', err);
+        setModalReturnItems([]);
+      } finally {
+        setModalReturnItemsLoading(false);
+      }
+    };
+
+    fetchReturnItems();
+  }, [showReturnDetailsModal, selectedReturnForModal, returnItemsCache]);
 
   // Load global previous returns history (all returns across transactions)
   useEffect(() => {
@@ -3192,13 +3236,54 @@ export const Returns: React.FC = () => {
                 <span style={{ color: '#111827' }}>{selectedReturnForModal.handledBy || 'Unknown Employee'}</span>
               </div>
               <div style={{ marginBottom: '0.75rem', display: 'flex', gap: '0.5rem' }}>
-                <strong style={{ color: '#374151', minWidth: '140px' }}>Items Returned:</strong>
-                <span style={{ color: '#111827' }}>{selectedReturnForModal.itemsReturned} item{selectedReturnForModal.itemsReturned === 1 ? '' : 's'}</span>
-              </div>
-              <div style={{ marginBottom: '0.75rem', display: 'flex', gap: '0.5rem' }}>
                 <strong style={{ color: '#374151', minWidth: '140px' }}>Returned Total:</strong>
                 <span style={{ color: '#111827', fontWeight: '600' }}>₱{selectedReturnForModal.returnedTotal.toFixed(2)}</span>
               </div>
+            </div>
+
+            {/* Items Returned Cards */}
+            <div style={{ marginBottom: '1rem' }}>
+              <div style={{ fontSize: '0.875rem', fontWeight: '600', color: '#374151', marginBottom: '0.75rem' }}>
+                Items Returned ({selectedReturnForModal.itemsReturned} item{selectedReturnForModal.itemsReturned === 1 ? '' : 's'})
+              </div>
+              {modalReturnItemsLoading ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} style={{ backgroundColor: '#f9fafb', borderRadius: '0.5rem', padding: '0.75rem', border: '1px solid #e5e7eb', height: '80px' }}>
+                      <div style={{ backgroundColor: '#e5e7eb', height: '16px', width: '60%', borderRadius: '0.25rem', marginBottom: '0.5rem' }}></div>
+                      <div style={{ backgroundColor: '#e5e7eb', height: '14px', width: '40%', borderRadius: '0.25rem' }}></div>
+                    </div>
+                  ))}
+                </div>
+              ) : modalReturnItems.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  {modalReturnItems.map((item) => (
+                    <div key={item.id} style={{ backgroundColor: 'white', borderRadius: '0.5rem', padding: '0.75rem', border: '1px solid #e5e7eb' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                        <div style={{ fontWeight: '500', fontSize: '0.875rem', color: '#111827' }}>{item.itemName}</div>
+                        <div style={{ fontSize: '0.875rem', fontWeight: '600', color: '#111827' }}>₱{(item.lineRefund || 0).toFixed(2)}</div>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+                          Qty Returned: {item.qtyReturned || 0}
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+                          Unit Price: ₱{(item.unitPrice || 0).toFixed(2)}
+                        </div>
+                      </div>
+                      {item.reason && (
+                        <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: '#6b7280', fontStyle: 'italic' }}>
+                          Reason: {item.reason}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ padding: '1rem', textAlign: 'center', color: '#6b7280', fontSize: '0.875rem', backgroundColor: '#f9fafb', borderRadius: '0.5rem', border: '1px solid #e5e7eb' }}>
+                  No items found
+                </div>
+              )}
             </div>
             
             {/* Individual Actions */}

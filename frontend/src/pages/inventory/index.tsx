@@ -2337,6 +2337,7 @@ export function Inventory() {
                         </label>
                         <input
                           type="number"
+                          inputMode="numeric"
                           placeholder="0"
                           min="0"
                           value={isEditMode
@@ -2345,6 +2346,14 @@ export function Inventory() {
                           onChange={(e) => {
                             setFormItem(prev => ({ ...prev, stockQuantity: e.target.value }));
                             setHasUnsavedChanges(true);
+                          }}
+                          onFocus={(e) => {
+                            e.currentTarget.style.border = '2px solid #3b82f6';
+                            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                          }}
+                          onBlur={(e) => {
+                            e.currentTarget.style.border = '1px solid #d1d5db';
+                            e.currentTarget.style.boxShadow = 'none';
                           }}
                           style={{
                             width: '100%',

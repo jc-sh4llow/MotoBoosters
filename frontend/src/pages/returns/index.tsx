@@ -41,6 +41,8 @@ export const Returns: React.FC = () => {
   }, []);
 
   const [searchTerm, setSearchTerm] = useState('');
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const searchRef = useRef<HTMLDivElement | null>(null);
   const [isReturnDetailsExpanded, setIsReturnDetailsExpanded] = useState(false);
   const returnDetailsRef = useRef<HTMLDivElement | null>(null);
   const returnDetailsToggleRef = useRef<HTMLButtonElement | null>(null);
@@ -558,6 +560,17 @@ export const Returns: React.FC = () => {
     if (showFilters) document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showFilters]);
+
+  // Click-outside listener for search expansion
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node) && isSearchExpanded) {
+        setIsSearchExpanded(false);
+      }
+    };
+    if (isSearchExpanded) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isSearchExpanded]);
 
   // Load global previous returns history (all returns across transactions)
   useEffect(() => {
@@ -1521,37 +1534,86 @@ export const Returns: React.FC = () => {
                       </button>
 
                       <div
+                        ref={searchRef}
                         style={{
                           position: 'relative',
                           flex: 1,
                         }}
                       >
-                        <FaSearch
-                          style={{
-                            position: 'absolute',
-                            left: '8px',
-                            top: '50%',
-                            transform: 'translateY(-50%)',
-                            color: '#9ca3af',
-                            fontSize: '0.75rem',
-                          }}
-                        />
-                        <input
-                          type="text"
-                          placeholder="Search transactions..."
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          style={{
-                            width: '100%',
-                            padding: '0.35rem 0.6rem 0.35rem 1.6rem',
-                            borderRadius: '9999px',
-                            border: '1px solid #d1d5db',
-                            fontSize: '0.8rem',
-                            outline: 'none',
-                            backgroundColor: 'white',
-                            color: '#111827',
-                          }}
-                        />
+                        {/* Search icon button */}
+                        {!isSearchExpanded && (
+                          <button
+                            type="button"
+                            onClick={() => setIsSearchExpanded(true)}
+                            style={{
+                              width: '30px',
+                              height: '30px',
+                              borderRadius: '9999px',
+                              border: 'none',
+                              backgroundColor: '#1d4ed8',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: 'white',
+                              cursor: 'pointer',
+                              marginLeft: 'auto',
+                            }}
+                          >
+                            <FaSearch size={12} />
+                          </button>
+                        )}
+
+                        {/* Expanded search with X button */}
+                        {isSearchExpanded && (
+                          <div
+                            style={{
+                              position: 'relative',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.4rem',
+                            }}
+                          >
+                            <input
+                              type="text"
+                              placeholder="Search transactions..."
+                              value={searchTerm}
+                              onChange={(e) => setSearchTerm(e.target.value)}
+                              autoFocus
+                              style={{
+                                flex: 1,
+                                padding: '0.35rem 0.6rem',
+                                borderRadius: '9999px',
+                                border: '1px solid #d1d5db',
+                                fontSize: '0.8rem',
+                                outline: 'none',
+                                backgroundColor: 'white',
+                                color: '#111827',
+                              }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsSearchExpanded(false);
+                                setSearchTerm('');
+                              }}
+                              style={{
+                                width: '30px',
+                                height: '30px',
+                                borderRadius: '9999px',
+                                border: 'none',
+                                backgroundColor: '#ef4444',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: 'white',
+                                cursor: 'pointer',
+                                flexShrink: 0,
+                              }}
+                            >
+                              <FaTimes size={12} />
+                            </button>
+                          </div>
+                        )}
 
                         <div
                           style={{

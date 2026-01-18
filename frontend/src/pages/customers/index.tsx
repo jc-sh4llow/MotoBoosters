@@ -22,6 +22,17 @@ export type CustomerRow = {
 };
 
 export function Customers() {
+  // Highlight text utility function for search results
+  const highlightText = (text: string, search: string) => {
+    if (!search || !text) return text;
+    const parts = text.split(new RegExp(`(${search})`, 'gi'));
+    return parts.map((part, i) => 
+      part.toLowerCase() === search.toLowerCase() 
+        ? <span key={i} style={{ backgroundColor: '#fef08a', color: '#854d0e', fontWeight: '600' }}>{part}</span>
+        : part
+    );
+  };
+
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { effectiveRoleIds } = useEffectiveRoleIds();
@@ -2674,9 +2685,9 @@ export function Customers() {
                                         borderBottom: '1px solid #e5e7eb',
                                       }}
                                     >
-                                      <div style={{ fontWeight: '500' }}>{customer.name || '-'}</div>
+                                      <div style={{ fontWeight: '500' }}>{highlightText(customer.name || '-', searchTerm)}</div>
                                       <div style={{ fontSize: '0.75rem', marginTop: '0.25rem', display: 'flex', gap: '0.25rem' }}>
-                                        <span style={{ color: '#6b7280' }}>{customer.customerId || '-'}</span>
+                                        <span style={{ color: '#6b7280' }}>{highlightText(customer.customerId || '-', searchTerm)}</span>
                                         {canViewArchived && (
                                           <>
                                             <span style={{ color: '#6b7280' }}>-</span>

@@ -150,16 +150,22 @@ export const Settings: React.FC = () => {
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
   const sectionsContainerRef = useRef<HTMLDivElement>(null);
 
-  // Click outside to close accordions
+  // Click outside to close accordions - only from settings container, not when modals are open
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      // Don't close accordions if modals are open
+      if (isCreatingRole || editingRole) {
+        return;
+      }
+      
+      // Only close if clicking outside the settings container
       if (sectionsContainerRef.current && !sectionsContainerRef.current.contains(event.target as Node)) {
         setExpandedSections([]);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [isCreatingRole, editingRole]);
 
   // Required fields state for each page (loaded from Firestore)
   const [inventoryRequiredFields, setInventoryRequiredFields] = useState<Record<string, boolean>>({

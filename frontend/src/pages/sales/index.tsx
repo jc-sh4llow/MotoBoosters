@@ -76,6 +76,8 @@ export function Sales() {
   const [firestoreSales, setFirestoreSales] = useState<SaleItem[]>([]);
   const [selectedSale, setSelectedSale] = useState<SaleItem | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [isTableScrollable, setIsTableScrollable] = useState(false);
+  const tableContainerRef = useRef<HTMLDivElement>(null);
 
   // Permission checks
   const { effectiveRoleIds } = useEffectiveRoleIds();
@@ -423,6 +425,22 @@ export function Sales() {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showFilters, isActionBarExpanded, isMobile]);
+
+  // Scroll detection for table indicators
+  useEffect(() => {
+    const checkScrollable = () => {
+      if (tableContainerRef.current && isMobile) {
+        const { scrollWidth, clientWidth } = tableContainerRef.current;
+        setIsTableScrollable(scrollWidth > clientWidth);
+      } else {
+        setIsTableScrollable(false);
+      }
+    };
+
+    checkScrollable();
+    window.addEventListener('resize', checkScrollable);
+    return () => window.removeEventListener('resize', checkScrollable);
+  }, [isMobile, filteredSales.length]);
 
   const handleApplyFilter = () => {
     // Handle filter logic here
@@ -1145,7 +1163,7 @@ export function Sales() {
                 Sales Detail Records
               </h2>
 
-              <div style={{
+              <div ref={tableContainerRef} style={{
                 overflowX: 'auto',
                 backgroundColor: 'var(--surface-elevated)',
                 borderRadius: '0.5rem',
@@ -1153,6 +1171,33 @@ export function Sales() {
                 WebkitOverflowScrolling: 'touch',
                 position: 'relative'
               }}>
+                {/* Scroll indicators for mobile */}
+                {isMobile && isTableScrollable && (
+                  <>
+                    <div style={{
+                      position: 'absolute',
+                      left: 0,
+                      top: 0,
+                      bottom: 0,
+                      width: '20px',
+                      background: 'linear-gradient(to right, rgba(255,255,255,0.3), transparent)',
+                      pointerEvents: 'none',
+                      zIndex: 1
+                      // TODO: Consider more prominent gradient: rgba(255,255,255,0.8) if needed
+                    }} />
+                    <div style={{
+                      position: 'absolute',
+                      right: 0,
+                      top: 0,
+                      bottom: 0,
+                      width: '20px',
+                      background: 'linear-gradient(to left, rgba(255,255,255,0.3), transparent)',
+                      pointerEvents: 'none',
+                      zIndex: 1
+                      // TODO: Consider more prominent gradient: rgba(255,255,255,0.8) if needed
+                    }} />
+                  </>
+                )}
                 <table style={{
                   width: '100%',
                   borderCollapse: 'collapse',

@@ -40,6 +40,9 @@ export function Customers() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [viewportWidth, setViewportWidth] = useState(window.innerWidth);
   let closeMenuTimeout: number | undefined;
+  const tableScrollRef = useRef<HTMLDivElement | null>(null);
+  const [showLeftScrollIndicator, setShowLeftScrollIndicator] = useState(false);
+  const [showRightScrollIndicator, setShowRightScrollIndicator] = useState(false);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [customers, setCustomers] = useState<CustomerRow[]>([]);
@@ -265,6 +268,26 @@ export function Customers() {
   useEffect(() => {
     loadCustomers();
   }, []);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const el = tableScrollRef.current;
+      if (!el || !isMobile) {
+        setShowLeftScrollIndicator(false);
+        setShowRightScrollIndicator(false);
+        return;
+      }
+      const { scrollLeft, scrollWidth, clientWidth } = el;
+      setShowLeftScrollIndicator(scrollLeft > 10);
+      setShowRightScrollIndicator(scrollLeft < scrollWidth - clientWidth - 10);
+    };
+    const el = tableScrollRef.current;
+    if (el && isMobile) {
+      handleScroll();
+      el.addEventListener('scroll', handleScroll);
+      return () => el.removeEventListener('scroll', handleScroll);
+    }
+  }, [isMobile, customers]);
 
   // Load required fields settings from Firestore
   useEffect(() => {
@@ -2311,19 +2334,50 @@ export function Customers() {
                   )}
                 </div>
 
-                <div
-                  style={{
-                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                    borderRadius: '0.5rem',
-                    overflow: 'hidden',
-                  }}
-                >
+                <div style={{ position: 'relative' }}>
+                  {isMobile && showLeftScrollIndicator && (
+                    <div style={{
+                      position: 'absolute',
+                      left: 0,
+                      top: 0,
+                      bottom: 0,
+                      width: '20px',
+                      background: 'linear-gradient(to right, rgba(0,0,0,0.1), transparent)',
+                      pointerEvents: 'none',
+                      zIndex: 10,
+                      borderTopLeftRadius: '0.5rem',
+                      borderBottomLeftRadius: '0.5rem',
+                    }} />
+                  )}
+                  {isMobile && showRightScrollIndicator && (
+                    <div style={{
+                      position: 'absolute',
+                      right: 0,
+                      top: 0,
+                      bottom: 0,
+                      width: '20px',
+                      background: 'linear-gradient(to left, rgba(0,0,0,0.1), transparent)',
+                      pointerEvents: 'none',
+                      zIndex: 10,
+                      borderTopRightRadius: '0.5rem',
+                      borderBottomRightRadius: '0.5rem',
+                    }} />
+                  )}
                   <div
                     style={{
-                      maxHeight: '520px',
-                      overflow: 'auto',
+                      backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                      borderRadius: '0.5rem',
+                      overflow: 'hidden',
                     }}
                   >
+                    <div
+                      ref={tableScrollRef}
+                      style={{
+                        maxHeight: '520px',
+                        overflow: 'auto',
+                        WebkitOverflowScrolling: 'touch',
+                      }}
+                    >
                     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                       <thead>
                         <tr
@@ -2721,6 +2775,7 @@ export function Customers() {
                         )}
                       </tbody>
                     </table>
+                    </div>
                   </div>
                 </div>
               </div>

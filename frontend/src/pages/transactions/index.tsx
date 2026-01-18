@@ -832,7 +832,11 @@ export function Transactions() {
                 )}
 
                 {/* Desktop: Horizontal Layout | Mobile: Collapsible Content */}
-                {(!isMobile || isActionBarExpanded) && (
+                <div style={{
+                  maxHeight: (!isMobile || isActionBarExpanded) ? '2000px' : '0',
+                  overflow: 'hidden',
+                  transition: 'max-height 0.3s ease-out'
+                }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                     {/* Row 1: Type pills (All/Parts/Service/Parts&Service) */}
                     <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
@@ -1223,287 +1227,287 @@ export function Transactions() {
                       )}
                     </div>
                   </div>
-                )}
+                </div>
 
-                {showFilters && (
-                  <div ref={filtersRef} style={{
-                    display: 'flex',
-                    flexDirection: isMobile ? 'column' : 'row',
-                    flexWrap: isMobile ? 'nowrap' : 'wrap',
-                    gap: '1rem',
-                    paddingTop: '1rem',
-                    borderTop: '1px solid #e5e7eb',
-                    justifyContent: 'center',
-                    textAlign: 'center'
-                  }}>
-                    {/* Timeframe with Calendar Picker */}
-                    <div style={{ position: 'relative', width: isMobile ? '100%' : 'calc(50% - 0.5rem)' }}>
-                      <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'rgb(75, 85, 99)', textAlign: 'left' }}>
-                        Timeframe
-                      </label>
-                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexDirection: isMobile ? 'column' : 'row' }}>
-                        <button
-                          type="button"
-                          onClick={() => { setSelectingDate('start'); setShowCalendarPicker(!showCalendarPicker); setShowMonthPicker(false); setShowYearPicker(false); }}
-                          style={{
-                            width: isMobile ? '100%' : 'auto',
-                            flex: isMobile ? 'none' : 1,
-                            padding: '0.5rem',
-                            borderRadius: '0.375rem',
-                            border: '1px solid #d1d5db',
-                            backgroundColor: selectingDate === 'start' && showCalendarPicker ? '#dbeafe' : 'white',
-                            color: '#111827',
-                            cursor: 'pointer',
-                            textAlign: 'left',
-                            fontSize: '0.875rem'
-                          }}
-                        >
-                          {startDate ? new Date(startDate).toLocaleDateString() : 'Start Date'}
-                        </button>
-                        <span style={{ color: '#6b7280' }}>to</span>
-                        <button
-                          type="button"
-                          onClick={() => { setSelectingDate('end'); setShowCalendarPicker(!showCalendarPicker); setShowMonthPicker(false); setShowYearPicker(false); }}
-                          style={{
-                            width: isMobile ? '100%' : 'auto',
-                            flex: isMobile ? 'none' : 1,
-                            padding: '0.5rem',
-                            borderRadius: '0.375rem',
-                            border: '1px solid #d1d5db',
-                            backgroundColor: selectingDate === 'end' && showCalendarPicker ? '#dbeafe' : 'white',
-                            color: '#111827',
-                            cursor: 'pointer',
-                            textAlign: 'left',
-                            fontSize: '0.875rem'
-                          }}
-                        >
-                          {endDate ? new Date(endDate).toLocaleDateString() : 'End Date'}
-                        </button>
-                      </div>
+                  {showFilters && (
+                    <div ref={filtersRef} style={{
+                      display: 'flex',
+                      flexDirection: isMobile ? 'column' : 'row',
+                      flexWrap: isMobile ? 'nowrap' : 'wrap',
+                      gap: '1rem',
+                      paddingTop: '1rem',
+                      borderTop: '1px solid #e5e7eb',
+                      justifyContent: 'center',
+                      textAlign: 'center'
+                    }}>
+                      {/* Timeframe with Calendar Picker */}
+                      <div style={{ position: 'relative', width: isMobile ? '100%' : 'calc(50% - 0.5rem)' }}>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'rgb(75, 85, 99)', textAlign: 'left' }}>
+                          Timeframe
+                        </label>
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexDirection: isMobile ? 'column' : 'row' }}>
+                          <button
+                            type="button"
+                            onClick={() => { setSelectingDate('start'); setShowCalendarPicker(!showCalendarPicker); setShowMonthPicker(false); setShowYearPicker(false); }}
+                            style={{
+                              width: isMobile ? '100%' : 'auto',
+                              flex: isMobile ? 'none' : 1,
+                              padding: '0.5rem',
+                              borderRadius: '0.375rem',
+                              border: '1px solid #d1d5db',
+                              backgroundColor: selectingDate === 'start' && showCalendarPicker ? '#dbeafe' : 'white',
+                              color: '#111827',
+                              cursor: 'pointer',
+                              textAlign: 'left',
+                              fontSize: '0.875rem'
+                            }}
+                          >
+                            {startDate ? new Date(startDate).toLocaleDateString() : 'Start Date'}
+                          </button>
+                          <span style={{ color: '#6b7280' }}>to</span>
+                          <button
+                            type="button"
+                            onClick={() => { setSelectingDate('end'); setShowCalendarPicker(!showCalendarPicker); setShowMonthPicker(false); setShowYearPicker(false); }}
+                            style={{
+                              width: isMobile ? '100%' : 'auto',
+                              flex: isMobile ? 'none' : 1,
+                              padding: '0.5rem',
+                              borderRadius: '0.375rem',
+                              border: '1px solid #d1d5db',
+                              backgroundColor: selectingDate === 'end' && showCalendarPicker ? '#dbeafe' : 'white',
+                              color: '#111827',
+                              cursor: 'pointer',
+                              textAlign: 'left',
+                              fontSize: '0.875rem'
+                            }}
+                          >
+                            {endDate ? new Date(endDate).toLocaleDateString() : 'End Date'}
+                          </button>
+                        </div>
 
-                      {/* Calendar Picker Dropdown */}
-                      {showCalendarPicker && (() => {
-                        const minDate = new Date('2020-01-01');
-                        const maxDate = new Date();
-                        const year = calendarViewDate.getFullYear();
-                        const month = calendarViewDate.getMonth();
-                        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                        {/* Calendar Picker Dropdown */}
+                        {showCalendarPicker && (() => {
+                          const minDate = new Date('2020-01-01');
+                          const maxDate = new Date();
+                          const year = calendarViewDate.getFullYear();
+                          const month = calendarViewDate.getMonth();
+                          const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                          const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-                        const firstDay = new Date(year, month, 1).getDay();
-                        const daysInMonth = new Date(year, month + 1, 0).getDate();
-                        const days: (number | null)[] = [];
-                        for (let i = 0; i < firstDay; i++) days.push(null);
-                        for (let d = 1; d <= daysInMonth; d++) days.push(d);
+                          const firstDay = new Date(year, month, 1).getDay();
+                          const daysInMonth = new Date(year, month + 1, 0).getDate();
+                          const days: (number | null)[] = [];
+                          for (let i = 0; i < firstDay; i++) days.push(null);
+                          for (let d = 1; d <= daysInMonth; d++) days.push(d);
 
-                        const canGoPrev = new Date(year, month - 1, 1) >= new Date(minDate.getFullYear(), minDate.getMonth(), 1);
-                        const canGoNext = new Date(year, month + 1, 1) <= new Date(maxDate.getFullYear(), maxDate.getMonth(), 1);
+                          const canGoPrev = new Date(year, month - 1, 1) >= new Date(minDate.getFullYear(), minDate.getMonth(), 1);
+                          const canGoNext = new Date(year, month + 1, 1) <= new Date(maxDate.getFullYear(), maxDate.getMonth(), 1);
 
-                        return (
-                          <div style={{
-                            position: 'absolute',
-                            top: '100%',
-                            left: 0,
-                            zIndex: 1000,
-                            backgroundColor: 'var(--surface-elevated)',
-                            borderRadius: '0.5rem',
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                            border: '1px solid #e5e7eb',
-                            padding: '1rem',
-                            marginTop: '0.25rem',
-                            minWidth: '280px'
-                          }}>
-                            {/* Calendar Header */}
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', position: 'relative' }}>
-                              <button type="button" onClick={() => canGoPrev && setCalendarViewDate(new Date(year, month - 1, 1))} disabled={!canGoPrev}
-                                style={{ background: 'none', border: 'none', cursor: canGoPrev ? 'pointer' : 'not-allowed', color: canGoPrev ? '#374151' : '#d1d5db', fontSize: '1rem', padding: '0.25rem 0.5rem' }}>{'<'}</button>
-                              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                                <span onClick={() => { setShowMonthPicker(!showMonthPicker); setShowYearPicker(false); }}
-                                  style={{ fontWeight: 600, color: '#1e40af', fontSize: '0.9rem', cursor: 'pointer', padding: '0.25rem 0.5rem', borderRadius: '0.25rem' }}>{monthNames[month]}</span>
-                                <span onClick={() => { setShowYearPicker(!showYearPicker); setShowMonthPicker(false); }}
-                                  style={{ fontWeight: 600, color: '#1e40af', fontSize: '0.9rem', cursor: 'pointer', padding: '0.25rem 0.5rem', borderRadius: '0.25rem' }}>{year}</span>
-                              </div>
-                              <button type="button" onClick={() => canGoNext && setCalendarViewDate(new Date(year, month + 1, 1))} disabled={!canGoNext}
-                                style={{ background: 'none', border: 'none', cursor: canGoNext ? 'pointer' : 'not-allowed', color: canGoNext ? '#374151' : '#d1d5db', fontSize: '1rem', padding: '0.25rem 0.5rem' }}>{'>'}</button>
-
-                              {/* Month Picker */}
-                              {showMonthPicker && (
-                                <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', zIndex: 1001, backgroundColor: 'white', borderRadius: '0.5rem', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', border: '1px solid #e5e7eb', padding: '0.5rem', marginTop: '0.25rem', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.25rem', minWidth: '180px' }}>
-                                  {monthNames.map((m, idx) => {
-                                    const isDisabled = (year === minDate.getFullYear() && idx < minDate.getMonth()) || (year === maxDate.getFullYear() && idx > maxDate.getMonth());
-                                    return (
-                                      <div key={m} onClick={() => { if (!isDisabled) { setCalendarViewDate(new Date(year, idx, 1)); setShowMonthPicker(false); } }}
-                                        style={{ padding: '0.5rem', textAlign: 'center', fontSize: '0.8rem', borderRadius: '0.25rem', cursor: isDisabled ? 'not-allowed' : 'pointer', backgroundColor: idx === month ? '#1e40af' : 'transparent', color: isDisabled ? '#d1d5db' : idx === month ? 'white' : '#111827', fontWeight: idx === month ? 600 : 400 }}>{m}</div>
-                                    );
-                                  })}
+                          return (
+                            <div style={{
+                              position: 'absolute',
+                              top: '100%',
+                              left: 0,
+                              zIndex: 1000,
+                              backgroundColor: 'var(--surface-elevated)',
+                              borderRadius: '0.5rem',
+                              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                              border: '1px solid #e5e7eb',
+                              padding: '1rem',
+                              marginTop: '0.25rem',
+                              minWidth: '280px'
+                            }}>
+                              {/* Calendar Header */}
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', position: 'relative' }}>
+                                <button type="button" onClick={() => canGoPrev && setCalendarViewDate(new Date(year, month - 1, 1))} disabled={!canGoPrev}
+                                  style={{ background: 'none', border: 'none', cursor: canGoPrev ? 'pointer' : 'not-allowed', color: canGoPrev ? '#374151' : '#d1d5db', fontSize: '1rem', padding: '0.25rem 0.5rem' }}>{'<'}</button>
+                                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                  <span onClick={() => { setShowMonthPicker(!showMonthPicker); setShowYearPicker(false); }}
+                                    style={{ fontWeight: 600, color: '#1e40af', fontSize: '0.9rem', cursor: 'pointer', padding: '0.25rem 0.5rem', borderRadius: '0.25rem' }}>{monthNames[month]}</span>
+                                  <span onClick={() => { setShowYearPicker(!showYearPicker); setShowMonthPicker(false); }}
+                                    style={{ fontWeight: 600, color: '#1e40af', fontSize: '0.9rem', cursor: 'pointer', padding: '0.25rem 0.5rem', borderRadius: '0.25rem' }}>{year}</span>
                                 </div>
-                              )}
+                                <button type="button" onClick={() => canGoNext && setCalendarViewDate(new Date(year, month + 1, 1))} disabled={!canGoNext}
+                                  style={{ background: 'none', border: 'none', cursor: canGoNext ? 'pointer' : 'not-allowed', color: canGoNext ? '#374151' : '#d1d5db', fontSize: '1rem', padding: '0.25rem 0.5rem' }}>{'>'}</button>
 
-                              {/* Year Picker */}
-                              {showYearPicker && (() => {
-                                const years: number[] = [];
-                                for (let y = minDate.getFullYear(); y <= maxDate.getFullYear(); y++) years.push(y);
-                                return (
-                                  <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', zIndex: 1001, backgroundColor: 'white', borderRadius: '0.5rem', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', border: '1px solid #e5e7eb', padding: '0.5rem', marginTop: '0.25rem', maxHeight: '200px', overflowY: 'auto', minWidth: '100px' }}>
-                                    {years.map(y => (
-                                      <div key={y} onClick={() => { setCalendarViewDate(new Date(y, month, 1)); setShowYearPicker(false); }}
-                                        style={{ padding: '0.5rem 1rem', textAlign: 'center', fontSize: '0.85rem', borderRadius: '0.25rem', cursor: 'pointer', backgroundColor: y === year ? '#1e40af' : 'transparent', color: y === year ? 'white' : '#111827', fontWeight: y === year ? 600 : 400 }}>{y}</div>
-                                    ))}
+                                {/* Month Picker */}
+                                {showMonthPicker && (
+                                  <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', zIndex: 1001, backgroundColor: 'white', borderRadius: '0.5rem', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', border: '1px solid #e5e7eb', padding: '0.5rem', marginTop: '0.25rem', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.25rem', minWidth: '180px' }}>
+                                    {monthNames.map((m, idx) => {
+                                      const isDisabled = (year === minDate.getFullYear() && idx < minDate.getMonth()) || (year === maxDate.getFullYear() && idx > maxDate.getMonth());
+                                      return (
+                                        <div key={m} onClick={() => { if (!isDisabled) { setCalendarViewDate(new Date(year, idx, 1)); setShowMonthPicker(false); } }}
+                                          style={{ padding: '0.5rem', textAlign: 'center', fontSize: '0.8rem', borderRadius: '0.25rem', cursor: isDisabled ? 'not-allowed' : 'pointer', backgroundColor: idx === month ? '#1e40af' : 'transparent', color: isDisabled ? '#d1d5db' : idx === month ? 'white' : '#111827', fontWeight: idx === month ? 600 : 400 }}>{m}</div>
+                                      );
+                                    })}
                                   </div>
-                                );
-                              })()}
+                                )}
+
+                                {/* Year Picker */}
+                                {showYearPicker && (() => {
+                                  const years: number[] = [];
+                                  for (let y = minDate.getFullYear(); y <= maxDate.getFullYear(); y++) years.push(y);
+                                  return (
+                                    <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', zIndex: 1001, backgroundColor: 'white', borderRadius: '0.5rem', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', border: '1px solid #e5e7eb', padding: '0.5rem', marginTop: '0.25rem', maxHeight: '200px', overflowY: 'auto', minWidth: '100px' }}>
+                                      {years.map(y => (
+                                        <div key={y} onClick={() => { setCalendarViewDate(new Date(y, month, 1)); setShowYearPicker(false); }}
+                                          style={{ padding: '0.5rem 1rem', textAlign: 'center', fontSize: '0.85rem', borderRadius: '0.25rem', cursor: 'pointer', backgroundColor: y === year ? '#1e40af' : 'transparent', color: y === year ? 'white' : '#111827', fontWeight: y === year ? 600 : 400 }}>{y}</div>
+                                      ))}
+                                    </div>
+                                  );
+                                })()}
+                              </div>
+
+                              {/* Day Names */}
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.25rem', marginBottom: '0.5rem' }}>
+                                {dayNames.map(d => (
+                                  <div key={d} style={{ textAlign: 'center', fontSize: '0.7rem', color: '#6b7280', fontWeight: 600 }}>{d}</div>
+                                ))}
+                              </div>
+
+                              {/* Days Grid */}
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.25rem' }}>
+                                {days.map((day, idx) => {
+                                  if (day === null) return <div key={`empty-${idx}`} />;
+                                  const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                                  const dateObj = new Date(year, month, day);
+                                  const isDisabled = dateObj < minDate || dateObj > maxDate;
+                                  const isSelected = dateStr === startDate || dateStr === endDate;
+                                  const isInRange = startDate && endDate && dateStr > startDate && dateStr < endDate;
+
+                                  return (
+                                    <div key={day} onClick={() => {
+                                      if (isDisabled) return;
+                                      if (selectingDate === 'start') {
+                                        setStartDate(dateStr);
+                                        if (endDate && dateStr > endDate) setEndDate('');
+                                      } else {
+                                        setEndDate(dateStr);
+                                        if (startDate && dateStr < startDate) setStartDate('');
+                                      }
+                                      setShowCalendarPicker(false);
+                                    }}
+                                      style={{
+                                        padding: '0.5rem',
+                                        textAlign: 'center',
+                                        fontSize: '0.85rem',
+                                        borderRadius: '0.25rem',
+                                        cursor: isDisabled ? 'not-allowed' : 'pointer',
+                                        backgroundColor: isSelected ? '#1e40af' : isInRange ? '#dbeafe' : 'transparent',
+                                        color: isDisabled ? '#d1d5db' : isSelected ? 'white' : '#111827',
+                                        fontWeight: isSelected ? 600 : 400
+                                      }}>{day}</div>
+                                  );
+                                })}
+                              </div>
                             </div>
-
-                            {/* Day Names */}
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.25rem', marginBottom: '0.5rem' }}>
-                              {dayNames.map(d => (
-                                <div key={d} style={{ textAlign: 'center', fontSize: '0.7rem', color: '#6b7280', fontWeight: 600 }}>{d}</div>
-                              ))}
-                            </div>
-
-                            {/* Days Grid */}
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.25rem' }}>
-                              {days.map((day, idx) => {
-                                if (day === null) return <div key={`empty-${idx}`} />;
-                                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                                const dateObj = new Date(year, month, day);
-                                const isDisabled = dateObj < minDate || dateObj > maxDate;
-                                const isSelected = dateStr === startDate || dateStr === endDate;
-                                const isInRange = startDate && endDate && dateStr > startDate && dateStr < endDate;
-
-                                return (
-                                  <div key={day} onClick={() => {
-                                    if (isDisabled) return;
-                                    if (selectingDate === 'start') {
-                                      setStartDate(dateStr);
-                                      if (endDate && dateStr > endDate) setEndDate('');
-                                    } else {
-                                      setEndDate(dateStr);
-                                      if (startDate && dateStr < startDate) setStartDate('');
-                                    }
-                                    setShowCalendarPicker(false);
-                                  }}
-                                    style={{
-                                      padding: '0.5rem',
-                                      textAlign: 'center',
-                                      fontSize: '0.85rem',
-                                      borderRadius: '0.25rem',
-                                      cursor: isDisabled ? 'not-allowed' : 'pointer',
-                                      backgroundColor: isSelected ? '#1e40af' : isInRange ? '#dbeafe' : 'transparent',
-                                      color: isDisabled ? '#d1d5db' : isSelected ? 'white' : '#111827',
-                                      fontWeight: isSelected ? 600 : 400
-                                    }}>{day}</div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        );
-                      })()}
-                    </div>
-
-                    {/* Transaction Type */}
-                    <div style={{ width: isMobile ? '100%' : 'calc(50% - 0.5rem)' }}>
-                      <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'rgb(75, 85, 99)', textAlign: 'left' }}>
-                        Transaction Type
-                      </label>
-                      <select
-                        value={transactionType}
-                        onChange={(e) => setTransactionType(e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '0.5rem',
-                          borderRadius: '0.375rem',
-                          border: '1px solid #d1d5db',
-                          backgroundColor: 'var(--surface-elevated)',
-                          color: '#111827'
-                        }}
-                      >
-                        <option value="">All Types</option>
-                        <option value="Parts Only">Parts Only</option>
-                        <option value="Service Only">Service Only</option>
-                        <option value="Parts + Service">Parts + Service</option>
-                      </select>
-                    </div>
-
-                    {/* Price Range */}
-                    <div style={{ width: isMobile ? '100%' : 'calc(50% - 0.5rem)' }}>
-                      <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'rgb(75, 85, 99)', textAlign: 'left' }}>
-                        Price Range
-                      </label>
-                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                        <input
-                          type="number"
-                          placeholder="Min"
-                          value={minPrice}
-                          onChange={(e) => setMinPrice(e.target.value)}
-                          style={{
-                            width: 'calc(50% - 1rem)',
-                            padding: '0.5rem',
-                            borderRadius: '0.375rem',
-                            border: '1px solid #d1d5db',
-                            fontSize: '0.875rem',
-                            backgroundColor: 'white'
-                          }}
-                        />
-                        <span style={{ color: '#111827' }}>to</span>
-                        <input
-                          type="number"
-                          placeholder="Max"
-                          value={maxPrice}
-                          onChange={(e) => setMaxPrice(e.target.value)}
-                          style={{
-                            width: 'calc(50% - 1rem)',
-                            padding: '0.5rem',
-                            borderRadius: '0.375rem',
-                            border: '1px solid #d1d5db',
-                            fontSize: '0.875rem',
-                            backgroundColor: 'white'
-                          }}
-                        />
+                          );
+                        })()}
                       </div>
-                    </div>
 
-                    {/* Status */}
-                    <div style={{ width: isMobile ? '100%' : 'calc(50% - 0.5rem)' }}>
-                      <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'rgb(75, 85, 99)', textAlign: 'left' }}>
-                        Status
-                      </label>
-                      <select
-                        value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '0.5rem',
-                          borderRadius: '0.375rem',
-                          border: '1px solid #d1d5db',
-                          fontSize: '0.875rem',
-                          color: '#1f2937',
-                          backgroundColor: 'white'
-                        }}
-                      >
-                        <option value="">All Status</option>
-                        <option value="Completed">Completed</option>
-                        <option value="Pending">Pending</option>
-                        <option value="Cancelled">Cancelled</option>
-                      </select>
-                    </div>
+                      {/* Transaction Type */}
+                      <div style={{ width: isMobile ? '100%' : 'calc(50% - 0.5rem)' }}>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'rgb(75, 85, 99)', textAlign: 'left' }}>
+                          Transaction Type
+                        </label>
+                        <select
+                          value={transactionType}
+                          onChange={(e) => setTransactionType(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '0.5rem',
+                            borderRadius: '0.375rem',
+                            border: '1px solid #d1d5db',
+                            backgroundColor: 'var(--surface-elevated)',
+                            color: '#111827'
+                          }}
+                        >
+                          <option value="">All Types</option>
+                          <option value="Parts Only">Parts Only</option>
+                          <option value="Service Only">Service Only</option>
+                          <option value="Parts + Service">Parts + Service</option>
+                        </select>
+                      </div>
 
-                    {/* Show Archived Toggle - only visible if user has permission */}
-                    {canViewArchived && (
-                      <div style={{ width: isMobile ? '100%' : 'calc(50% - 0.5rem)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <div style={{ fontSize: '0.875rem', color: 'rgb(75, 85, 99)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <Switch
-                            checked={showArchivedFilter}
-                            onChange={(checked) => setShowArchivedFilter(checked)}
-                            size="sm"
+                      {/* Price Range */}
+                      <div style={{ width: isMobile ? '100%' : 'calc(50% - 0.5rem)' }}>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'rgb(75, 85, 99)', textAlign: 'left' }}>
+                          Price Range
+                        </label>
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                          <input
+                            type="number"
+                            placeholder="Min"
+                            value={minPrice}
+                            onChange={(e) => setMinPrice(e.target.value)}
+                            style={{
+                              width: 'calc(50% - 1rem)',
+                              padding: '0.5rem',
+                              borderRadius: '0.375rem',
+                              border: '1px solid #d1d5db',
+                              fontSize: '0.875rem',
+                              backgroundColor: 'white'
+                            }}
                           />
-                          Show Archived
+                          <span style={{ color: '#111827' }}>to</span>
+                          <input
+                            type="number"
+                            placeholder="Max"
+                            value={maxPrice}
+                            onChange={(e) => setMaxPrice(e.target.value)}
+                            style={{
+                              width: 'calc(50% - 1rem)',
+                              padding: '0.5rem',
+                              borderRadius: '0.375rem',
+                              border: '1px solid #d1d5db',
+                              fontSize: '0.875rem',
+                              backgroundColor: 'white'
+                            }}
+                          />
                         </div>
                       </div>
-                    )}
-                  </div>
-                )}
-              </div>
+
+                      {/* Status */}
+                      <div style={{ width: isMobile ? '100%' : 'calc(50% - 0.5rem)' }}>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'rgb(75, 85, 99)', textAlign: 'left' }}>
+                          Status
+                        </label>
+                        <select
+                          value={statusFilter}
+                          onChange={(e) => setStatusFilter(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '0.5rem',
+                            borderRadius: '0.375rem',
+                            border: '1px solid #d1d5db',
+                            fontSize: '0.875rem',
+                            color: '#1f2937',
+                            backgroundColor: 'white'
+                          }}
+                        >
+                          <option value="">All Status</option>
+                          <option value="Completed">Completed</option>
+                          <option value="Pending">Pending</option>
+                          <option value="Cancelled">Cancelled</option>
+                        </select>
+                      </div>
+
+                      {/* Show Archived Toggle - only visible if user has permission */}
+                      {canViewArchived && (
+                        <div style={{ width: isMobile ? '100%' : 'calc(50% - 0.5rem)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <div style={{ fontSize: '0.875rem', color: 'rgb(75, 85, 99)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <Switch
+                              checked={showArchivedFilter}
+                              onChange={(checked) => setShowArchivedFilter(checked)}
+                              size="sm"
+                            />
+                            Show Archived
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
             </section>
 
             {/* Loading / error states */}

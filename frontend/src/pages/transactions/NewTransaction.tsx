@@ -1226,6 +1226,7 @@ export function NewTransaction() {
                       <input
                         placeholder="andres.bonifacio@email.com"
                         type="email"
+                        inputMode="email"
                         value={customer.email}
                         onChange={(e) => setCustomer({ ...customer, email: e.target.value })}
                         style={{

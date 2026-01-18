@@ -3145,7 +3145,7 @@ export const Returns: React.FC = () => {
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-            padding: '1rem',
+            padding: isMobile ? '1rem' : '0',
           }}
         >
           <div
@@ -3153,9 +3153,11 @@ export const Returns: React.FC = () => {
             style={{
               backgroundColor: 'white',
               borderRadius: '0.75rem',
-              padding: '1.5rem',
-              maxWidth: '500px',
+              padding: isMobile ? '1rem' : '1.5rem 2rem',
+              maxWidth: isMobile ? '100%' : '600px',
               width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
               border: '1px solid #e5e7eb',
               boxShadow: '0 20px 40px rgba(15, 23, 42, 0.45)',
             }}

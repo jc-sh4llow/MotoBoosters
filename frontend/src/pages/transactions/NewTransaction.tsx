@@ -1097,9 +1097,9 @@ export function NewTransaction() {
 
             {/* Form Content */}
             <form onSubmit={handleSubmit} className="rounded-lg shadow-md p-6"
-                  style={{
-                    backgroundColor: 'var(--surface-elevated)',
-                  }}>
+              style={{
+                backgroundColor: 'var(--surface-elevated)',
+              }}>
               {step === 1 && (
                 <div className="space-y-4">
                   <h2 className="text-lg font-semibold mb-4"
@@ -1123,9 +1123,19 @@ export function NewTransaction() {
                             border: '1px solid var(--control-border)',
                             backgroundColor: 'var(-control-bg)',
                             color: 'var(--text-muted)',
+                            fontSize: '16px',
+                            minHeight: '48px',
                           }}
                           className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                           required={requiredFields.name}
+                          onFocus={(e) => {
+                            e.currentTarget.style.border = '2px solid #3b82f6';
+                            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                          }}
+                          onBlur={(e) => {
+                            e.currentTarget.style.border = '1px solid var(--control-border)';
+                            e.currentTarget.style.boxShadow = 'none';
+                          }}
                         />
                         <button
                           type="button"
@@ -1163,9 +1173,19 @@ export function NewTransaction() {
                           border: '1px solid var(--control-border)',
                           backgroundColor: 'var(-control-bg)',
                           color: 'var(--text-muted)',
+                          fontSize: '16px',
+                          minHeight: '48px',
                         }}
                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                         required={requiredFields.contact}
+                        onFocus={(e) => {
+                          e.currentTarget.style.border = '2px solid #3b82f6';
+                          e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                        }}
+                        onBlur={(e) => {
+                          e.currentTarget.style.border = '1px solid var(--control-border)';
+                          e.currentTarget.style.boxShadow = 'none';
+                        }}
                       />
                     </div>
                     <div>
@@ -1185,9 +1205,19 @@ export function NewTransaction() {
                           border: '1px solid var(--control-border)',
                           backgroundColor: 'var(-control-bg)',
                           color: 'var(--text-muted)',
+                          fontSize: '16px',
+                          minHeight: '48px',
                         }}
                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                         required={requiredFields.email}
+                        onFocus={(e) => {
+                          e.currentTarget.style.border = '2px solid #3b82f6';
+                          e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                        }}
+                        onBlur={(e) => {
+                          e.currentTarget.style.border = '1px solid var(--control-border)';
+                          e.currentTarget.style.boxShadow = 'none';
+                        }}
                       />
                     </div>
                     <div>
@@ -1205,9 +1235,19 @@ export function NewTransaction() {
                           border: '1px solid var(--control-border)',
                           backgroundColor: 'var(-control-bg)',
                           color: 'var(--text-muted)',
+                          fontSize: '16px',
+                          minHeight: '48px',
                         }}
                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                         required={requiredFields.handledBy}
+                        onFocus={(e) => {
+                          e.currentTarget.style.border = '2px solid #3b82f6';
+                          e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                        }}
+                        onBlur={(e) => {
+                          e.currentTarget.style.border = '1px solid var(--control-border)';
+                          e.currentTarget.style.boxShadow = 'none';
+                        }}
                       >
                         <option value="">Select employee</option>
                         {employees.map(emp => (

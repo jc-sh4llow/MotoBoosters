@@ -137,6 +137,7 @@ export const Settings: React.FC = () => {
   const [isNavExpanded, setIsNavExpanded] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   let closeMenuTimeout: number | undefined;
   // Role management state
   const [editingRole, setEditingRole] = useState<Role | null>(null);
@@ -149,6 +150,14 @@ export const Settings: React.FC = () => {
   // Accordion state for settings sections (all closed by default)
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
   const sectionsContainerRef = useRef<HTMLDivElement>(null);
+
+  // Debounce search term for highlighting
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   // Click outside to close accordions - only from settings container, not when modals are open
   useEffect(() => {
@@ -633,6 +642,27 @@ export const Settings: React.FC = () => {
       prev.includes(category)
         ? prev.filter(c => c !== category)
         : [...prev, category]
+    );
+  };
+
+  const highlightText = (text: string, highlight: string) => {
+    if (!highlight.trim()) {
+      return text;
+    }
+
+    const parts = text.toString().split(new RegExp(`(${highlight})`, 'gi'));
+    return parts.map((part, index) =>
+      part.toLowerCase() === highlight.toLowerCase() ? (
+        <span key={index} style={{
+          backgroundColor: '#fef3c7',
+          color: '#92400e',
+          fontWeight: '600',
+          padding: '0 2px',
+          borderRadius: '2px'
+        }}>
+          {part}
+        </span>
+      ) : part
     );
   };
 
@@ -1161,7 +1191,16 @@ export const Settings: React.FC = () => {
                                 
                                 {/* Role badge and info */}
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1 }}>
-                                  <RoleBadge role={role} />
+                                  <div style={{
+                                    padding: '0.25rem 0.75rem',
+                                    borderRadius: '0.375rem',
+                                    backgroundColor: role.color || '#6b7280',
+                                    color: 'white',
+                                    fontSize: '0.875rem',
+                                    fontWeight: 600,
+                                  }}>
+                                    {highlightText(role.name, debouncedSearchTerm)}
+                                  </div>
                                   <div>
                                     <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>
                                       Position: {role.position}

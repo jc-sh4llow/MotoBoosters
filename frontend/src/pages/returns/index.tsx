@@ -1994,7 +1994,7 @@ export const Returns: React.FC = () => {
                                       }}
                                     >
                                       <div style={{ fontWeight: '500', color: '#111827' }}>
-                                        {tx.customerName || 'Walk-in Customer'}
+                                        {highlightText(tx.customerName || 'Walk-in Customer', searchTerm)}
                                       </div>
                                       <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.15rem' }}>
                                         {(() => {
@@ -2012,7 +2012,7 @@ export const Returns: React.FC = () => {
                                           if (t.includes('parts')) return 'Parts';
                                           if (t.includes('service')) return 'Service';
                                           return 'N/A';
-                                        })()} • {tx.transactionCode}
+                                        })()} • {highlightText(tx.transactionCode, searchTerm)}
                                       </div>
                                     </td>
                                     <td

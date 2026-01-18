@@ -140,6 +140,7 @@ export const Returns: React.FC = () => {
       handledBy?: string;
     }>
   >([]);
+  const [globalReturns, setGlobalReturns] = useState<any[]>([]);
 
   const canProcessReturns = can(effectiveRoleIds, 'returns.process');
   const canViewArchivedReturns = can(effectiveRoleIds, 'returns.view.archived');
@@ -698,6 +699,7 @@ export const Returns: React.FC = () => {
           return b.id.localeCompare(a.id);
         });
 
+        setGlobalReturns(rows);
         setPreviousReturns(rows);
       } catch (err) {
         console.error('Error loading global previous returns:', err);

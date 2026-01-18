@@ -23,6 +23,17 @@ type TransactionRow = {
 };
 
 export const Returns: React.FC = () => {
+  // Highlight text utility function for search results
+  const highlightText = (text: string, search: string) => {
+    if (!search || !text) return text;
+    const parts = text.split(new RegExp(`(${search})`, 'gi'));
+    return parts.map((part, i) => 
+      part.toLowerCase() === search.toLowerCase() 
+        ? <span key={i} style={{ backgroundColor: '#fef08a', color: '#854d0e', fontWeight: '600' }}>{part}</span>
+        : part
+    );
+  };
+
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
@@ -3119,9 +3130,9 @@ export const Returns: React.FC = () => {
                             {isMobile ? (
                               <>
                                 <td style={{ padding: '0.6rem 1rem' }}>
-                                  <div style={{ fontWeight: '500' }}>{ret.id}</div>
+                                  <div style={{ fontWeight: '500' }}>{highlightText(ret.id, searchTerm)}</div>
                                   <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
-                                    {ret.customerName || 'Walk-in Customer'} - {ret.transactionCode}
+                                    {highlightText(ret.customerName || 'Walk-in Customer', searchTerm)} - {highlightText(ret.transactionCode, searchTerm)}
                                   </div>
                                 </td>
                                 <td style={{ padding: '0.6rem 1rem', textAlign: 'right' }}>

@@ -2470,12 +2470,21 @@ export const Returns: React.FC = () => {
                                           return next;
                                         });
                                       }}
+                                      onFocus={(e) => {
+                                        e.currentTarget.style.border = '2px solid #3b82f6';
+                                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                                      }}
+                                      onBlur={(e) => {
+                                        e.currentTarget.style.border = '1px solid #d1d5db';
+                                        e.currentTarget.style.boxShadow = 'none';
+                                      }}
                                       style={{
                                         flex: 1,
                                         padding: '0.4rem',
                                         border: '1px solid #d1d5db',
                                         borderRadius: '0.375rem',
-                                        fontSize: '0.75rem',
+                                        fontSize: '16px',
+                                        minHeight: '48px',
                                         backgroundColor: line.maxReturn <= 0 ? '#f9fafb' : 'white',
                                         color: line.maxReturn <= 0 ? '#9ca3af' : '#111827',
                                       }}

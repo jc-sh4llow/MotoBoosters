@@ -1881,6 +1881,7 @@ export function Services() {
                         </label>
                         <input
                           type="number"
+                          inputMode="decimal"
                           min="0"
                           step="0.01"
                           required={servicesRequiredFields.servicePrice}
@@ -1889,6 +1890,14 @@ export function Services() {
                           onChange={(e) => {
                             setServiceForm(prev => ({ ...prev, price: e.target.value }));
                             setServiceHasUnsavedChanges(true);
+                          }}
+                          onFocus={(e) => {
+                            e.currentTarget.style.border = '2px solid #3b82f6';
+                            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                          }}
+                          onBlur={(e) => {
+                            e.currentTarget.style.border = '1px solid #d1d5db';
+                            e.currentTarget.style.boxShadow = 'none';
                           }}
                           disabled={!canEditServices}
                           style={{

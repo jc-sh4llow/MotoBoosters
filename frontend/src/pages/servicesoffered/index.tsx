@@ -57,6 +57,9 @@ export function Services() {
   const [searchTerm, setSearchTerm] = useState('');
   let closeMenuTimeout: number | undefined;
   const [selectedTypes, setSelectedTypes] = useState<Set<string>>(new Set());
+  const tableScrollRef = useRef<HTMLDivElement | null>(null);
+  const [showLeftScrollIndicator, setShowLeftScrollIndicator] = useState(false);
+  const [showRightScrollIndicator, setShowRightScrollIndicator] = useState(false);
   const [vehicleTypeOptions, setVehicleTypeOptions] = useState<string[]>([
     'Scooter',
     'Underbone',
@@ -194,6 +197,26 @@ export function Services() {
   useEffect(() => {
     loadServices();
   }, []);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const el = tableScrollRef.current;
+      if (!el || !isMobile) {
+        setShowLeftScrollIndicator(false);
+        setShowRightScrollIndicator(false);
+        return;
+      }
+      const { scrollLeft, scrollWidth, clientWidth } = el;
+      setShowLeftScrollIndicator(scrollLeft > 10);
+      setShowRightScrollIndicator(scrollLeft < scrollWidth - clientWidth - 10);
+    };
+    const el = tableScrollRef.current;
+    if (el && isMobile) {
+      handleScroll();
+      el.addEventListener('scroll', handleScroll);
+      return () => el.removeEventListener('scroll', handleScroll);
+    }
+  }, [isMobile, services]);
 
   // Load required fields settings from Firestore
   useEffect(() => {
@@ -2602,213 +2625,245 @@ export function Services() {
                   </div>
                 </div>
 
-                <div style={{
-                  backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                  borderRadius: '0.5rem',
-                  overflow: 'hidden'
-                }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', color: '#1e293b' }}>
-                    <thead>
-                      <tr style={{
-                        backgroundColor: 'var(--table-header-bg)',
-                        borderBottom: '1px solid var(--table-border)',
-                        textAlign: 'left',
-                        fontWeight: 600
-                      }}>
-                        {isSelectMode && (
-                          <th style={{ padding: '0.75rem 0.5rem', textAlign: 'center', width: '40px' }}>
-                            <input type="checkbox" checked={selectedItems.size === filteredServices.length && filteredServices.length > 0} onChange={(e) => { if (e.target.checked) { setSelectedItems(new Set(filteredServices.map(s => s.id))); } else { setSelectedItems(new Set()); } }} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
-                          </th>
-                        )}
-                        <th onClick={() => handleHeaderSort('serviceId')} style={{ padding: '0.75rem 1rem', fontWeight: '500', color: 'var(--table-header-text)', cursor: 'pointer', userSelect: 'none' }}>Service ID {sortBy === 'serviceId-asc' ? '↑' : sortBy === 'serviceId-desc' ? '↓' : ''}</th>
-                        <th onClick={() => handleHeaderSort('name')} style={{ padding: '0.75rem 1rem', fontWeight: '500', color: 'var(--table-header-text)', cursor: 'pointer', userSelect: 'none' }}>Service Name {sortBy === 'name-asc' ? '↑' : sortBy === 'name-desc' ? '↓' : ''}</th>
-                        {showDescription && <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: '500', color: 'var(--table-header-text)' }}>Description</th>}
-                        {showPrice && <th onClick={() => handleHeaderSort('price')} style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: '500', color: 'var(--table-header-text)', cursor: 'pointer', userSelect: 'none' }}>Price {sortBy === 'price-asc' ? '↑' : sortBy === 'price-desc' ? '↓' : ''}</th>}
-                        {showStatus && <th onClick={() => handleHeaderSort('status')} style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: '500', color: 'var(--table-header-text)', cursor: 'pointer', userSelect: 'none' }}>Status {sortBy === 'status-asc' ? '↑' : sortBy === 'status-desc' ? '↓' : ''}</th>}
-                        {showVehicleTypes && <th style={{ padding: '0.75rem 1rem', fontWeight: '500', color: 'var(--table-header-text)' }}>Vehicle Types</th>}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredServices.map((service) => (
-                        <tr
-                          key={service.id}
-                          style={{
-                            borderTop: '1px solid rgba(0, 0, 0, 0.1)',
-                            transition: 'background-color 0.2s',
-                            backgroundColor: 'var(--surface-elevated)',
-                            cursor: 'pointer'
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = 'var(--surface-elevated)';
-                          }}
-                          onClick={() => {
-                            if (isSelectMode) {
-                              setSelectedItems(prev => {
-                                const next = new Set(prev);
-                                if (next.has(service.id)) { next.delete(service.id); } else { next.add(service.id); }
-                                return next;
-                              });
-                            } else {
-                              setSelectedService(service);
-                              setServiceForm({
-                                id: service.serviceId,
-                                name: service.name,
-                                price: String(service.price),
-                                description: service.description,
-                                vehicleTypes: service.vehicleTypes
-                              });
-                              setSelectedTypes(new Set(service.vehicleTypes));
-                              setServiceHasUnsavedChanges(false);
-                              setShouldShowDetails(true);
-                              requestAnimationFrame(() => setIsDetailsVisible(true));
-                            }
-                          }}
-                        >
-                          {isMobile ? (
-                            <>
-                              {/* Mobile 2-column layout */}
-                              {isSelectMode && (
-                                <td style={{ padding: '0.75rem 0.5rem', textAlign: 'center', verticalAlign: 'top' }}>
-                                  <input type="checkbox" checked={selectedItems.has(service.id)} onChange={() => { }} onClick={(e) => e.stopPropagation()} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
-                                </td>
-                              )}
-                              <td style={{ padding: '0.75rem 1rem', verticalAlign: 'top' }}>
-                                <div style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--table-row-text)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                  {service.serviceId}
-                                  {service.archived && (
-                                    <span style={{ backgroundColor: '#fef3c7', color: '#92400e', padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.65rem', fontWeight: 600 }}>Archived</span>
+                <div style={{ position: 'relative' }}>
+                  {isMobile && showLeftScrollIndicator && (
+                    <div style={{
+                      position: 'absolute',
+                      left: 0,
+                      top: 0,
+                      bottom: 0,
+                      width: '20px',
+                      background: 'linear-gradient(to right, rgba(0,0,0,0.1), transparent)',
+                      pointerEvents: 'none',
+                      zIndex: 10,
+                      borderTopLeftRadius: '0.5rem',
+                      borderBottomLeftRadius: '0.5rem',
+                    }} />
+                  )}
+                  {isMobile && showRightScrollIndicator && (
+                    <div style={{
+                      position: 'absolute',
+                      right: 0,
+                      top: 0,
+                      bottom: 0,
+                      width: '20px',
+                      background: 'linear-gradient(to left, rgba(0,0,0,0.1), transparent)',
+                      pointerEvents: 'none',
+                      zIndex: 10,
+                      borderTopRightRadius: '0.5rem',
+                      borderBottomRightRadius: '0.5rem',
+                    }} />
+                  )}
+                  <div style={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                    borderRadius: '0.5rem',
+                    overflow: 'hidden'
+                  }}>
+                    <div ref={tableScrollRef} style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', color: '#1e293b' }}>
+                        <thead>
+                          <tr style={{
+                            backgroundColor: 'var(--table-header-bg)',
+                            borderBottom: '1px solid var(--table-border)',
+                            textAlign: 'left',
+                            fontWeight: 600
+                          }}>
+                            {isSelectMode && (
+                              <th style={{ padding: '0.75rem 0.5rem', textAlign: 'center', width: '40px' }}>
+                                <input type="checkbox" checked={selectedItems.size === filteredServices.length && filteredServices.length > 0} onChange={(e) => { if (e.target.checked) { setSelectedItems(new Set(filteredServices.map(s => s.id))); } else { setSelectedItems(new Set()); } }} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
+                              </th>
+                            )}
+                            <th onClick={() => handleHeaderSort('serviceId')} style={{ padding: '0.75rem 1rem', fontWeight: '500', color: 'var(--table-header-text)', cursor: 'pointer', userSelect: 'none' }}>Service ID {sortBy === 'serviceId-asc' ? '↑' : sortBy === 'serviceId-desc' ? '↓' : ''}</th>
+                            <th onClick={() => handleHeaderSort('name')} style={{ padding: '0.75rem 1rem', fontWeight: '500', color: 'var(--table-header-text)', cursor: 'pointer', userSelect: 'none' }}>Service Name {sortBy === 'name-asc' ? '↑' : sortBy === 'name-desc' ? '↓' : ''}</th>
+                            {showDescription && <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: '500', color: 'var(--table-header-text)' }}>Description</th>}
+                            {showPrice && <th onClick={() => handleHeaderSort('price')} style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: '500', color: 'var(--table-header-text)', cursor: 'pointer', userSelect: 'none' }}>Price {sortBy === 'price-asc' ? '↑' : sortBy === 'price-desc' ? '↓' : ''}</th>}
+                            {showStatus && <th onClick={() => handleHeaderSort('status')} style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: '500', color: 'var(--table-header-text)', cursor: 'pointer', userSelect: 'none' }}>Status {sortBy === 'status-asc' ? '↑' : sortBy === 'status-desc' ? '↓' : ''}</th>}
+                            {showVehicleTypes && <th style={{ padding: '0.75rem 1rem', fontWeight: '500', color: 'var(--table-header-text)' }}>Vehicle Types</th>}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filteredServices.map((service) => (
+                            <tr
+                              key={service.id}
+                              style={{
+                                borderTop: '1px solid rgba(0, 0, 0, 0.1)',
+                                transition: 'background-color 0.2s',
+                                backgroundColor: 'var(--surface-elevated)',
+                                cursor: 'pointer'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = 'var(--surface-elevated)';
+                              }}
+                              onClick={() => {
+                                if (isSelectMode) {
+                                  setSelectedItems(prev => {
+                                    const next = new Set(prev);
+                                    if (next.has(service.id)) { next.delete(service.id); } else { next.add(service.id); }
+                                    return next;
+                                  });
+                                } else {
+                                  setSelectedService(service);
+                                  setServiceForm({
+                                    id: service.serviceId,
+                                    name: service.name,
+                                    price: String(service.price),
+                                    description: service.description,
+                                    vehicleTypes: service.vehicleTypes
+                                  });
+                                  setSelectedTypes(new Set(service.vehicleTypes));
+                                  setServiceHasUnsavedChanges(false);
+                                  setShouldShowDetails(true);
+                                  requestAnimationFrame(() => setIsDetailsVisible(true));
+                                }
+                              }}
+                            >
+                              {isMobile ? (
+                                <>
+                                  {/* Mobile 2-column layout */}
+                                  {isSelectMode && (
+                                    <td style={{ padding: '0.75rem 0.5rem', textAlign: 'center', verticalAlign: 'top' }}>
+                                      <input type="checkbox" checked={selectedItems.has(service.id)} onChange={() => { }} onClick={(e) => e.stopPropagation()} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
+                                    </td>
                                   )}
-                                </div>
-                                <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
-                                  {!showStatus && (
-                                    <span style={{
-                                      display: 'inline-block',
-                                      padding: '0.125rem 0.375rem',
-                                      borderRadius: '9999px',
-                                      backgroundColor: service.status === 'Active' ? '#dcfce7' : '#fee2e2',
-                                      color: service.status === 'Active' ? '#166534' : '#991b1b',
-                                      fontSize: '0.65rem',
-                                      fontWeight: 500,
-                                      marginRight: '0.375rem'
-                                    }}>
-                                      {service.status}
-                                    </span>
+                                  <td style={{ padding: '0.75rem 1rem', verticalAlign: 'top' }}>
+                                    <div style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--table-row-text)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                      {service.serviceId}
+                                      {service.archived && (
+                                        <span style={{ backgroundColor: '#fef3c7', color: '#92400e', padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.65rem', fontWeight: 600 }}>Archived</span>
+                                      )}
+                                    </div>
+                                    <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
+                                      {!showStatus && (
+                                        <span style={{
+                                          display: 'inline-block',
+                                          padding: '0.125rem 0.375rem',
+                                          borderRadius: '9999px',
+                                          backgroundColor: service.status === 'Active' ? '#dcfce7' : '#fee2e2',
+                                          color: service.status === 'Active' ? '#166534' : '#991b1b',
+                                          fontSize: '0.65rem',
+                                          fontWeight: 500,
+                                          marginRight: '0.375rem'
+                                        }}>
+                                          {service.status}
+                                        </span>
+                                      )}
+                                      {service.name}
+                                    </div>
+                                    {!showVehicleTypes && (
+                                      <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
+                                        {service.vehicleTypes.length > 0
+                                          ? service.vehicleTypes.slice(0, 2).join(', ') +
+                                          (service.vehicleTypes.length > 2 ? '...' : '')
+                                          : 'N/A'
+                                        }
+                                      </div>
+                                    )}
+                                  </td>
+                                  <td style={{ padding: '0.75rem 1rem', verticalAlign: 'middle', textAlign: 'right' }}>
+                                    <div style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--table-row-text)' }}>
+                                      ₱{service.price.toLocaleString()}
+                                    </div>
+                                  </td>
+                                </>
+                              ) : (
+                                <>
+                                  {/* Desktop layout */}
+                                  {isSelectMode && (
+                                    <td style={{ padding: '0.75rem 0.5rem', textAlign: 'center' }}>
+                                      <input type="checkbox" checked={selectedItems.has(service.id)} onChange={() => { }} onClick={(e) => e.stopPropagation()} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
+                                    </td>
                                   )}
-                                  {service.name}
-                                </div>
-                                {!showVehicleTypes && (
-                                  <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
-                                    {service.vehicleTypes.length > 0
-                                      ? service.vehicleTypes.slice(0, 2).join(', ') +
-                                      (service.vehicleTypes.length > 2 ? '...' : '')
-                                      : 'N/A'
-                                    }
-                                  </div>
-                                )}
-                              </td>
-                              <td style={{ padding: '0.75rem 1rem', verticalAlign: 'middle', textAlign: 'right' }}>
-                                <div style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--table-row-text)' }}>
-                                  ₱{service.price.toLocaleString()}
-                                </div>
-                              </td>
-                            </>
-                          ) : (
-                            <>
-                              {/* Desktop layout */}
-                              {isSelectMode && (
-                                <td style={{ padding: '0.75rem 0.5rem', textAlign: 'center' }}>
-                                  <input type="checkbox" checked={selectedItems.has(service.id)} onChange={() => { }} onClick={(e) => e.stopPropagation()} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
-                                </td>
-                              )}
-                              <td style={{ padding: '0.75rem 1rem', color: 'var(--table-row-text)' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                  {service.serviceId}
-                                  {service.archived && (
-                                    <span style={{ backgroundColor: '#fef3c7', color: '#92400e', padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.65rem', fontWeight: 600 }}>Archived</span>
-                                  )}
-                                </div>
-                              </td>
-                              <td style={{ padding: '0.75rem 1rem', color: 'var(--table-row-text)' }}>{service.name}</td>
+                                  <td style={{ padding: '0.75rem 1rem', color: 'var(--table-row-text)' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                      {service.serviceId}
+                                      {service.archived && (
+                                        <span style={{ backgroundColor: '#fef3c7', color: '#92400e', padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.65rem', fontWeight: 600 }}>Archived</span>
+                                      )}
+                                    </div>
+                                  </td>
+                                  <td style={{ padding: '0.75rem 1rem', color: 'var(--table-row-text)' }}>{service.name}</td>
 
-                              {showDescription && (
-                                <td style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setDescriptionModalService(service);
-                                    }}
-                                    style={{
-                                      padding: '0.25rem 0.75rem',
-                                      borderRadius: '9999px',
-                                      border: '1px solid #2563eb',
-                                      backgroundColor: 'var(--surface-elevated)',
-                                      color: '#2563eb',
-                                      fontSize: '0.75rem',
-                                      fontWeight: 500,
-                                      cursor: 'pointer'
-                                    }}
-                                  >
-                                    Description
-                                  </button>
-                                </td>
-                              )}
-                              {showPrice && <td style={{ padding: '0.75rem 1rem', textAlign: 'right', color: 'var(--table-row-text)' }}>₱{service.price.toLocaleString()}</td>}
-                              {showStatus && (
-                                <td style={{ padding: '0.75rem 1rem', color: 'var(--table-row-text)', }}>
-                                  <button
-                                    type="button"
-                                    disabled={!canToggleStatus}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleToggleServiceStatus(service);
-                                    }}
-                                    style={{
-                                      display: 'inline-block',
-                                      padding: '0.25rem 0.5rem',
-                                      borderRadius: '9999px',
-                                      backgroundColor: service.status === 'Active' ? '#dcfce7' : '#fee2e2',
-                                      color: service.status === 'Active' ? '#166534' : '#991b1b',
-                                      fontSize: '0.75rem',
-                                      fontWeight: 500,
-                                      border: 'none',
-                                      cursor: canToggleStatus ? 'pointer' : 'default',
-                                    }}
-                                  >
-                                    {service.status}
-                                  </button>
-                                </td>
-                              )}
-                              {showVehicleTypes && (
-                                <td style={{ padding: '0.75rem 1rem' }}>
-                                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                                    {service.vehicleTypes.map((type, i) => (
-                                      <span
-                                        key={i}
+                                  {showDescription && (
+                                    <td style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setDescriptionModalService(service);
+                                        }}
                                         style={{
-                                          backgroundColor: 'var(--surface-hover)',
-                                          color: 'var(--text-primary)',
-                                          padding: '0.25rem 0.5rem',
-                                          borderRadius: '0.25rem',
+                                          padding: '0.25rem 0.75rem',
+                                          borderRadius: '9999px',
+                                          border: '1px solid #2563eb',
+                                          backgroundColor: 'var(--surface-elevated)',
+                                          color: '#2563eb',
                                           fontSize: '0.75rem',
-                                          border: '1px solid var(--border)'
+                                          fontWeight: 500,
+                                          cursor: 'pointer'
                                         }}
                                       >
-                                        {type}
-                                      </span>
-                                    ))}
-                                  </div>
-                                </td>
+                                        Description
+                                      </button>
+                                    </td>
+                                  )}
+                                  {showPrice && <td style={{ padding: '0.75rem 1rem', textAlign: 'right', color: 'var(--table-row-text)' }}>₱{service.price.toLocaleString()}</td>}
+                                  {showStatus && (
+                                    <td style={{ padding: '0.75rem 1rem', color: 'var(--table-row-text)', }}>
+                                      <button
+                                        type="button"
+                                        disabled={!canToggleStatus}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleToggleServiceStatus(service);
+                                        }}
+                                        style={{
+                                          display: 'inline-block',
+                                          padding: '0.25rem 0.5rem',
+                                          borderRadius: '9999px',
+                                          backgroundColor: service.status === 'Active' ? '#dcfce7' : '#fee2e2',
+                                          color: service.status === 'Active' ? '#166534' : '#991b1b',
+                                          fontSize: '0.75rem',
+                                          fontWeight: 500,
+                                          border: 'none',
+                                          cursor: canToggleStatus ? 'pointer' : 'default',
+                                        }}
+                                      >
+                                        {service.status}
+                                      </button>
+                                    </td>
+                                  )}
+                                  {showVehicleTypes && (
+                                    <td style={{ padding: '0.75rem 1rem' }}>
+                                      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                        {service.vehicleTypes.map((type, i) => (
+                                          <span
+                                            key={i}
+                                            style={{
+                                              backgroundColor: 'var(--surface-hover)',
+                                              color: 'var(--text-primary)',
+                                              padding: '0.25rem 0.5rem',
+                                              borderRadius: '0.25rem',
+                                              fontSize: '0.75rem',
+                                              border: '1px solid var(--border)'
+                                            }}
+                                          >
+                                            {type}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    </td>
+                                  )}
+                                </>
                               )}
-                            </>
-                          )}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

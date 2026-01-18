@@ -646,17 +646,30 @@ export const Settings: React.FC = () => {
   }, []);
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        position: 'relative',
-        background: 'var(--bg-gradient)',
-        backgroundSize: 'cover',
-        backgroundAttachment: 'fixed',
-      }}
-    >
+    <>
+      <style>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(-8px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
+      <div
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          position: 'relative',
+          background: 'var(--bg-gradient)',
+          backgroundSize: 'cover',
+          backgroundAttachment: 'fixed',
+        }}
+      >
       <div
         style={{
           position: 'fixed',
@@ -1023,7 +1036,10 @@ export const Settings: React.FC = () => {
                   </button>
 
                   {expandedSections.includes('roleManagement') && (
-                    <div style={{ padding: '0 1.75rem 1.75rem 1.75rem' }}>
+                    <div style={{
+                      padding: '0 1.75rem 1.75rem 1.75rem',
+                      animation: 'fadeIn 0.3s ease-out'
+                    }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                         <p
                           style={{
@@ -3499,5 +3515,6 @@ export const Settings: React.FC = () => {
         </div>
       )}
     </div>
+    </>
   );
 };

@@ -944,12 +944,16 @@ export function Services() {
                     )}
                   </div>
 
-                  {/* Accordion Content */}
-                  {(isActionBarExpanded || isSelectMode) && (
+                                    {/* Accordion Content */}
+                  <div style={{
+                    maxHeight: (isActionBarExpanded || isSelectMode) ? '1000px' : '0',
+                    overflow: 'hidden',
+                    transition: 'max-height 0.3s ease-out'
+                  }}>
                     <div style={{
-                      padding: '1rem',
+                      padding: (isActionBarExpanded || isSelectMode) ? '1rem' : '0 1rem',
                       paddingTop: '0',
-                      borderTop: '1px solid #e5e7eb',
+                      borderTop: (isActionBarExpanded || isSelectMode) ? '1px solid #e5e7eb' : 'none',
                       display: 'flex',
                       flexDirection: 'column',
                       gap: '0.5rem'
@@ -1300,7 +1304,7 @@ export function Services() {
                         Clear Filters
                       </button>
                     </div>
-                  )}
+                  </div>
 
                   {/* Mobile Filter Section */}
                   {showFilters && (

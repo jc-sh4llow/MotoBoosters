@@ -17,6 +17,15 @@ export type PermissionKey =
   | 'page.customers.view'
   | 'page.users.view'
   | 'page.settings.view'
+  // Transactions Permissions (6)
+  | 'transactions.create'
+  | 'transactions.view.archived'
+  | 'transactions.archive'
+  | 'transactions.unarchive'
+  | 'transactions.delete'
+  | 'transactions.export'
+  // Item Sales Permissions (2)
+  | 'sales.export'
   // Inventory Permissions (8)
   | 'inventory.view.purchaseprice'
   | 'inventory.view.archived'
@@ -34,13 +43,13 @@ export type PermissionKey =
   | 'services.delete'
   | 'services.toggle.status'
   | 'services.export'
-  // Transactions Permissions (6)
-  | 'transactions.create'
-  | 'transactions.view.archived'
-  | 'transactions.archive'
-  | 'transactions.unarchive'
-  | 'transactions.delete'
-  | 'transactions.export'
+  // Customers Permissions (6)
+  | 'customers.view.archived'
+  | 'customers.add'
+  | 'customers.edit'
+  | 'customers.archive'
+  | 'customers.delete'
+  | 'customers.export'
   // Returns Permissions (6)
   | 'returns.process'
   | 'returns.view.archived'
@@ -48,28 +57,23 @@ export type PermissionKey =
   | 'returns.unarchive'
   | 'returns.delete'
   | 'returns.export'
-  // Customers Permissions (5)
-  | 'customers.view.archived'
-  | 'customers.add'
-  | 'customers.edit'
-  | 'customers.archive'
-  | 'customers.delete'
-  // Users Permissions (6)
+  // Users Permissions (7)
   | 'users.view.developer'
   | 'users.view.archived'
   | 'users.edit.any'
   | 'users.edit.self'
   | 'users.archive'
   | 'users.delete'
+  | 'users.export'
+  // Settings Permissions (1)
+  | 'settings.edit'
   // Roles Permissions (6)
   | 'roles.view'
   | 'roles.create'
   | 'roles.edit'
   | 'roles.delete'
   | 'roles.assign'
-  | 'roles.set.maxperuser'
-  // Settings Permissions (1)
-  | 'settings.edit';
+  | 'roles.set.maxperuser';
 
 // Role document structure (stored in Firestore)
 export interface Role {
@@ -97,15 +101,32 @@ export const permissionGroups: { category: string; permissions: { key: Permissio
     category: 'Page Access',
     permissions: [
       { key: 'page.home.view', label: 'Home' },
-      { key: 'page.inventory.view', label: 'Inventory' },
-      { key: 'page.sales.view', label: 'Sales Records' },
-      { key: 'page.services.view', label: 'Services Offered' },
-      { key: 'page.transactions.view', label: 'Transaction History' },
       { key: 'page.newtransaction.view', label: 'New Transaction' },
-      { key: 'page.returns.view', label: 'Returns & Refunds' },
+      { key: 'page.transactions.view', label: 'Transactions' },
+      { key: 'page.sales.view', label: 'Item Sales' },
+      { key: 'page.inventory.view', label: 'Inventory' },
+      { key: 'page.services.view', label: 'Services' },
       { key: 'page.customers.view', label: 'Customers' },
-      { key: 'page.users.view', label: 'User Management' },
+      { key: 'page.returns.view', label: 'Returns' },
+      { key: 'page.users.view', label: 'Users' },
       { key: 'page.settings.view', label: 'Settings' },
+    ],
+  },
+  {
+    category: 'Transactions',
+    permissions: [
+      { key: 'transactions.create', label: 'Create Transactions' },
+      { key: 'transactions.view.archived', label: 'View Archived' },
+      { key: 'transactions.archive', label: 'Archive Transactions' },
+      { key: 'transactions.unarchive', label: 'Unarchive Transactions' },
+      { key: 'transactions.delete', label: 'Permanently Delete' },
+      { key: 'transactions.export', label: 'Export to CSV' },
+    ],
+  },
+  {
+    category: 'Item Sales',
+    permissions: [
+      { key: 'sales.export', label: 'Export to CSV' },
     ],
   },
   {
@@ -134,28 +155,6 @@ export const permissionGroups: { category: string; permissions: { key: Permissio
     ],
   },
   {
-    category: 'Transactions',
-    permissions: [
-      { key: 'transactions.create', label: 'Create Transactions' },
-      { key: 'transactions.view.archived', label: 'View Archived' },
-      { key: 'transactions.archive', label: 'Archive Transactions' },
-      { key: 'transactions.unarchive', label: 'Unarchive Transactions' },
-      { key: 'transactions.delete', label: 'Permanently Delete' },
-      { key: 'transactions.export', label: 'Export to CSV' },
-    ],
-  },
-  {
-    category: 'Returns & Refunds',
-    permissions: [
-      { key: 'returns.process', label: 'Process Returns' },
-      { key: 'returns.view.archived', label: 'View Archived' },
-      { key: 'returns.archive', label: 'Archive Returns' },
-      { key: 'returns.unarchive', label: 'Unarchive Returns' },
-      { key: 'returns.delete', label: 'Permanently Delete' },
-      { key: 'returns.export', label: 'Export to CSV' },
-    ],
-  },
-  {
     category: 'Customers',
     permissions: [
       { key: 'customers.view.archived', label: 'View Archived' },
@@ -163,6 +162,18 @@ export const permissionGroups: { category: string; permissions: { key: Permissio
       { key: 'customers.edit', label: 'Edit Customers' },
       { key: 'customers.archive', label: 'Archive Customers' },
       { key: 'customers.delete', label: 'Permanently Delete' },
+      { key: 'customers.export', label: 'Export to CSV' },
+    ],
+  },
+  {
+    category: 'Returns',
+    permissions: [
+      { key: 'returns.process', label: 'Process Returns' },
+      { key: 'returns.view.archived', label: 'View Archived' },
+      { key: 'returns.archive', label: 'Archive Returns' },
+      { key: 'returns.unarchive', label: 'Unarchive Returns' },
+      { key: 'returns.delete', label: 'Permanently Delete' },
+      { key: 'returns.export', label: 'Export to CSV' },
     ],
   },
   {
@@ -174,6 +185,13 @@ export const permissionGroups: { category: string; permissions: { key: Permissio
       { key: 'users.edit.self', label: 'Edit Own Profile' },
       { key: 'users.archive', label: 'Archive Users' },
       { key: 'users.delete', label: 'Permanently Delete' },
+      { key: 'users.export', label: 'Export to CSV' },
+    ],
+  },
+  {
+    category: 'Settings',
+    permissions: [
+      { key: 'settings.edit', label: 'Edit System Settings' },
     ],
   },
   {
@@ -185,12 +203,6 @@ export const permissionGroups: { category: string; permissions: { key: Permissio
       { key: 'roles.delete', label: 'Delete Roles' },
       { key: 'roles.assign', label: 'Assign Roles to Users' },
       { key: 'roles.set.maxperuser', label: 'Set Max Roles Per User' },
-    ],
-  },
-  {
-    category: 'Settings',
-    permissions: [
-      { key: 'settings.edit', label: 'Edit System Settings' },
     ],
   },
 ];

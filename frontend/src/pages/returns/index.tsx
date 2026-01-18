@@ -958,13 +958,13 @@ export const Returns: React.FC = () => {
       returnsSnap.forEach((docSnap) => {
         const data = docSnap.data() as any;
         const currentHandledBy = data.handledBy;
-        
+
         // Store backup
         backup.push({ id: docSnap.id, handledBy: currentHandledBy });
 
         // Check if handledBy is an ID (exists in employees array)
         const employee = employees.find((e) => e.id === currentHandledBy);
-        
+
         if (employee) {
           // It's an ID, convert to name
           const handledByName = employee.name;
@@ -988,7 +988,7 @@ export const Returns: React.FC = () => {
 
       // Execute updates
       await Promise.all(updates);
-      
+
       console.log(`Migration complete! Updated ${updates.length} returns.`);
       console.log('Backup saved. Click "Restore Migration" to undo.');
     } catch (err) {
@@ -1011,7 +1011,7 @@ export const Returns: React.FC = () => {
       });
 
       await Promise.all(updates);
-      
+
       console.log(`Restore complete! Restored ${updates.length} returns.`);
       setMigrationBackup(null);
     } catch (err) {
@@ -1147,59 +1147,59 @@ export const Returns: React.FC = () => {
             {/* Right: search bar, Logout, navbar toggle */}
             <div style={{ display: 'flex', alignItems: 'center', marginLeft: 'auto' }}>
               {!isMobile && (
-              <div
-                style={{
-                  position: 'relative',
-                  display: 'flex',
-                  alignItems: 'center',
-                  marginRight: '1rem',
-                }}
-              >
-                <FaSearch
+                <div
                   style={{
-                    position: 'absolute',
-                    left: '12px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    color: '#9ca3af',
+                    position: 'relative',
+                    display: 'flex',
+                    alignItems: 'center',
+                    marginRight: '1rem',
                   }}
-                />
-                <input
-                  type="text"
-                  placeholder="Search returns..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  style={{
-                    padding: '0.5rem 2.5rem 0.5rem 2.5rem',
-                    borderRadius: '0.5rem',
-                    border: '1px solid #d1d5db',
-                    backgroundColor: 'rgba(255, 255, 255)',
-                    color: '#1f2937',
-                    width: '320px',
-                    outline: 'none',
-                  }}
-                />
-                {searchTerm && (
-                  <button
-                    onClick={() => setSearchTerm('')}
+                >
+                  <FaSearch
                     style={{
                       position: 'absolute',
-                      right: '8px',
+                      left: '12px',
                       top: '50%',
                       transform: 'translateY(-50%)',
-                      background: 'transparent',
-                      border: 'none',
                       color: '#9ca3af',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      padding: '4px',
                     }}
-                  >
-                    <FaTimes size={14} />
-                  </button>
-                )}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Search returns..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    style={{
+                      padding: '0.5rem 2.5rem 0.5rem 2.5rem',
+                      borderRadius: '0.5rem',
+                      border: '1px solid #d1d5db',
+                      backgroundColor: 'rgba(255, 255, 255)',
+                      color: '#1f2937',
+                      width: '320px',
+                      outline: 'none',
+                    }}
+                  />
+                  {searchTerm && (
+                    <button
+                      onClick={() => setSearchTerm('')}
+                      style={{
+                        position: 'absolute',
+                        right: '8px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#9ca3af',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '4px',
+                      }}
+                    >
+                      <FaTimes size={14} />
+                    </button>
+                  )}
                 </div>
               )}
 
@@ -1336,8 +1336,12 @@ export const Returns: React.FC = () => {
                         <FaChevronDown style={{ fontSize: '0.9em' }} />
                       </span>
                     </button>
-                    {isActionBarExpanded && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.75rem' }}>
+                    <div style={{
+                      maxHeight: isActionBarExpanded ? '1500px' : '0',
+                      overflow: 'hidden',
+                      transition: 'max-height 0.3s ease-out'
+                    }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: isActionBarExpanded ? '0.75rem' : '0' }}>
                         {canExportReturns && (
                           <button type="button" onClick={() => {
                             const rows = previousReturns;
@@ -1505,73 +1509,73 @@ export const Returns: React.FC = () => {
                           );
                         })()}
                       </div>
-                    )}
+                    </div>
                   </div>
                 ) : (
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: showFilters ? '1rem' : 0 }}>
                     <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                       {canExportReturns && (
-                      <button type="button" onClick={() => {
-                        const rows = previousReturns;
-                        if (!rows.length) return;
-                        const headers = ['Return Code', 'Date', 'Customer', 'Transaction', 'Items Returned', 'Total Refunded'];
-                        const escapeCell = (v: unknown) => { const s = (v ?? '').toString(); return s.includes('"') || s.includes(',') || s.includes('\n') ? '"' + s.replace(/"/g, '""') + '"' : s; };
-                        const csv = [headers.join(','), ...rows.map(r => [r.id, r.date, r.customerName, r.transactionCode, r.itemsReturned, r.returnedTotal].map(escapeCell).join(','))].join('\r\n');
-                        const blob = new Blob([csv], { type: 'text/csv' });
-                        const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `returns_${new Date().toISOString().split('T')[0]}.csv`; document.body.appendChild(link); link.click(); document.body.removeChild(link);
-                      }} style={{ backgroundColor: '#059669', color: 'white', padding: '0.5rem 1rem', borderRadius: '0.375rem', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 500, fontSize: '0.875rem', height: '40px' }}>
-                        Export to CSV <FaFileExcel />
-                      </button>
-                    )}
-                    {canArchiveReturns && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (isSelectMode) {
-                            setIsSelectMode(false);
-                            setSelectedItems(new Set());
-                          } else {
-                            if (isReturnDetailsExpanded) {
-                              showToast('Please close the Return Details section before entering Select mode.', 'warning');
-                              return;
+                        <button type="button" onClick={() => {
+                          const rows = previousReturns;
+                          if (!rows.length) return;
+                          const headers = ['Return Code', 'Date', 'Customer', 'Transaction', 'Items Returned', 'Total Refunded'];
+                          const escapeCell = (v: unknown) => { const s = (v ?? '').toString(); return s.includes('"') || s.includes(',') || s.includes('\n') ? '"' + s.replace(/"/g, '""') + '"' : s; };
+                          const csv = [headers.join(','), ...rows.map(r => [r.id, r.date, r.customerName, r.transactionCode, r.itemsReturned, r.returnedTotal].map(escapeCell).join(','))].join('\r\n');
+                          const blob = new Blob([csv], { type: 'text/csv' });
+                          const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `returns_${new Date().toISOString().split('T')[0]}.csv`; document.body.appendChild(link); link.click(); document.body.removeChild(link);
+                        }} style={{ backgroundColor: '#059669', color: 'white', padding: '0.5rem 1rem', borderRadius: '0.375rem', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 500, fontSize: '0.875rem', height: '40px' }}>
+                          Export to CSV <FaFileExcel />
+                        </button>
+                      )}
+                      {canArchiveReturns && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (isSelectMode) {
+                              setIsSelectMode(false);
+                              setSelectedItems(new Set());
+                            } else {
+                              if (isReturnDetailsExpanded) {
+                                showToast('Please close the Return Details section before entering Select mode.', 'warning');
+                                return;
+                              }
+                              setIsSelectMode(true);
                             }
-                            setIsSelectMode(true);
-                          }
-                        }}
-                        style={{
-                          backgroundColor: isSelectMode ? '#6b7280' : '#1d4ed8',
-                          color: 'white',
-                          padding: '0.5rem 1rem',
-                          borderRadius: '0.375rem',
-                          border: 'none',
-                          cursor: 'pointer',
-                          fontWeight: 500,
-                          fontSize: '0.875rem',
-                          height: '40px',
-                        }}
-                      >
-                        {isSelectMode ? 'Cancel' : 'Select'}
+                          }}
+                          style={{
+                            backgroundColor: isSelectMode ? '#6b7280' : '#1d4ed8',
+                            color: 'white',
+                            padding: '0.5rem 1rem',
+                            borderRadius: '0.375rem',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontWeight: 500,
+                            fontSize: '0.875rem',
+                            height: '40px',
+                          }}
+                        >
+                          {isSelectMode ? 'Cancel' : 'Select'}
+                        </button>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                      <button type="button" onClick={() => setShowFilters(!showFilters)} style={{ backgroundColor: '#1e40af', color: 'white', padding: '0.5rem 1rem', borderRadius: '0.375rem', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 500, fontSize: '0.875rem', height: '40px' }}>
+                        Filters <FaFilter />
                       </button>
-                    )}
-                  </div>
-                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                    <button type="button" onClick={() => setShowFilters(!showFilters)} style={{ backgroundColor: '#1e40af', color: 'white', padding: '0.5rem 1rem', borderRadius: '0.375rem', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 500, fontSize: '0.875rem', height: '40px' }}>
-                      Filters <FaFilter />
-                    </button>
-                    <button type="button" onClick={() => { setDateFilter('all'); setShowArchived(false); setSortBy('date-desc'); }} style={{ backgroundColor: '#6b7280', color: 'white', padding: '0.5rem 1rem', borderRadius: '0.375rem', border: 'none', cursor: 'pointer', fontWeight: 500, fontSize: '0.875rem', height: '40px' }}>
-                      Clear Filters
-                    </button>
-                    {/* DEV ONLY: Migration buttons */}
-                    <button type="button" onClick={handleMigrateHandledBy} style={{ backgroundColor: '#8b5cf6', color: 'white', padding: '0.5rem 1rem', borderRadius: '0.375rem', border: 'none', cursor: 'pointer', fontWeight: 500, fontSize: '0.875rem', height: '40px' }}>
-                      Migrate Handled By
-                    </button>
-                    {migrationBackup && (
-                      <button type="button" onClick={handleRestoreMigration} style={{ backgroundColor: '#f59e0b', color: 'white', padding: '0.5rem 1rem', borderRadius: '0.375rem', border: 'none', cursor: 'pointer', fontWeight: 500, fontSize: '0.875rem', height: '40px' }}>
-                        Restore Migration
+                      <button type="button" onClick={() => { setDateFilter('all'); setShowArchived(false); setSortBy('date-desc'); }} style={{ backgroundColor: '#6b7280', color: 'white', padding: '0.5rem 1rem', borderRadius: '0.375rem', border: 'none', cursor: 'pointer', fontWeight: 500, fontSize: '0.875rem', height: '40px' }}>
+                        Clear Filters
                       </button>
-                    )}
+                      {/* DEV ONLY: Migration buttons */}
+                      <button type="button" onClick={handleMigrateHandledBy} style={{ backgroundColor: '#8b5cf6', color: 'white', padding: '0.5rem 1rem', borderRadius: '0.375rem', border: 'none', cursor: 'pointer', fontWeight: 500, fontSize: '0.875rem', height: '40px' }}>
+                        Migrate Handled By
+                      </button>
+                      {migrationBackup && (
+                        <button type="button" onClick={handleRestoreMigration} style={{ backgroundColor: '#f59e0b', color: 'white', padding: '0.5rem 1rem', borderRadius: '0.375rem', border: 'none', cursor: 'pointer', fontWeight: 500, fontSize: '0.875rem', height: '40px' }}>
+                          Restore Migration
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
                 )}
                 {showFilters && (
                   <div ref={filtersRef} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1rem', paddingTop: '1rem', borderTop: '1px solid #e5e7eb' }}>
@@ -1622,413 +1626,413 @@ export const Returns: React.FC = () => {
 
             {/* Transactions List overlay panel */}
             {isTransactionsPanelOpen && (
-            <section
-              ref={transactionsPanelRef}
-              style={{
-                backgroundColor: 'white',
-                borderRadius: '0 0.75rem 0.75rem 0',
-                padding: '1.25rem 1.5rem',
-                border: '1px solid #e5e7eb',
-                boxShadow: '0 8px 20px rgba(15, 23, 42, 0.2)',
-                maxHeight: '70vh',
-                overflow: 'visible',
-                display: 'flex',
-                flexDirection: 'column',
-                position: 'absolute',
-                top: '1rem',
-                left: 0,
-                width: isMobile ? 'calc(100vw - 80px)' : 480,
-                zIndex: 209,
-              }}
-            >
-              {showTransactionsContent && (
-                <>
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: '0.75rem',
-                      marginBottom: '0.75rem',
-                      position: 'relative',
-                    }}
-                  >
-                    <h2
-                      style={{
-                        fontSize: '1rem',
-                        fontWeight: 600,
-                        color: '#111827',
-                        margin: 0,
-                      }}
-                    >
-                      Transactions List
-                    </h2>
-
-                    {/* Search bar + filter button for transactions */}
+              <section
+                ref={transactionsPanelRef}
+                style={{
+                  backgroundColor: 'white',
+                  borderRadius: '0 0.75rem 0.75rem 0',
+                  padding: '1.25rem 1.5rem',
+                  border: '1px solid #e5e7eb',
+                  boxShadow: '0 8px 20px rgba(15, 23, 42, 0.2)',
+                  maxHeight: '70vh',
+                  overflow: 'visible',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  position: 'absolute',
+                  top: '1rem',
+                  left: 0,
+                  width: isMobile ? 'calc(100vw - 80px)' : 480,
+                  zIndex: 209,
+                }}
+              >
+                {showTransactionsContent && (
+                  <>
                     <div
                       style={{
-                        position: 'relative',
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'flex-end',
-                        gap: '0.4rem',
-                        flex: 1,
-                        maxWidth: '260px',
+                        justifyContent: 'space-between',
+                        gap: '0.75rem',
+                        marginBottom: '0.75rem',
+                        position: 'relative',
                       }}
                     >
-                      {/* Date filter trigger */}
-                      <button
-                        type="button"
-                        onClick={() => setIsTransactionsFilterOpen(prev => !prev)}
+                      <h2
                         style={{
-                          width: '30px',
-                          height: '30px',
-                          borderRadius: '9999px',
-                          border: 'none',
-                          backgroundColor: '#1d4ed8',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: 'white',
-                          cursor: 'pointer',
-                          flexShrink: 0,
+                          fontSize: '1rem',
+                          fontWeight: 600,
+                          color: '#111827',
+                          margin: 0,
                         }}
                       >
-                        <FaFilter size={12} />
-                      </button>
+                        Transactions List
+                      </h2>
 
+                      {/* Search bar + filter button for transactions */}
                       <div
-                        ref={searchRef}
                         style={{
                           position: 'relative',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'flex-end',
+                          gap: '0.4rem',
                           flex: 1,
+                          maxWidth: '260px',
                         }}
                       >
-                        {/* Search icon button */}
-                        {!isSearchExpanded && (
-                          <button
-                            type="button"
-                            onClick={() => setIsSearchExpanded(true)}
-                            style={{
-                              width: '30px',
-                              height: '30px',
-                              borderRadius: '9999px',
-                              border: 'none',
-                              backgroundColor: '#1d4ed8',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              color: 'white',
-                              cursor: 'pointer',
-                              marginLeft: 'auto',
-                            }}
-                          >
-                            <FaSearch size={12} />
-                          </button>
-                        )}
+                        {/* Date filter trigger */}
+                        <button
+                          type="button"
+                          onClick={() => setIsTransactionsFilterOpen(prev => !prev)}
+                          style={{
+                            width: '30px',
+                            height: '30px',
+                            borderRadius: '9999px',
+                            border: 'none',
+                            backgroundColor: '#1d4ed8',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: 'white',
+                            cursor: 'pointer',
+                            flexShrink: 0,
+                          }}
+                        >
+                          <FaFilter size={12} />
+                        </button>
 
-                        {/* Expanded search with X button */}
-                        {isSearchExpanded && (
-                          <div
-                            style={{
-                              position: 'relative',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '0.4rem',
-                            }}
-                          >
-                            <input
-                              type="text"
-                              placeholder="Search transactions..."
-                              value={searchTerm}
-                              onChange={(e) => setSearchTerm(e.target.value)}
-                              autoFocus
-                              style={{
-                                flex: 1,
-                                padding: '0.35rem 0.6rem',
-                                borderRadius: '9999px',
-                                border: '1px solid #d1d5db',
-                                fontSize: '0.8rem',
-                                outline: 'none',
-                                backgroundColor: 'white',
-                                color: '#111827',
-                              }}
-                            />
+                        <div
+                          ref={searchRef}
+                          style={{
+                            position: 'relative',
+                            flex: 1,
+                          }}
+                        >
+                          {/* Search icon button */}
+                          {!isSearchExpanded && (
                             <button
                               type="button"
-                              onClick={() => {
-                                setIsSearchExpanded(false);
-                                setSearchTerm('');
-                              }}
+                              onClick={() => setIsSearchExpanded(true)}
                               style={{
                                 width: '30px',
                                 height: '30px',
                                 borderRadius: '9999px',
                                 border: 'none',
-                                backgroundColor: '#ef4444',
+                                backgroundColor: '#1d4ed8',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 color: 'white',
                                 cursor: 'pointer',
-                                flexShrink: 0,
+                                marginLeft: 'auto',
                               }}
                             >
-                              <FaTimes size={12} />
+                              <FaSearch size={12} />
                             </button>
-                          </div>
-                        )}
+                          )}
 
-                        <div
-                          style={{
-                            position: 'absolute',
-                            right: 0,
-                            top: '110%',
-                            backgroundColor: 'white',
-                            borderRadius: '0.5rem',
-                            boxShadow:
-                              '0 10px 25px rgba(15, 23, 42, 0.18)',
-                            border: '1px solid #e5e7eb',
-                            padding: '0.4rem 0.4rem',
-                            minWidth: '180px',
-                            zIndex: 220,
-                            opacity: isTransactionsFilterOpen ? 1 : 0,
-                            transform: isTransactionsFilterOpen
-                              ? 'translateY(0)'
-                              : 'translateY(-4px)',
-                            pointerEvents: isTransactionsFilterOpen ? 'auto' : 'none',
-                            transition: 'opacity 0.15s ease-out, transform 0.15s ease-out',
-                          }}
-                        >
+                          {/* Expanded search with X button */}
+                          {isSearchExpanded && (
+                            <div
+                              style={{
+                                position: 'relative',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.4rem',
+                              }}
+                            >
+                              <input
+                                type="text"
+                                placeholder="Search transactions..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                autoFocus
+                                style={{
+                                  flex: 1,
+                                  padding: '0.35rem 0.6rem',
+                                  borderRadius: '9999px',
+                                  border: '1px solid #d1d5db',
+                                  fontSize: '0.8rem',
+                                  outline: 'none',
+                                  backgroundColor: 'white',
+                                  color: '#111827',
+                                }}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setIsSearchExpanded(false);
+                                  setSearchTerm('');
+                                }}
+                                style={{
+                                  width: '30px',
+                                  height: '30px',
+                                  borderRadius: '9999px',
+                                  border: 'none',
+                                  backgroundColor: '#ef4444',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  color: 'white',
+                                  cursor: 'pointer',
+                                  flexShrink: 0,
+                                }}
+                              >
+                                <FaTimes size={12} />
+                              </button>
+                            </div>
+                          )}
+
                           <div
                             style={{
-                              fontSize: '0.75rem',
-                              fontWeight: 600,
-                              color: '#4b5563',
-                              marginBottom: '0.25rem',
+                              position: 'absolute',
+                              right: 0,
+                              top: '110%',
+                              backgroundColor: 'white',
+                              borderRadius: '0.5rem',
+                              boxShadow:
+                                '0 10px 25px rgba(15, 23, 42, 0.18)',
+                              border: '1px solid #e5e7eb',
+                              padding: '0.4rem 0.4rem',
+                              minWidth: '180px',
+                              zIndex: 220,
+                              opacity: isTransactionsFilterOpen ? 1 : 0,
+                              transform: isTransactionsFilterOpen
+                                ? 'translateY(0)'
+                                : 'translateY(-4px)',
+                              pointerEvents: isTransactionsFilterOpen ? 'auto' : 'none',
+                              transition: 'opacity 0.15s ease-out, transform 0.15s ease-out',
                             }}
                           >
-                            Date Filter
-                          </div>
-                          {[
-                            { key: 'all', label: 'All dates' },
-                            { key: 'today', label: 'Today' },
-                            { key: 'last7', label: 'Last 7 days' },
-                            { key: 'thisMonth', label: 'This month' },
-                          ].map((opt) => (
-                            <button
-                              key={opt.key}
-                              type="button"
-                              onClick={() => {
-                                setDateFilter(opt.key as any);
-                                setIsTransactionsFilterOpen(false);
-                              }}
+                            <div
                               style={{
-                                width: '100%',
-                                textAlign: 'left',
-                                padding: '0.3rem 0.45rem',
-                                borderRadius: '0.375rem',
-                                border: 'none',
-                                backgroundColor:
-                                  dateFilter === opt.key ? '#eff6ff' : 'white',
-                                color:
-                                  dateFilter === opt.key ? '#1d4ed8' : '#374151',
                                 fontSize: '0.75rem',
-                                cursor: 'pointer',
-                                marginBottom: '0.2rem',
+                                fontWeight: 600,
+                                color: '#4b5563',
+                                marginBottom: '0.25rem',
                               }}
                             >
-                              {opt.label}
-                            </button>
-                          ))}
+                              Date Filter
+                            </div>
+                            {[
+                              { key: 'all', label: 'All dates' },
+                              { key: 'today', label: 'Today' },
+                              { key: 'last7', label: 'Last 7 days' },
+                              { key: 'thisMonth', label: 'This month' },
+                            ].map((opt) => (
+                              <button
+                                key={opt.key}
+                                type="button"
+                                onClick={() => {
+                                  setDateFilter(opt.key as any);
+                                  setIsTransactionsFilterOpen(false);
+                                }}
+                                style={{
+                                  width: '100%',
+                                  textAlign: 'left',
+                                  padding: '0.3rem 0.45rem',
+                                  borderRadius: '0.375rem',
+                                  border: 'none',
+                                  backgroundColor:
+                                    dateFilter === opt.key ? '#eff6ff' : 'white',
+                                  color:
+                                    dateFilter === opt.key ? '#1d4ed8' : '#374151',
+                                  fontSize: '0.75rem',
+                                  cursor: 'pointer',
+                                  marginBottom: '0.2rem',
+                                }}
+                              >
+                                {opt.label}
+                              </button>
+                            ))}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div
-                    style={{
-                      borderRadius: '0.5rem',
-                      border: '1px solid #e5e7eb',
-                      overflow: 'hidden',
-                      display: 'flex',
-                      flexDirection: 'column',
-                    }}
-                  >
-                    <div style={{ position: 'relative', height: '100%' }}>
-                      {isMobile && showLeftScrollIndicator && (
-                        <div style={{
-                          position: 'absolute',
-                          left: 0,
-                          top: 0,
-                          bottom: 0,
-                          width: '20px',
-                          background: 'linear-gradient(to right, rgba(0,0,0,0.1), transparent)',
-                          pointerEvents: 'none',
-                          zIndex: 10,
-                        }} />
-                      )}
-                      {isMobile && showRightScrollIndicator && (
-                        <div style={{
-                          position: 'absolute',
-                          right: 0,
-                          top: 0,
-                          bottom: 0,
-                          width: '20px',
-                          background: 'linear-gradient(to left, rgba(0,0,0,0.1), transparent)',
-                          pointerEvents: 'none',
-                          zIndex: 10,
-                        }} />
-                      )}
-                      <div
-                        ref={tableScrollRef}
-                        style={{
-                          maxHeight: '100%',
-                          overflowY: 'auto',
-                          overflowX: 'auto',
-                          scrollbarWidth: 'thin',
-                          scrollbarColor: '#d1d5db #f3f4f6',
-                          WebkitOverflowScrolling: 'touch',
-                        }}
-                      >
-                      <table
-                        style={{
-                          width: '100%',
-                          borderCollapse: 'collapse',
-                          tableLayout: 'auto',
-                          fontSize: '0.8rem',
-                          color: '#111827',
-                        }}
-                      >
-                        <thead>
-                          <tr
+                    <div
+                      style={{
+                        borderRadius: '0.5rem',
+                        border: '1px solid #e5e7eb',
+                        overflow: 'hidden',
+                        display: 'flex',
+                        flexDirection: 'column',
+                      }}
+                    >
+                      <div style={{ position: 'relative', height: '100%' }}>
+                        {isMobile && showLeftScrollIndicator && (
+                          <div style={{
+                            position: 'absolute',
+                            left: 0,
+                            top: 0,
+                            bottom: 0,
+                            width: '20px',
+                            background: 'linear-gradient(to right, rgba(0,0,0,0.1), transparent)',
+                            pointerEvents: 'none',
+                            zIndex: 10,
+                          }} />
+                        )}
+                        {isMobile && showRightScrollIndicator && (
+                          <div style={{
+                            position: 'absolute',
+                            right: 0,
+                            top: 0,
+                            bottom: 0,
+                            width: '20px',
+                            background: 'linear-gradient(to left, rgba(0,0,0,0.1), transparent)',
+                            pointerEvents: 'none',
+                            zIndex: 10,
+                          }} />
+                        )}
+                        <div
+                          ref={tableScrollRef}
+                          style={{
+                            maxHeight: '100%',
+                            overflowY: 'auto',
+                            overflowX: 'auto',
+                            scrollbarWidth: 'thin',
+                            scrollbarColor: '#d1d5db #f3f4f6',
+                            WebkitOverflowScrolling: 'touch',
+                          }}
+                        >
+                          <table
                             style={{
-                              backgroundColor: '#f9fafb',
-                              borderBottom: '1px solid #e5e7eb',
+                              width: '100%',
+                              borderCollapse: 'collapse',
+                              tableLayout: 'auto',
+                              fontSize: '0.8rem',
+                              color: '#111827',
                             }}
                           >
-                            <th
-                              style={{
-                                padding: '0.4rem 0.5rem',
-                                textAlign: 'left',
-                                fontWeight: 600,
-                                color: '#6b7280',
-                              }}
-                            >
-                              Transaction
-                            </th>
-                            <th
-                              style={{
-                                padding: '0.4rem 0.5rem',
-                                textAlign: 'right',
-                                fontWeight: 600,
-                                color: '#6b7280',
-                              }}
-                            >
-                              Payment
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {transactionsLoading && (
-                            <tr>
-                              <td
-                                colSpan={2}
-                                style={{
-                                  padding: '0.75rem 0.75rem',
-                                  fontSize: '0.8rem',
-                                  color: '#6b7280',
-                                  textAlign: 'center',
-                                }}
-                              >
-                                Loading transactions...
-                              </td>
-                            </tr>
-                          )}
-                          {!transactionsLoading && filteredTransactions.length === 0 && (
-                            <tr>
-                              <td
-                                colSpan={2}
-                                style={{
-                                  padding: '0.75rem 0.75rem',
-                                  fontSize: '0.8rem',
-                                  color: '#6b7280',
-                                  textAlign: 'center',
-                                }}
-                              >
-                                No matching transactions.
-                              </td>
-                            </tr>
-                          )}
-                          {!transactionsLoading &&
-                            filteredTransactions.map((tx) => (
+                            <thead>
                               <tr
-                                key={tx.id}
-                                onClick={() => handleSelectTransaction(tx)}
                                 style={{
-                                  cursor: 'pointer',
-                                  backgroundColor:
-                                    selectedTransactionId === tx.id ? '#eff6ff' : 'white',
+                                  backgroundColor: '#f9fafb',
                                   borderBottom: '1px solid #e5e7eb',
                                 }}
                               >
-                                <td
+                                <th
                                   style={{
                                     padding: '0.4rem 0.5rem',
-                                    verticalAlign: 'middle',
+                                    textAlign: 'left',
+                                    fontWeight: 600,
+                                    color: '#6b7280',
                                   }}
                                 >
-                                  <div style={{ fontWeight: '500', color: '#111827' }}>
-                                    {tx.customerName || 'Walk-in Customer'}
-                                  </div>
-                                  <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.15rem' }}>
-                                    {(() => {
-                                      const raw = tx.date || '';
-                                      const parts = raw.split('-');
-                                      if (parts.length === 3) {
-                                        const [yyyy, mm, dd] = parts;
-                                        const yy = yyyy.slice(-2);
-                                        return `${dd}/${mm}/${yy}`;
-                                      }
-                                      return raw;
-                                    })()} • {(() => {
-                                      const t = (tx.transactionType || '').toLowerCase();
-                                      if (t.includes('parts') && t.includes('service')) return 'Parts & Service';
-                                      if (t.includes('parts')) return 'Parts';
-                                      if (t.includes('service')) return 'Service';
-                                      return 'N/A';
-                                    })()} • {tx.transactionCode}
-                                  </div>
-                                </td>
-                                <td
+                                  Transaction
+                                </th>
+                                <th
                                   style={{
                                     padding: '0.4rem 0.5rem',
                                     textAlign: 'right',
-                                    verticalAlign: 'middle',
+                                    fontWeight: 600,
+                                    color: '#6b7280',
                                   }}
                                 >
-                                  <div style={{ fontWeight: '500', color: '#111827', fontVariantNumeric: 'tabular-nums' }}>
-                                    ₱{tx.total.toFixed(2)}
-                                  </div>
-                                  <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.15rem' }}>
-                                    {(() => {
-                                      const p = (tx.paymentType || '').toLowerCase();
-                                      if (p === 'cash') return 'Cash';
-                                      if (p === 'gcash') return 'GCash';
-                                      return 'N/A';
-                                    })()}
-                                  </div>
-                                </td>
+                                  Payment
+                                </th>
                               </tr>
-                            ))}
-                        </tbody>
-                      </table>
+                            </thead>
+                            <tbody>
+                              {transactionsLoading && (
+                                <tr>
+                                  <td
+                                    colSpan={2}
+                                    style={{
+                                      padding: '0.75rem 0.75rem',
+                                      fontSize: '0.8rem',
+                                      color: '#6b7280',
+                                      textAlign: 'center',
+                                    }}
+                                  >
+                                    Loading transactions...
+                                  </td>
+                                </tr>
+                              )}
+                              {!transactionsLoading && filteredTransactions.length === 0 && (
+                                <tr>
+                                  <td
+                                    colSpan={2}
+                                    style={{
+                                      padding: '0.75rem 0.75rem',
+                                      fontSize: '0.8rem',
+                                      color: '#6b7280',
+                                      textAlign: 'center',
+                                    }}
+                                  >
+                                    No matching transactions.
+                                  </td>
+                                </tr>
+                              )}
+                              {!transactionsLoading &&
+                                filteredTransactions.map((tx) => (
+                                  <tr
+                                    key={tx.id}
+                                    onClick={() => handleSelectTransaction(tx)}
+                                    style={{
+                                      cursor: 'pointer',
+                                      backgroundColor:
+                                        selectedTransactionId === tx.id ? '#eff6ff' : 'white',
+                                      borderBottom: '1px solid #e5e7eb',
+                                    }}
+                                  >
+                                    <td
+                                      style={{
+                                        padding: '0.4rem 0.5rem',
+                                        verticalAlign: 'middle',
+                                      }}
+                                    >
+                                      <div style={{ fontWeight: '500', color: '#111827' }}>
+                                        {tx.customerName || 'Walk-in Customer'}
+                                      </div>
+                                      <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.15rem' }}>
+                                        {(() => {
+                                          const raw = tx.date || '';
+                                          const parts = raw.split('-');
+                                          if (parts.length === 3) {
+                                            const [yyyy, mm, dd] = parts;
+                                            const yy = yyyy.slice(-2);
+                                            return `${dd}/${mm}/${yy}`;
+                                          }
+                                          return raw;
+                                        })()} • {(() => {
+                                          const t = (tx.transactionType || '').toLowerCase();
+                                          if (t.includes('parts') && t.includes('service')) return 'Parts & Service';
+                                          if (t.includes('parts')) return 'Parts';
+                                          if (t.includes('service')) return 'Service';
+                                          return 'N/A';
+                                        })()} • {tx.transactionCode}
+                                      </div>
+                                    </td>
+                                    <td
+                                      style={{
+                                        padding: '0.4rem 0.5rem',
+                                        textAlign: 'right',
+                                        verticalAlign: 'middle',
+                                      }}
+                                    >
+                                      <div style={{ fontWeight: '500', color: '#111827', fontVariantNumeric: 'tabular-nums' }}>
+                                        ₱{tx.total.toFixed(2)}
+                                      </div>
+                                      <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.15rem' }}>
+                                        {(() => {
+                                          const p = (tx.paymentType || '').toLowerCase();
+                                          if (p === 'cash') return 'Cash';
+                                          if (p === 'gcash') return 'GCash';
+                                          return 'N/A';
+                                        })()}
+                                      </div>
+                                    </td>
+                                  </tr>
+                                ))}
+                            </tbody>
+                          </table>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </>
-              )}
-            </section>
+                  </>
+                )}
+              </section>
             )}
 
             <div
@@ -2514,155 +2518,155 @@ export const Returns: React.FC = () => {
                         </div>
                       ) : (
                         /* Desktop Items table */
-                      <div
-                        style={{
-                          marginBottom: '1.25rem',
-                          borderRadius: '0.5rem',
-                          border: '1px solid #e5e7eb',
-                          overflow: 'hidden',
-                        }}
-                      >
                         <div
                           style={{
-                            backgroundColor: '#f9fafb',
-                            padding: '0.5rem 0.75rem',
-                            fontSize: '0.8rem',
-                            fontWeight: 600,
-                            color: '#6b7280',
-                            display: 'grid',
-                            gridTemplateColumns:
-                              '40px 2.2fr 0.9fr 0.9fr 1fr 1fr 1.3fr',
-                            columnGap: '0.35rem',
+                            marginBottom: '1.25rem',
+                            borderRadius: '0.5rem',
+                            border: '1px solid #e5e7eb',
+                            overflow: 'hidden',
                           }}
                         >
-                          <span />
-                          <span>Item</span>
-                          <span>Qty Bought</span>
-                          <span>Qty Returned</span>
-                          <span>Max Return</span>
-                          <span>Qty To Return</span>
-                          <span>Line Refund / Reason</span>
-                        </div>
-                        <div style={{ maxHeight: 220, overflowY: 'auto' }}>
-                          {returnLines.map((line, index) => (
-                            <div
-                              key={line.id}
-                              style={{
-                                padding: '0.45rem 0.75rem',
-                                borderBottom: '1px solid #e5e7eb',
-                                display: 'grid',
-                                gridTemplateColumns:
-                                  '40px 2.2fr 0.9fr 0.9fr 1fr 1fr 1.3fr',
-                                columnGap: '0.35rem',
-                                fontSize: '0.8rem',
-                                alignItems: 'center',
-                              }}
-                            >
-                              <input
-                                type="checkbox"
-                                disabled={line.maxReturn <= 0}
-                                checked={line.selected}
-                                onChange={(e) => {
-                                  if (line.maxReturn <= 0) return;
-                                  const checked = e.target.checked;
-                                  setReturnLines((prev) => {
-                                    const next = [...prev];
-                                    const current = next[index];
-                                    // If selecting and qtyToReturn is falsy, auto-fill with max; if unselecting, reset qty
-                                    const nextLine = checked
-                                      ? {
-                                        ...current,
-                                        selected: true,
-                                        qtyToReturn:
-                                          !current.qtyToReturn && current.qtyToReturn !== 0
-                                            ? current.maxReturn
-                                            : Math.min(current.qtyToReturn || current.maxReturn, current.maxReturn),
-                                      }
-                                      : {
-                                        ...current,
-                                        selected: false,
-                                        qtyToReturn: 0,
-                                      };
-                                    next[index] = nextLine;
-                                    return next;
-                                  });
-                                }}
-                              />
-                              <span style={{ color: '#111827' }}>{line.itemName}</span>
-                              <span style={{ color: '#111827' }}>{line.quantity}</span>
-                              <span style={{ color: '#111827' }}>{line.alreadyReturned}</span>
-                              <span style={{ color: '#111827' }}>{line.maxReturn}</span>
-                              <input
-                                type="number"
-                                min={0}
-                                max={line.maxReturn}
-                                value={Number.isNaN(line.qtyToReturn) ? '' : line.qtyToReturn}
-                                onChange={(e) => {
-                                  const value = e.target.value;
-                                  setReturnLines((prev) => {
-                                    const next = [...prev];
-                                    if (value === '') {
-                                      next[index] = { ...next[index], qtyToReturn: Number.NaN };
-                                      return next;
-                                    }
-                                    const numeric = Number(value);
-                                    const clamped = Math.max(0, Math.min(line.maxReturn, numeric || 0));
-                                    next[index] = { ...next[index], qtyToReturn: clamped };
-                                    return next;
-                                  });
-                                }}
-                                style={{
-                                  width: '100%',
-                                  padding: '0.25rem 0.4rem',
-                                  borderRadius: '0.25rem',
-                                  border: '1px solid #d1d5db',
-                                  backgroundColor: 'white',
-                                  color: '#111827',
-                                }}
-                                disabled={line.maxReturn <= 0}
-                              />
+                          <div
+                            style={{
+                              backgroundColor: '#f9fafb',
+                              padding: '0.5rem 0.75rem',
+                              fontSize: '0.8rem',
+                              fontWeight: 600,
+                              color: '#6b7280',
+                              display: 'grid',
+                              gridTemplateColumns:
+                                '40px 2.2fr 0.9fr 0.9fr 1fr 1fr 1.3fr',
+                              columnGap: '0.35rem',
+                            }}
+                          >
+                            <span />
+                            <span>Item</span>
+                            <span>Qty Bought</span>
+                            <span>Qty Returned</span>
+                            <span>Max Return</span>
+                            <span>Qty To Return</span>
+                            <span>Line Refund / Reason</span>
+                          </div>
+                          <div style={{ maxHeight: 220, overflowY: 'auto' }}>
+                            {returnLines.map((line, index) => (
                               <div
+                                key={line.id}
                                 style={{
-                                  display: 'flex',
-                                  flexDirection: 'column',
-                                  gap: '0.25rem',
+                                  padding: '0.45rem 0.75rem',
+                                  borderBottom: '1px solid #e5e7eb',
+                                  display: 'grid',
+                                  gridTemplateColumns:
+                                    '40px 2.2fr 0.9fr 0.9fr 1fr 1fr 1.3fr',
+                                  columnGap: '0.35rem',
+                                  fontSize: '0.8rem',
+                                  alignItems: 'center',
                                 }}
                               >
-                                <div
-                                  style={{
-                                    fontWeight: 600,
-                                    color: '#111827',
-                                  }}
-                                >
-                                  ₱{Number(line.totalAmount ?? 0).toFixed(2)}
-                                </div>
                                 <input
-                                  type="text"
-                                  placeholder="Reason (optional)"
+                                  type="checkbox"
+                                  disabled={line.maxReturn <= 0}
+                                  checked={line.selected}
+                                  onChange={(e) => {
+                                    if (line.maxReturn <= 0) return;
+                                    const checked = e.target.checked;
+                                    setReturnLines((prev) => {
+                                      const next = [...prev];
+                                      const current = next[index];
+                                      // If selecting and qtyToReturn is falsy, auto-fill with max; if unselecting, reset qty
+                                      const nextLine = checked
+                                        ? {
+                                          ...current,
+                                          selected: true,
+                                          qtyToReturn:
+                                            !current.qtyToReturn && current.qtyToReturn !== 0
+                                              ? current.maxReturn
+                                              : Math.min(current.qtyToReturn || current.maxReturn, current.maxReturn),
+                                        }
+                                        : {
+                                          ...current,
+                                          selected: false,
+                                          qtyToReturn: 0,
+                                        };
+                                      next[index] = nextLine;
+                                      return next;
+                                    });
+                                  }}
+                                />
+                                <span style={{ color: '#111827' }}>{line.itemName}</span>
+                                <span style={{ color: '#111827' }}>{line.quantity}</span>
+                                <span style={{ color: '#111827' }}>{line.alreadyReturned}</span>
+                                <span style={{ color: '#111827' }}>{line.maxReturn}</span>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  max={line.maxReturn}
+                                  value={Number.isNaN(line.qtyToReturn) ? '' : line.qtyToReturn}
+                                  onChange={(e) => {
+                                    const value = e.target.value;
+                                    setReturnLines((prev) => {
+                                      const next = [...prev];
+                                      if (value === '') {
+                                        next[index] = { ...next[index], qtyToReturn: Number.NaN };
+                                        return next;
+                                      }
+                                      const numeric = Number(value);
+                                      const clamped = Math.max(0, Math.min(line.maxReturn, numeric || 0));
+                                      next[index] = { ...next[index], qtyToReturn: clamped };
+                                      return next;
+                                    });
+                                  }}
                                   style={{
                                     width: '100%',
                                     padding: '0.25rem 0.4rem',
                                     borderRadius: '0.25rem',
                                     border: '1px solid #d1d5db',
-                                    fontSize: '0.75rem',
                                     backgroundColor: 'white',
                                     color: '#111827',
                                   }}
-                                  value={line.reason}
-                                  onChange={(e) => {
-                                    const value = e.target.value;
-                                    setReturnLines((prev) => {
-                                      const next = [...prev];
-                                      next[index] = { ...next[index], reason: value };
-                                      return next;
-                                    });
-                                  }}
+                                  disabled={line.maxReturn <= 0}
                                 />
+                                <div
+                                  style={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '0.25rem',
+                                  }}
+                                >
+                                  <div
+                                    style={{
+                                      fontWeight: 600,
+                                      color: '#111827',
+                                    }}
+                                  >
+                                    ₱{Number(line.totalAmount ?? 0).toFixed(2)}
+                                  </div>
+                                  <input
+                                    type="text"
+                                    placeholder="Reason (optional)"
+                                    style={{
+                                      width: '100%',
+                                      padding: '0.25rem 0.4rem',
+                                      borderRadius: '0.25rem',
+                                      border: '1px solid #d1d5db',
+                                      fontSize: '0.75rem',
+                                      backgroundColor: 'white',
+                                      color: '#111827',
+                                    }}
+                                    value={line.reason}
+                                    onChange={(e) => {
+                                      const value = e.target.value;
+                                      setReturnLines((prev) => {
+                                        const next = [...prev];
+                                        next[index] = { ...next[index], reason: value };
+                                        return next;
+                                      });
+                                    }}
+                                  />
+                                </div>
                               </div>
-                            </div>
-                          ))}
+                            ))}
+                          </div>
                         </div>
-                      </div>
                       )}
 
                       {/* Row 7: Overall Reason / Notes */}
@@ -3136,86 +3140,86 @@ export const Returns: React.FC = () => {
                                     justifyContent: 'flex-end',
                                   }}
                                 >
-                              {ret.status !== 'archived' && canArchiveReturns && (
-                                <button
-                                  type="button"
-                                  onClick={async (e) => {
-                                    e.stopPropagation();
-                                    const retRef = doc(db, 'returns', ret.returnDocId);
-                                    await updateDoc(retRef, { status: 'archived', archivedAt: new Date().toISOString() });
-                                    setPreviousReturns((prev) =>
-                                      prev.map((row) =>
-                                        row.returnDocId === ret.returnDocId
-                                          ? { ...row, status: 'archived' }
-                                          : row,
-                                      ),
-                                    );
-                                  }}
-                                  style={{
-                                    padding: '0.25rem 0.75rem',
-                                    borderRadius: '999px',
-                                    border: '1px solid #fecaca',
-                                    backgroundColor: '#fee2e2',
-                                    color: '#b91c1c',
-                                    fontSize: '0.75rem',
-                                    cursor: 'pointer',
-                                  }}
-                                >
-                                  Archive
-                                </button>
-                              )}
-                              {ret.status === 'archived' && canUnarchiveReturns && (
-                                <button
-                                  type="button"
-                                  onClick={async (e) => {
-                                    e.stopPropagation();
-                                    const retRef = doc(db, 'returns', ret.returnDocId);
-                                    await updateDoc(retRef, { status: 'active', archivedAt: null });
-                                    setPreviousReturns((prev) =>
-                                      prev.map((row) =>
-                                        row.returnDocId === ret.returnDocId
-                                          ? { ...row, status: 'active' }
-                                          : row,
-                                      ),
-                                    );
-                                  }}
-                                  style={{
-                                    padding: '0.25rem 0.75rem',
-                                    borderRadius: '999px',
-                                    border: '1px solid #93c5fd',
-                                    backgroundColor: '#dbeafe',
-                                    color: '#1d4ed8',
-                                    fontSize: '0.75rem',
-                                    cursor: 'pointer',
-                                  }}
-                                >
-                                  Unarchive
-                                </button>
-                              )}
-                              {ret.status === 'archived' && canDeleteReturns && (
-                                <button
-                                  type="button"
-                                  onClick={async (e) => {
-                                    e.stopPropagation();
-                                    const retRef = doc(db, 'returns', ret.returnDocId);
-                                    await updateDoc(retRef, { deleted: true });
-                                    setPreviousReturns((prev) =>
-                                      prev.filter((row) => row.returnDocId !== ret.returnDocId),
-                                    );
-                                  }}
-                                  style={{
-                                    padding: '0.25rem 0.75rem',
-                                    borderRadius: '999px',
-                                    border: '1px solid #fca5a5',
-                                    backgroundColor: '#fef2f2',
-                                    color: '#dc2626',
-                                    fontSize: '0.75rem',
-                                    cursor: 'pointer',
-                                  }}
-                                >
-                                  Delete
-                                </button>
-                              )}
+                                  {ret.status !== 'archived' && canArchiveReturns && (
+                                    <button
+                                      type="button"
+                                      onClick={async (e) => {
+                                        e.stopPropagation();
+                                        const retRef = doc(db, 'returns', ret.returnDocId);
+                                        await updateDoc(retRef, { status: 'archived', archivedAt: new Date().toISOString() });
+                                        setPreviousReturns((prev) =>
+                                          prev.map((row) =>
+                                            row.returnDocId === ret.returnDocId
+                                              ? { ...row, status: 'archived' }
+                                              : row,
+                                          ),
+                                        );
+                                      }}
+                                      style={{
+                                        padding: '0.25rem 0.75rem',
+                                        borderRadius: '999px',
+                                        border: '1px solid #fecaca',
+                                        backgroundColor: '#fee2e2',
+                                        color: '#b91c1c',
+                                        fontSize: '0.75rem',
+                                        cursor: 'pointer',
+                                      }}
+                                    >
+                                      Archive
+                                    </button>
+                                  )}
+                                  {ret.status === 'archived' && canUnarchiveReturns && (
+                                    <button
+                                      type="button"
+                                      onClick={async (e) => {
+                                        e.stopPropagation();
+                                        const retRef = doc(db, 'returns', ret.returnDocId);
+                                        await updateDoc(retRef, { status: 'active', archivedAt: null });
+                                        setPreviousReturns((prev) =>
+                                          prev.map((row) =>
+                                            row.returnDocId === ret.returnDocId
+                                              ? { ...row, status: 'active' }
+                                              : row,
+                                          ),
+                                        );
+                                      }}
+                                      style={{
+                                        padding: '0.25rem 0.75rem',
+                                        borderRadius: '999px',
+                                        border: '1px solid #93c5fd',
+                                        backgroundColor: '#dbeafe',
+                                        color: '#1d4ed8',
+                                        fontSize: '0.75rem',
+                                        cursor: 'pointer',
+                                      }}
+                                    >
+                                      Unarchive
+                                    </button>
+                                  )}
+                                  {ret.status === 'archived' && canDeleteReturns && (
+                                    <button
+                                      type="button"
+                                      onClick={async (e) => {
+                                        e.stopPropagation();
+                                        const retRef = doc(db, 'returns', ret.returnDocId);
+                                        await updateDoc(retRef, { deleted: true });
+                                        setPreviousReturns((prev) =>
+                                          prev.filter((row) => row.returnDocId !== ret.returnDocId),
+                                        );
+                                      }}
+                                      style={{
+                                        padding: '0.25rem 0.75rem',
+                                        borderRadius: '999px',
+                                        border: '1px solid #fca5a5',
+                                        backgroundColor: '#fef2f2',
+                                        color: '#dc2626',
+                                        fontSize: '0.75rem',
+                                        cursor: 'pointer',
+                                      }}
+                                    >
+                                      Delete
+                                    </button>
+                                  )}
                                 </td>
                               </>
                             )}
@@ -3265,7 +3269,7 @@ export const Returns: React.FC = () => {
             <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#111827', margin: 0, marginBottom: '1rem' }}>
               Return Details
             </h3>
-            
+
             <div style={{ marginBottom: '1rem' }}>
               <div style={{ marginBottom: '0.75rem', display: 'flex', gap: '0.5rem' }}>
                 <strong style={{ color: '#374151', minWidth: '140px' }}>Return ID:</strong>
@@ -3337,7 +3341,7 @@ export const Returns: React.FC = () => {
                 </div>
               )}
             </div>
-            
+
             {/* Individual Actions */}
             <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', justifyContent: 'flex-start', flexWrap: 'wrap' }}>
               {selectedReturnForModal.status !== 'archived' && canArchiveReturns && (
@@ -3421,7 +3425,7 @@ export const Returns: React.FC = () => {
                 </button>
               )}
             </div>
-            
+
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <button
                 onClick={() => setShowReturnDetailsModal(false)}

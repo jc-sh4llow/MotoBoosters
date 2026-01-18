@@ -14,6 +14,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import logo from '../../assets/logo.png';
 import { db } from '../../lib/firebase';
 import { HeaderDropdown } from '../../components/HeaderDropdown';
+import { can } from '../../config/permissions';
+import { useEffectiveRoleIds } from '../../hooks/useEffectiveRoleIds';
 
 type SaleItem = {
   id: string;
@@ -74,6 +76,10 @@ export function Sales() {
   const [firestoreSales, setFirestoreSales] = useState<SaleItem[]>([]);
   const [selectedSale, setSelectedSale] = useState<SaleItem | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+
+  // Permission checks
+  const { effectiveRoleIds } = useEffectiveRoleIds();
+  const canExportSales = can(effectiveRoleIds, 'sales.export');
 
   // Responsive column visibility helpers
   // Priority: Item Name > Quantity > Total Amount > Date > Transaction ID > Item Code > Customer > Unit Price
@@ -430,8 +436,58 @@ export function Sales() {
   };
 
   const handleExportToExcel = () => {
-    // Handle export to Excel logic here
-    console.log('Exporting to Excel...');
+    const rows = filteredSales;
+    if (!rows.length) {
+      return;
+    }
+
+    const headers = [
+      'Transaction ID',
+      'Date',
+      'Item Code',
+      'Item Name',
+      'Quantity',
+      'Unit Price',
+      'Total Amount',
+      'Customer',
+    ];
+
+    const escapeCell = (value: unknown): string => {
+      const str = (value ?? '').toString();
+      if (str.includes('"') || str.includes(',') || str.includes('\n') || str.includes('\r')) {
+        return '"' + str.replace(/"/g, '""') + '"';
+      }
+      return str;
+    };
+
+    const dataLines = rows.map(sale => {
+      const displayDate = sale.date ? new Date(sale.date).toLocaleDateString() : '';
+      const cells = [
+        sale.transactionCode || sale.id,
+        displayDate,
+        sale.itemCode || '',
+        sale.itemName || '',
+        (sale.quantity ?? 0).toString(),
+        (sale.unitPrice ?? 0).toFixed(2),
+        (sale.totalAmount ?? 0).toFixed(2),
+        sale.customer || '',
+      ];
+      return cells.map(escapeCell).join(',');
+    });
+
+    const csv = [headers.join(','), ...dataLines].join('\r\n');
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = url;
+    const today = new Date().toISOString().split('T')[0];
+    link.download = `sales_${today}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -731,7 +787,7 @@ export function Sales() {
                     marginBottom: showFilters ? '1rem' : 0
                   }}>
                     {/* Left side: Export Button (desktop only) */}
-                    {!isMobile && (
+                    {!isMobile && canExportSales && (
                       <div style={{ display: 'flex', gap: '0.5rem' }}>
                         <button
                           onClick={handleExportToExcel}
@@ -760,7 +816,7 @@ export function Sales() {
                     {/* Right side: Filters + Clear Filters (desktop) | All buttons stacked (mobile) */}
                     <div style={{ display: 'flex', gap: '0.5rem', flexDirection: isMobile ? 'column' : 'row', width: isMobile ? '100%' : 'auto' }}>
                       {/* Export Button (mobile only) */}
-                      {isMobile && (
+                      {isMobile && canExportSales && (
                         <button
                           onClick={handleExportToExcel}
                           style={{

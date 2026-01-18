@@ -1599,7 +1599,7 @@ export const Returns: React.FC = () => {
                 onClick={handleToggleTransactionsPanel}
                 style={{
                   position: 'absolute',
-                  right: -32,
+                  right: isTransactionsPanelOpen ? -32 : 8,
                   top: '0.75rem',
                   transform: 'none',
                   padding: '0.5rem 0.4rem',

@@ -5,6 +5,7 @@ import { useRolePreview } from '../contexts/RolePreviewContext';
 import { useRoles } from '../contexts/PermissionsContext';
 import { useEffectiveRoleIds } from '../hooks/useEffectiveRoleIds';
 import { useState, useRef, useEffect } from 'react';
+import { HelpButton } from './HelpButton';
 
 interface HeaderDropdownProps {
   isNavExpanded: boolean;
@@ -304,6 +305,11 @@ export function HeaderDropdown({
           <span>{currentPageItem.title}</span>
         </button>
       )}
+
+      {/* Help Button - Below current page indicator */}
+      <div style={{ padding: '0 1.25rem' }}>
+        <HelpButton currentPage={currentPath} isMobile={isMobile} />
+      </div>
 
       {/* Home button */}
       <button

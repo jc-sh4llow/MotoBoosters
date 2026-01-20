@@ -3,6 +3,7 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from '
 import { signOut } from 'firebase/auth';
 import { DEVELOPER_ROLE_ID } from '../config/permissions';
 import { auth } from '../lib/firebase';
+import { resetDebugPermissionCache } from '../utils/debugLog';
 
 export interface AuthUser {
   id: string;
@@ -68,6 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (err) {
       console.error('Failed to persist auth user to storage', err);
     }
+    resetDebugPermissionCache();
   };
 
   const logout = () => {
@@ -82,6 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signOut(auth).catch((err) => {
       console.error('Failed to sign out from Firebase Auth', err);
     });
+    resetDebugPermissionCache();
   };
 
   // Check if user has Developer role

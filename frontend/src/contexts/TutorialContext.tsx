@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { useLocation } from 'react-router-dom';
 import type { Tutorial } from '../config/tutorialConfig';
 import { TUTORIAL_CONFIG } from '../config/tutorialConfig';
 import { can } from '../config/permissions';
@@ -27,11 +26,10 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
   const [viewedImages, setViewedImages] = useState<Set<string>>(new Set());
   
   const { effectiveRoleIds } = useEffectiveRoleIds();
-  const location = useLocation();
   
-  const startTutorial = (tutorialId: string) => {
-    const currentPage = location.pathname;
-    const availableTutorials = TUTORIAL_CONFIG[currentPage] || [];
+  const startTutorial = (tutorialId: string, currentPage?: string) => {
+    const page = currentPage || window.location.pathname;
+    const availableTutorials = TUTORIAL_CONFIG[page] || [];
     const tutorial = availableTutorials.find((t: Tutorial) => t.id === tutorialId);
     
     if (tutorial) {
@@ -67,7 +65,7 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
   };
   
   const getAvailableTutorials = (currentPage?: string) => {
-    const page = currentPage || location.pathname;
+    const page = currentPage || window.location.pathname;
     const tutorials = TUTORIAL_CONFIG[page] || [];
     
     return tutorials.filter((tutorial: Tutorial) => 

@@ -16,6 +16,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { TutorialProvider } from './contexts/TutorialContext';
 import { RolePreviewBanner } from './components/RolePreviewBanner';
 import { DebugInitializer } from './components/DebugInitializer';
+import { TutorialModalWrapper } from './components/TutorialModalWrapper';
 import { Login } from './pages/auth/login';
 import { SignUp } from './pages/auth/signup';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -34,6 +35,7 @@ function App() {
                 <Router>
                   <DebugInitializer />
                   <RolePreviewBanner />
+                  <TutorialModalWrapper />
                   <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/login" element={<Login />} />

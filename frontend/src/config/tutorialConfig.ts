@@ -67,19 +67,19 @@ export const TUTORIAL_CONFIG: Record<string, Tutorial[]> = {
   '/transactions': [
     {
       id: 'transactionsOverview',
-      title: 'Transactions Management',
+      title: 'Transactions',
       description: 'Learn to manage and view transaction records',
       requiredPermissions: ['page.transactions.view'],
       screenshots: [
         {
           title: 'Transaction Records',
-          image: 'https://i.imgur.com/transactions-list.jpg',
+          image: 'https://r2.fivemanage.com/image/JZpA6BqFpY5a.jpg',
           mobileImage: 'https://i.imgur.com/transactions-list-mobile.jpg',
           description: 'View all transaction records with search and filtering options. Click on any transaction to view detailed information and items.',
         },
         {
           title: 'Transaction Actions',
-          image: 'https://i.imgur.com/transactions-actions.jpg',
+          image: 'https://r2.fivemanage.com/image/VV2KWLTiQ7dW.jpg',
           mobileImage: 'https://i.imgur.com/transactions-actions-mobile.jpg',
           description: 'Use filters to find specific transactions, export records for reporting, or archive/delete old transactions as needed.',
         },

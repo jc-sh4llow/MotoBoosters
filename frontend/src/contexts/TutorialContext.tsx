@@ -7,7 +7,7 @@ import type { PermissionKey } from '../config/permissions';
 import { useEffectiveRoleIds } from '../hooks/useEffectiveRoleIds';
 
 interface TutorialContextType {
-  startTutorial: (tutorialId: string) => void;
+  startTutorial: (tutorialId: string, currentPage?: string) => void;
   stopTutorial: () => void;
   isTutorialActive: boolean;
   currentTutorial: Tutorial | null;

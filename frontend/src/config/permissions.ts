@@ -73,7 +73,9 @@ export type PermissionKey =
   | 'roles.edit'
   | 'roles.delete'
   | 'roles.assign'
-  | 'roles.set.maxperuser';
+  | 'roles.set.maxperuser'
+  // Debug Permissions (1)
+  | 'debug.tools.access';
 
 // Role document structure (stored in Firestore)
 export interface Role {
@@ -205,6 +207,12 @@ export const permissionGroups: { category: string; permissions: { key: Permissio
       { key: 'roles.set.maxperuser', label: 'Set Max Roles Per User' },
     ],
   },
+  {
+    category: 'Debug',
+    permissions: [
+      { key: 'debug.tools.access', label: 'Access Debug Tools' },
+    ],
+  },
 ];
 
 // Flat list of all permission keys
@@ -329,7 +337,7 @@ export function getCachedRoles(): Role[] {
 // Legacy permission mapping for pre-migration compatibility
 // Maps old role names to their default permissions
 const legacyRolePermissions: Record<string, PermissionKey[]> = {
-  superadmin: allPermissionKeys, // Full access
+  superadmin: [...allPermissionKeys], // Full access
   admin: [
     'page.home.view', 'page.inventory.view', 'page.sales.view', 'page.services.view',
     'page.transactions.view', 'page.newtransaction.view', 'page.returns.view',

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { FaQuestionCircle } from 'react-icons/fa';
 import { useTutorial } from '../contexts/TutorialContext';
 
@@ -9,13 +9,25 @@ interface HelpButtonProps {
 
 export function HelpButton({ currentPage, isMobile }: HelpButtonProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const { startTutorial, getAvailableTutorials } = useTutorial();
   
   const availableTutorials = getAvailableTutorials(currentPage);
   
+  useEffect(() => {
+    if (isDropdownOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + 4,
+        left: rect.left
+      });
+    }
+  }, [isDropdownOpen]);
+  
   const handleTutorialSelect = (tutorialId: string) => {
     setIsDropdownOpen(false);
-    startTutorial(tutorialId);
+    startTutorial(tutorialId, currentPage);
   };
   
   // Don't show help button if no tutorials available
@@ -26,6 +38,7 @@ export function HelpButton({ currentPage, isMobile }: HelpButtonProps) {
   return (
     <div className="help-button-container">
       <button
+        ref={buttonRef}
         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
         className="help-button"
         title="View tutorials"
@@ -46,7 +59,13 @@ export function HelpButton({ currentPage, isMobile }: HelpButtonProps) {
       </button>
       
       {isDropdownOpen && (
-        <div className="help-dropdown">
+        <div 
+          className="help-dropdown"
+          style={{
+            top: `${dropdownPosition.top}px`,
+            left: `${dropdownPosition.left}px`,
+          }}
+        >
           {availableTutorials.map(tutorial => (
             <button
               key={tutorial.id}

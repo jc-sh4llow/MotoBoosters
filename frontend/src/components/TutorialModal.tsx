@@ -90,15 +90,41 @@ export function TutorialModal({ tutorial, isOpen, onClose, isMobile }: TutorialM
         boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
       }}>
         {/* Header */}
-        <div className="tutorial-modal-header">
-          <h2>{tutorial.title}</h2>
-          <button onClick={onClose} className="close-button">
+        <div className="tutorial-modal-header" style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '1.5rem 2rem',
+          borderBottom: '1px solid #e5e7eb',
+          backgroundColor: '#f9fafb'
+        }}>
+          <h2 style={{
+            margin: 0,
+            fontSize: '1.5rem',
+            fontWeight: 600,
+            color: '#111827'
+          }}>{tutorial.title}</h2>
+          <button onClick={onClose} className="close-button" style={{
+            background: 'none',
+            border: 'none',
+            fontSize: '1.5rem',
+            cursor: 'pointer',
+            color: '#6b7280',
+            padding: '0.25rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
             <FaTimes />
           </button>
         </div>
         
         {/* Content */}
-        <div className="tutorial-modal-content">
+        <div className="tutorial-modal-content" style={{
+          padding: '2rem',
+          maxHeight: 'calc(90vh - 120px)',
+          overflowY: 'auto'
+        }}>
           {!imagesLoaded && (
             <div className="tutorial-loading">
               <div className="loading-spinner" />
@@ -109,7 +135,10 @@ export function TutorialModal({ tutorial, isOpen, onClose, isMobile }: TutorialM
           {imagesLoaded && (
             <>
               {/* Image */}
-              <div className="tutorial-image-container">
+              <div className="tutorial-image-container" style={{
+                marginBottom: '2rem',
+                textAlign: 'center'
+              }}>
                 {loadingErrors.has(currentImageIndex) ? (
                   <div className="image-error">
                     <FaExclamationTriangle />
@@ -127,27 +156,74 @@ export function TutorialModal({ tutorial, isOpen, onClose, isMobile }: TutorialM
                     src={imageUrl} 
                     alt={currentScreenshot.title}
                     className="tutorial-image"
+                    style={{
+                      maxWidth: '100%',
+                      maxHeight: '400px',
+                      borderRadius: '0.5rem',
+                      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+                    }}
                   />
                 )}
               </div>
               
               {/* Description */}
-              <div className="tutorial-description">
-                <h3>{currentScreenshot.title}</h3>
-                <p>{currentScreenshot.description}</p>
+              <div className="tutorial-description" style={{
+                marginBottom: '2rem',
+                textAlign: 'center'
+              }}>
+                <h3 style={{
+                  margin: '0 0 1rem 0',
+                  fontSize: '1.25rem',
+                  fontWeight: 600,
+                  color: '#111827'
+                }}>{currentScreenshot.title}</h3>
+                <p style={{
+                  margin: 0,
+                  color: '#6b7280',
+                  lineHeight: 1.6,
+                  fontSize: '0.95rem',
+                  textAlign: 'left',
+                  padding: '0 1rem'
+                }}>{currentScreenshot.description}</p>
               </div>
               
               {/* Navigation */}
-              <div className="tutorial-navigation">
+              <div className="tutorial-navigation" style={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: '1rem',
+                paddingTop: '1.5rem',
+                borderTop: '1px solid #e5e7eb'
+              }}>
                 <button 
                   onClick={handlePrev}
                   disabled={currentImageIndex === 0}
                   className="nav-button prev"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.5rem 1rem',
+                    backgroundColor: currentImageIndex === 0 ? '#e5e7eb' : '#3b82f6',
+                    color: currentImageIndex === 0 ? '#9ca3af' : '#ffffff',
+                    border: 'none',
+                    borderRadius: '0.375rem',
+                    cursor: currentImageIndex === 0 ? 'not-allowed' : 'pointer',
+                    fontSize: '0.875rem',
+                    fontWeight: 500
+                  }}
                 >
                   <FaChevronLeft /> Previous
                 </button>
                 
-                <span className="image-counter">
+                <span className="image-counter" style={{
+                  color: '#6b7280',
+                  fontSize: '0.875rem',
+                  fontWeight: 500,
+                  minWidth: '60px',
+                  textAlign: 'center'
+                }}>
                   {currentImageIndex + 1} / {tutorial.screenshots.length}
                 </span>
                 
@@ -155,6 +231,19 @@ export function TutorialModal({ tutorial, isOpen, onClose, isMobile }: TutorialM
                   onClick={handleNext}
                   disabled={currentImageIndex === tutorial.screenshots.length - 1}
                   className="nav-button next"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.5rem 1rem',
+                    backgroundColor: currentImageIndex === tutorial.screenshots.length - 1 ? '#e5e7eb' : '#3b82f6',
+                    color: currentImageIndex === tutorial.screenshots.length - 1 ? '#9ca3af' : '#ffffff',
+                    border: 'none',
+                    borderRadius: '0.375rem',
+                    cursor: currentImageIndex === tutorial.screenshots.length - 1 ? 'not-allowed' : 'pointer',
+                    fontSize: '0.875rem',
+                    fontWeight: 500
+                  }}
                 >
                   Next <FaChevronRight />
                 </button>

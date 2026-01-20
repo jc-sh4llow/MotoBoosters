@@ -67,8 +67,28 @@ export function TutorialModal({ tutorial, isOpen, onClose, isMobile }: TutorialM
   if (!isOpen) return null;
   
   return (
-    <div className="tutorial-modal-overlay">
-      <div className="tutorial-modal">
+    <div className="tutorial-modal-overlay" style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 1000,
+      padding: '1rem'
+    }}>
+      <div className="tutorial-modal" style={{
+        backgroundColor: '#ffffff',
+        borderRadius: '0.75rem',
+        maxWidth: '900px',
+        width: '100%',
+        maxHeight: '90vh',
+        overflow: 'hidden',
+        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
+      }}>
         {/* Header */}
         <div className="tutorial-modal-header">
           <h2>{tutorial.title}</h2>

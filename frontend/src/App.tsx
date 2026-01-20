@@ -15,6 +15,7 @@ import { RolePreviewProvider } from './contexts/RolePreviewContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { TutorialProvider } from './contexts/TutorialContext';
 import { RolePreviewBanner } from './components/RolePreviewBanner';
+import { DebugInitializer } from './components/DebugInitializer';
 import { Login } from './pages/auth/login';
 import { SignUp } from './pages/auth/signup';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -31,6 +32,7 @@ function App() {
             <TutorialProvider>
               <QueryClientProvider client={queryClient}>
                 <Router>
+                  <DebugInitializer />
                   <RolePreviewBanner />
                   <Routes>
                   <Route path="/" element={<Home />} />

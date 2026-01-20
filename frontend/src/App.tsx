@@ -13,6 +13,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { PermissionsProvider } from './contexts/PermissionsContext';
 import { RolePreviewProvider } from './contexts/RolePreviewContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { TutorialProvider } from './contexts/TutorialContext';
 import { RolePreviewBanner } from './components/RolePreviewBanner';
 import { Login } from './pages/auth/login';
 import { SignUp } from './pages/auth/signup';
@@ -27,10 +28,11 @@ function App() {
       <AuthProvider>
         <PermissionsProvider>
           <RolePreviewProvider>
-            <QueryClientProvider client={queryClient}>
-              <Router>
-                <RolePreviewBanner />
-                <Routes>
+            <TutorialProvider>
+              <QueryClientProvider client={queryClient}>
+                <Router>
+                  <RolePreviewBanner />
+                  <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/signup" element={<SignUp />} />
@@ -56,6 +58,7 @@ function App() {
                 </Routes>
               </Router>
             </QueryClientProvider>
+          </TutorialProvider>
           </RolePreviewProvider>
         </PermissionsProvider>
       </AuthProvider>

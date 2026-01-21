@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { FaTimes, FaChevronLeft, FaChevronRight, FaExclamationTriangle } from 'react-icons/fa';
 import type { Tutorial } from '../config/tutorialConfig';
 import { ContactDeveloperModal } from './ContactDeveloperModal';
+import { can } from '../config/permissions';
+import { useEffectiveRoleIds } from '../hooks/useEffectiveRoleIds';
 
 interface TutorialModalProps {
   tutorial: Tutorial;
@@ -11,20 +13,27 @@ interface TutorialModalProps {
 }
 
 export function TutorialModal({ tutorial, isOpen, onClose, isMobile }: TutorialModalProps) {
+  const { effectiveRoleIds } = useEffectiveRoleIds();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [imagesLoaded, setImagesLoaded] = useState(false);
   const [loadingErrors, setLoadingErrors] = useState<Set<number>>(new Set());
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   
-  const currentScreenshot = tutorial.screenshots[currentImageIndex];
-  const imageUrl = isMobile && currentScreenshot.mobileImage 
+  // Filter screenshots based on permissions
+  const visibleScreenshots = tutorial.screenshots.filter(screenshot => 
+    !screenshot.requiredPermissions || 
+    screenshot.requiredPermissions.some(permission => can(effectiveRoleIds, permission as any))
+  );
+  
+  const currentScreenshot = visibleScreenshots[currentImageIndex];
+  const imageUrl = isMobile && currentScreenshot?.mobileImage 
     ? currentScreenshot.mobileImage 
-    : currentScreenshot.image;
+    : currentScreenshot?.image;
   
   // Preload all images when modal opens
   useEffect(() => {
     if (isOpen && tutorial) {
-      const imageUrls = tutorial.screenshots.map(screenshot => 
+      const imageUrls = visibleScreenshots.map(screenshot => 
         isMobile && screenshot.mobileImage ? screenshot.mobileImage : screenshot.image
       );
       
@@ -50,7 +59,7 @@ export function TutorialModal({ tutorial, isOpen, onClose, isMobile }: TutorialM
         img.src = url;
       });
     }
-  }, [isOpen, tutorial, isMobile]);
+  }, [isOpen, tutorial, isMobile, visibleScreenshots]);
   
   const handleContactDeveloper = () => {
     setIsContactModalOpen(true);
@@ -61,7 +70,7 @@ export function TutorialModal({ tutorial, isOpen, onClose, isMobile }: TutorialM
   };
   
   const handleNext = () => {
-    setCurrentImageIndex(prev => Math.min(tutorial.screenshots.length - 1, prev + 1));
+    setCurrentImageIndex(prev => Math.min(visibleScreenshots.length - 1, prev + 1));
   };
   
   if (!isOpen) return null;
@@ -137,7 +146,10 @@ export function TutorialModal({ tutorial, isOpen, onClose, isMobile }: TutorialM
               {/* Image */}
               <div className="tutorial-image-container" style={{
                 marginBottom: '2rem',
-                textAlign: 'center'
+                textAlign: 'center',
+                justifyContent: 'center',
+                display: 'flex',
+                alignItems: 'center',
               }}>
                 {loadingErrors.has(currentImageIndex) ? (
                   <div className="image-error">
@@ -224,23 +236,23 @@ export function TutorialModal({ tutorial, isOpen, onClose, isMobile }: TutorialM
                   minWidth: '60px',
                   textAlign: 'center'
                 }}>
-                  {currentImageIndex + 1} / {tutorial.screenshots.length}
+                  {currentImageIndex + 1} / {visibleScreenshots.length}
                 </span>
                 
                 <button 
                   onClick={handleNext}
-                  disabled={currentImageIndex === tutorial.screenshots.length - 1}
+                  disabled={currentImageIndex === visibleScreenshots.length - 1}
                   className="nav-button next"
                   style={{
                     display: 'flex',
                     alignItems: 'center',
                     gap: '0.5rem',
                     padding: '0.5rem 1rem',
-                    backgroundColor: currentImageIndex === tutorial.screenshots.length - 1 ? '#e5e7eb' : '#3b82f6',
-                    color: currentImageIndex === tutorial.screenshots.length - 1 ? '#9ca3af' : '#ffffff',
+                    backgroundColor: currentImageIndex === visibleScreenshots.length - 1 ? '#e5e7eb' : '#3b82f6',
+                    color: currentImageIndex === visibleScreenshots.length - 1 ? '#9ca3af' : '#ffffff',
                     border: 'none',
                     borderRadius: '0.375rem',
-                    cursor: currentImageIndex === tutorial.screenshots.length - 1 ? 'not-allowed' : 'pointer',
+                    cursor: currentImageIndex === visibleScreenshots.length - 1 ? 'not-allowed' : 'pointer',
                     fontSize: '0.875rem',
                     fontWeight: 500
                   }}

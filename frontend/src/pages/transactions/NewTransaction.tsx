@@ -1453,7 +1453,7 @@ export function NewTransaction() {
                                         </p>
                                       )}
                                     </div>
-                                    <div className="mt-3 flex justify-between gap-2">
+                                    <div className="mt-3 flex gap-2" style={{ flexDirection: isMobile ? 'column' : 'row', justifyContent: isMobile ? 'stretch' : 'space-between' }}>
                                       <button
                                         type="button"
                                         onClick={() => handleAddToCart(product)}
@@ -1541,7 +1541,7 @@ export function NewTransaction() {
                                       <p className="font-medium text-gray-900 truncate" title={service.name}>{highlightText(service.name, debouncedServiceSearch)}</p>
                                       <p className="text-sm text-gray-600">₱{service.price.toFixed(2)}</p>
                                     </div>
-                                    <div className="mt-3 flex justify-between gap-2">
+                                    <div className="mt-3 flex flex-col gap-2" style={{ flexDirection: isMobile ? 'column' : 'row', justifyContent: isMobile ? 'stretch' : 'space-between' }}>
                                       <button
                                         type="button"
                                         onClick={() => handleAddToCart(service)}

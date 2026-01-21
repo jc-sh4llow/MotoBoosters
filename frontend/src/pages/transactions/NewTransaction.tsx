@@ -128,6 +128,7 @@ export function NewTransaction() {
     basePrice: number;
     discountAmount: number;
     netDiscountAmount: number;
+    brand?: string;
   }[]>([]);
   const [services, setServices] = useState<{ id: string; name: string; price: number; description: string; type: 'service' }[]>([]);
   const [selectedProductForDetails, setSelectedProductForDetails] = useState<{
@@ -141,6 +142,7 @@ export function NewTransaction() {
     inventoryDocId: string;
     basePrice: number;
     discountAmount: number;
+    brand?: string;
   } | null>(null);
   const [selectedServiceForDetails, setSelectedServiceForDetails] = useState<{ id: string; name: string; price: number; description: string; type: 'service' } | null>(null);
   const [isProductDetailsOpen, setIsProductDetailsOpen] = useState(false);
@@ -256,6 +258,7 @@ export function NewTransaction() {
           basePrice: number;
           discountAmount: number;
           netDiscountAmount: number;
+          brand?: string;
         }[] = [];
 
         inventorySnap.forEach(docSnap => {
@@ -290,6 +293,7 @@ export function NewTransaction() {
                 basePrice,
                 discountAmount: isNaN(discountAmount) ? 0 : discountAmount,
                 netDiscountAmount: isNaN(netDiscountAmount) ? 0 : netDiscountAmount,
+                brand: brand || undefined,
               });
             }
           }
@@ -1423,7 +1427,17 @@ export function NewTransaction() {
                                     className="flex flex-col justify-between p-3 rounded-md border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-colors"
                                   >
                                     <div>
-                                      <p className="font-medium text-gray-900 truncate" title={product.name}>{highlightText(product.name, debouncedProductSearch)}</p>
+                                      <p className="font-medium text-gray-900" style={{
+                                        display: '-webkit-box',
+                                        WebkitLineClamp: 2,
+                                        WebkitBoxOrient: 'vertical',
+                                        overflow: 'hidden'
+                                      }} title={product.name}>{highlightText(product.name, debouncedProductSearch)}</p>
+                                      {isMobile && product.brand && (
+                                        <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
+                                          {product.brand}
+                                        </div>
+                                      )}
                                       {product.discountAmount > 0 ? (
                                         <p className="text-sm text-gray-600">
                                           <span className="line-through text-gray-400 mr-1">

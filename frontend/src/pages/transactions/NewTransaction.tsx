@@ -55,6 +55,7 @@ type FirestoreCustomerData = {
   email?: string;
   address?: string;
   customerId?: string;
+  archivedAt?: string;
 };
 
 type CartItem = {
@@ -156,6 +157,7 @@ export function NewTransaction() {
     contact: string;
     email: string;
     address: string;
+    archivedAt?: string;
   }[]>([]);
   const [isLoadingCustomers, setIsLoadingCustomers] = useState(false);
   const [customerLovError, setCustomerLovError] = useState<string | null>(null);
@@ -342,6 +344,7 @@ export function NewTransaction() {
         contact: string;
         email: string;
         address: string;
+        archivedAt?: string;
       }[] = [];
 
       snap.forEach(docSnap => {
@@ -352,6 +355,7 @@ export function NewTransaction() {
           contact: (data.contact ?? '').toString(),
           email: (data.email ?? '').toString(),
           address: (data.address ?? '').toString(),
+          archivedAt: data.archivedAt,
         });
       });
 

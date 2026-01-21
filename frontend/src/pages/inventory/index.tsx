@@ -3891,7 +3891,7 @@ export function Inventory() {
                                 style={{ padding: '0.75rem 1.5rem', cursor: 'pointer' }}
                                 onClick={() => handleHeaderSort('brand')}
                               >
-                                BRAND
+                                BRAND {filters.sortBy.startsWith('brand-') ? (filters.sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
                               </th>
                             )}
                             {showItemNameColumn && (
@@ -3899,7 +3899,7 @@ export function Inventory() {
                                 style={{ padding: '0.75rem 1.5rem', cursor: 'pointer' }}
                                 onClick={() => handleHeaderSort('itemName')}
                               >
-                                {isMobile ? 'ITEM' : 'ITEM NAME'}
+                                {isMobile ? 'ITEM' : 'ITEM NAME'} {filters.sortBy.startsWith('itemName-') ? (filters.sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
                               </th>
                             )}
                             {showType && (
@@ -3907,7 +3907,7 @@ export function Inventory() {
                                 style={{ padding: '0.75rem 1.5rem', textAlign: 'center', cursor: 'pointer' }}
                                 onClick={() => handleHeaderSort('type')}
                               >
-                                TYPE
+                                TYPE {filters.sortBy.startsWith('type-') ? (filters.sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
                               </th>
                             )}
                             {showPurchasePrice && (
@@ -3915,21 +3915,21 @@ export function Inventory() {
                                 style={{ padding: '0.75rem 1.5rem', textAlign: 'center', cursor: 'pointer' }}
                                 onClick={() => handleHeaderSort('purchase')}
                               >
-                                PURCHASE PRICE
+                                PURCHASE PRICE {filters.sortBy.startsWith('purchase-') ? (filters.sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
                               </th>
                             )}
                             <th
                               style={{ padding: '0.75rem 1.5rem', textAlign: 'center', cursor: 'pointer' }}
                               onClick={() => handleHeaderSort('srp')}
                             >
-                              {isMobile && canViewPurchasePrice ? 'PRICE' : 'SRP'}
+                              {isMobile && canViewPurchasePrice ? 'PRICE' : 'SRP'} {filters.sortBy.startsWith('srp-') ? (filters.sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
                             </th>
                             {showAvailableStockColumn && (
                               <th
                                 style={{ padding: '0.75rem 1.5rem', textAlign: 'center', cursor: 'pointer' }}
                                 onClick={() => handleHeaderSort('available')}
                               >
-                                AVAILABLE STOCK
+                                AVAILABLE STOCK {filters.sortBy.startsWith('available-') ? (filters.sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
                               </th>
                             )}
                             {showSold && (
@@ -3937,21 +3937,21 @@ export function Inventory() {
                                 style={{ padding: '0.75rem 1.5rem', textAlign: 'center', cursor: 'pointer' }}
                                 onClick={() => handleHeaderSort('sold')}
                               >
-                                NO. SOLD
+                                NO. SOLD {filters.sortBy.startsWith('sold-') ? (filters.sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
                               </th>
                             )}
                             <th
                               style={{ padding: '0.75rem 1.5rem', textAlign: 'center', cursor: 'pointer' }}
                               onClick={() => handleHeaderSort('status')}
                             >
-                              STATUS
+                              STATUS {filters.sortBy.startsWith('status-') ? (filters.sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
                             </th>
                             {showDiscountMarkup && (
                               <th
                                 style={{ padding: '0.75rem 1.5rem', textAlign: 'center', cursor: 'pointer' }}
                                 onClick={() => handleHeaderSort('discount')}
                               >
-                                DISCOUNT / MARKUP
+                                DISCOUNT / MARKUP {filters.sortBy.startsWith('discount-') ? (filters.sortBy.endsWith('-asc') ? '↑' : '↓') : ''}
                               </th>
                             )}
                             {showRemarks && (

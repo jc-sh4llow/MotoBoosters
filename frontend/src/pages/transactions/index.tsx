@@ -147,6 +147,8 @@ export function Transactions() {
             ? data.customer.name
             : 'N/A';
 
+        const handledBy = data.handledBy || 'No staff assigned';
+
         const rawType = (data.transactionType ?? '').toString();
         let normalizedType: TransactionRow['type'] = 'N/A';
         if (rawType.toLowerCase() === 'parts only') {
@@ -209,6 +211,7 @@ export function Transactions() {
           paymentType,
           status: normalizedStatus,
           archived,
+          handledBy,
         });
       });
 

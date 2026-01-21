@@ -2238,6 +2238,25 @@ export function Transactions() {
                           <div style={{ fontSize: '0.75rem', color: 'var(--field-label-text)' }}>Payment Type</div>
                           <div style={{ fontSize: '0.875rem', fontWeight: 500 }}>{selectedTransaction.paymentType}</div>
                         </div>
+                        {returnItemsData && Object.keys(returnItemsData).length > 0 && (
+                          <div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--field-label-text)' }}>Returns</div>
+                            <button
+                              disabled={isLoadingReturns}
+                              style={{
+                                border: '1px solid black',
+                                background: 'none',
+                                padding: '0.5rem 1rem',
+                                fontSize: '0.875rem',
+                                fontWeight: 500,
+                                cursor: isLoadingReturns ? 'not-allowed' : 'pointer',
+                                borderRadius: '0.25rem'
+                              }}
+                            >
+                              {`${Object.values(returnItemsData).flat().reduce((sum, item: any) => sum + (item.qtyReturned || 0), 0)} - ${Object.keys(returnItemsData).sort().pop() || ''}`}
+                            </button>
+                          </div>
+                        )}
                         <div style={{ gridColumn: isMobile ? '1' : 'span 2' }}>
                           <div style={{ fontSize: '0.75rem', color: 'var(--field-label-text)' }}>Grand Total</div>
                           <div style={{ fontSize: '1.125rem', fontWeight: 600, color: '#059669' }}>

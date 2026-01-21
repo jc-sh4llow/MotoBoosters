@@ -2625,19 +2625,29 @@ export function NewTransaction() {
                       </thead>
                       <tbody>
                         {filtered.map((c) => (
-                          <tr key={c.id} className="border-t border-gray-100 hover:bg-gray-50 cursor-pointer">
-                            <td className="px-3 py-2 text-gray-900" onClick={() => handleSelectCustomerFromLov(c)}>{c.name || '-'}</td>
-                            <td className="px-3 py-2 text-gray-700" onClick={() => handleSelectCustomerFromLov(c)}>{c.contact || '-'}</td>
-                            <td className="px-3 py-2 text-gray-700" onClick={() => handleSelectCustomerFromLov(c)}>{c.email || '-'}</td>
-                            <td className="px-3 py-2 text-gray-700" onClick={() => handleSelectCustomerFromLov(c)}>{c.address || '-'}</td>
+                          <tr key={c.id} className={`border-t border-gray-100 hover:bg-gray-50 cursor-pointer ${c.archivedAt ? 'customer-lov-archived-row' : ''}`}>
+                            <td className="px-3 py-2 text-gray-900" onClick={() => !c.archivedAt && handleSelectCustomerFromLov(c)}>{c.name || '-'}</td>
+                            <td className="px-3 py-2 text-gray-700" onClick={() => !c.archivedAt && handleSelectCustomerFromLov(c)}>{c.contact || '-'}</td>
+                            <td className="px-3 py-2 text-gray-700" onClick={() => !c.archivedAt && handleSelectCustomerFromLov(c)}>{c.email || '-'}</td>
+                            <td className="px-3 py-2 text-gray-700" onClick={() => !c.archivedAt && handleSelectCustomerFromLov(c)}>{c.address || '-'}</td>
                             <td className="px-3 py-2 text-center">
-                              <button
-                                type="button"
-                                onClick={() => handleSelectCustomerFromLov(c)}
-                                className="px-3 py-1 rounded-md text-xs font-medium text-white bg-blue-600 hover:bg-blue-700"
-                              >
-                                Select
-                              </button>
+                              {c.archivedAt ? (
+                                <button
+                                  type="button"
+                                  disabled
+                                  className="px-3 py-1 rounded-md text-xs font-medium text-white bg-gray-400 cursor-not-allowed opacity-50"
+                                >
+                                  Archived
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => handleSelectCustomerFromLov(c)}
+                                  className="px-3 py-1 rounded-md text-xs font-medium text-white bg-blue-600 hover:bg-blue-700"
+                                >
+                                  Select
+                                </button>
+                              )}
                             </td>
                           </tr>
                         ))}

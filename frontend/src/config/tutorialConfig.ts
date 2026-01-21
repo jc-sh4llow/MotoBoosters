@@ -22,59 +22,72 @@ export const TUTORIAL_CONFIG: Record<string, Tutorial[]> = {
       description: 'Learn the inventory management interface',
       requiredPermissions: ['page.inventory.view'],
       screenshots: [
+        // TUTORIAL STEP PERMISSIONS GUIDE:
+        // Add requiredPermissions array to each screenshot to control visibility based on user permissions
+        // Example: requiredPermissions: ['page.inventory.view', 'inventory.add']
+        // If no permissions specified, step is visible to all users who can access the tutorial
         {
           title: 'Inventory Header',
           image: 'https://r2.fivemanage.com/image/XURROrrf5rn9.jpg',
           mobileImage: 'https://i.imgur.com/transactions-list-mobile.jpg',
           description: 'This is the page header',
+          requiredPermissions: ['page.inventory.view'],
         },
         {
           title: 'Logo, Page Title, Welcome',
           image: 'https://r2.fivemanage.com/image/nMStCMbWnKmT.jpg',
           mobileImage: 'https://i.imgur.com/transactions-actions-mobile.jpg',
           description: 'You can click/tap the logo to return to the home page.',
+          requiredPermissions: ['page.inventory.view'],
         },
         {
           title: 'Search Bar, Logout button, and Dropdown Menu',
           image: 'https://r2.fivemanage.com/image/HtaI7uEZcpQ2.jpg',
           mobileImage: 'https://i.imgur.com/transactions-actions-mobile.jpg',
           description: 'For mobile, click the dropdown menu button to view the Search and Logout functions. You can use the search bar to search inventory using either Brand Name or Item Name, and the Logout button to logout of the site.',
+          requiredPermissions: ['page.inventory.view'],
         },
         {
           title: 'Dropdown Menu',
           image: 'https://r2.fivemanage.com/image/AdjDEKYfFTrZ.jpg',
           mobileImage: 'https://i.imgur.com/transactions-actions-mobile.jpg',
           description: 'The dropdown menu shows the current page, and also allow you to navigate to other pages of the site',
+          requiredPermissions: ['page.inventory.view'],
         },
         {
           title: 'Item Details Section',
           image: 'https://r2.fivemanage.com/image/fUH4Er2qiYKs.jpg',
           mobileImage: 'https://i.imgur.com/transactions-actions-mobile.jpg',
           description: 'This is the Item Details section where you can view the details of an item.',
+          requiredPermissions: ['page.inventory.view'],
         },
         {
           title: 'Item Details Section: Expanded',
           image: 'https://r2.fivemanage.com/image/WTdj6rrgeJLy.jpg',
           mobileImage: 'https://i.imgur.com/transactions-actions-mobile.jpg',
           description: "Clicking on a row in the Current Inventory table shows that item's details here.",
+          requiredPermissions: ['page.inventory.view'],
         },
         {
           title: 'Current Inventory Section',
           image: 'https://r2.fivemanage.com/image/59Gw3xoE449A.jpg',
           mobileImage: 'https://i.imgur.com/transactions-actions-mobile.jpg',
           description: 'This is the Current Inventory section',
+          requiredPermissions: ['page.inventory.view'],
         },
         {
           title: 'Action Bar',
           image: 'https://r2.fivemanage.com/image/trC5nhIM4t0a.jpg',
           mobileImage: 'https://i.imgur.com/transactions-actions-mobile.jpg',
           description: 'This is the Action Bar. Open the Action Bar tutorial to explore its functions.',
+          requiredPermissions: ['page.inventory.view'],
         },
         {
           title: 'Current Inventory Table',
           image: 'https://r2.fivemanage.com/image/nL5uxbMaP7Mn.jpg',
           mobileImage: 'https://i.imgur.com/transactions-actions-mobile.jpg',
           description: "This table shows the inventory of products. You can freely add/edit/remove text from the Remarks field and they'll be added to the items's details automatically.",
+          requiredPermissions: ['page.inventory.view'],
         },
       ],
     },

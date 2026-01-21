@@ -97,6 +97,7 @@ export function Transactions() {
   // Return items state
   const [returnItemsData, setReturnItemsData] = useState<any>(null);
   const [isLoadingReturns, setIsLoadingReturns] = useState(false);
+  const [showReturnDetailsModal, setShowReturnDetailsModal] = useState(false);
 
   // Calendar picker state
   const [showCalendarPicker, setShowCalendarPicker] = useState(false);
@@ -2250,6 +2251,7 @@ export function Transactions() {
                             <div style={{ fontSize: '0.75rem', color: 'var(--field-label-text)' }}>Returns</div>
                             <button
                               disabled={isLoadingReturns}
+                              onClick={() => setShowReturnDetailsModal(true)}
                               style={{
                                 border: '1px solid black',
                                 background: 'none',

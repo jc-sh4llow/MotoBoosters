@@ -9,7 +9,7 @@ import {
 
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { collection, onSnapshot, getDocs } from 'firebase/firestore';
 import { useAuth } from '../../contexts/AuthContext';
 import logo from '../../assets/logo.png';
 import { db } from '../../lib/firebase';
@@ -79,6 +79,9 @@ export function Sales() {
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isTableScrollable, setIsTableScrollable] = useState(false);
   const tableContainerRef = useRef<HTMLDivElement>(null);
+
+  // Return items state
+  const [returnItemsMap, setReturnItemsMap] = useState<Record<string, number>>({});
 
   // Permission checks
   const { effectiveRoleIds } = useEffectiveRoleIds();
@@ -449,6 +452,31 @@ export function Sales() {
 
     return () => clearTimeout(timer);
   }, [searchTerm]);
+
+  // Load return items once on mount
+  useEffect(() => {
+    const loadReturnItems = async () => {
+      try {
+        const returnItemsSnap = await getDocs(collection(db, 'returnItems'));
+        const map: Record<string, number> = {};
+        
+        returnItemsSnap.forEach(docSnap => {
+          const data = docSnap.data();
+          const key = `${data.transactionCode}-${data.itemName}`;
+          if (!map[key]) {
+            map[key] = 0;
+          }
+          map[key] += data.qtyReturned || 0;
+        });
+        
+        setReturnItemsMap(map);
+      } catch (error) {
+        console.error('Error loading return items:', error);
+      }
+    };
+    
+    loadReturnItems();
+  }, []);
 
   const handleApplyFilter = () => {
     // Handle filter logic here

@@ -2776,6 +2776,103 @@ export function Transactions() {
                     </div>
                   </div>
                 )}
+
+                {/* Return Details Modal */}
+                {showReturnDetailsModal && returnItemsData && Object.keys(returnItemsData).length > 0 && (
+                  <div
+                    onClick={() => setShowReturnDetailsModal(false)}
+                    style={{
+                      position: 'fixed',
+                      inset: 0,
+                      zIndex: 2500,
+                      backgroundColor: 'rgba(0,0,0,0.5)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: isMobile ? '1rem' : '0',
+                      transition: 'opacity 0.25s ease'
+                    }}
+                  >
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      style={{
+                        backgroundColor: 'white',
+                        borderRadius: '0.75rem',
+                        padding: isMobile ? '1rem' : '1.5rem 2rem',
+                        maxWidth: isMobile ? '100%' : '600px',
+                        width: '100%',
+                        maxHeight: '90vh',
+                        overflowY: 'auto',
+                        border: '1px solid #e5e7eb',
+                        boxShadow: '0 20px 40px rgba(15, 23, 42, 0.45)',
+                        transition: 'transform 0.25s ease'
+                      }}
+                    >
+                      <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#111827', margin: 0, marginBottom: '1rem' }}>
+                        Return Details
+                      </h3>
+
+                      <div style={{ marginBottom: '1rem' }}>
+                        <div style={{ marginBottom: '0.75rem', display: 'flex', gap: '0.5rem' }}>
+                          <strong style={{ color: '#374151', minWidth: '140px' }}>Return ID:</strong>
+                          <span style={{ color: '#111827' }}>
+                            {Object.keys(returnItemsData).sort().join(' - ')}
+                          </span>
+                        </div>
+                        <div style={{ marginBottom: '0.75rem', display: 'flex', gap: '0.5rem' }}>
+                          <strong style={{ color: '#374151', minWidth: '140px' }}>Date:</strong>
+                          <span style={{ color: '#111827' }}>
+                            {Object.values(returnItemsData).flat().map((item: any) => {
+                              const date = item.createdAt?.toDate?.() || new Date(item.createdAt);
+                              return date.toLocaleDateString();
+                            }).filter((v, i, a) => a.indexOf(v) === i).join(' - ')}
+                          </span>
+                        </div>
+                        <div style={{ marginBottom: '0.75rem', display: 'flex', gap: '0.5rem' }}>
+                          <strong style={{ color: '#374151', minWidth: '140px' }}>Transaction ID:</strong>
+                          <span style={{ color: '#111827' }}>{selectedTransaction?.transactionCode || selectedTransaction?.id}</span>
+                        </div>
+                        <div style={{ marginBottom: '0.75rem', display: 'flex', gap: '0.5rem' }}>
+                          <strong style={{ color: '#374151', minWidth: '140px' }}>Returned Total:</strong>
+                          <span style={{ color: '#111827', fontWeight: '600' }}>
+                            ₱{Object.values(returnItemsData).flat().reduce((sum: number, item: any) => sum + (item.lineRefund || 0), 0).toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div style={{ marginBottom: '1rem' }}>
+                        <div style={{ fontSize: '0.875rem', fontWeight: '600', color: '#374151', marginBottom: '0.75rem' }}>
+                          Items Returned
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                          {(() => {
+                            const consolidatedItems: Record<string, { itemName: string; totalQty: number; totalRefund: number; unitPrice: number }> = {};
+                            Object.values(returnItemsData).flat().forEach((item: any) => {
+                              if (!consolidatedItems[item.itemName]) {
+                                consolidatedItems[item.itemName] = {
+                                  itemName: item.itemName,
+                                  totalQty: 0,
+                                  totalRefund: 0,
+                                  unitPrice: item.unitPrice || 0
+                                };
+                              }
+                              consolidatedItems[item.itemName].totalQty += item.qtyReturned || 0;
+                              consolidatedItems[item.itemName].totalRefund += item.lineRefund || 0;
+                            });
+                            return Object.values(consolidatedItems).map((item) => (
+                              <div key={item.itemName} style={{ backgroundColor: 'white', borderRadius: '0.5rem', padding: '0.75rem', border: '1px solid #e5e7eb' }}>
+                                <div style={{ fontWeight: '500', fontSize: '0.875rem', color: '#111827' }}>{item.itemName}</div>
+                                <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
+                                  Total Returned: {item.totalQty}
+                                </div>
+                              </div>
+                            ));
+                          })()}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </section>
           </div>

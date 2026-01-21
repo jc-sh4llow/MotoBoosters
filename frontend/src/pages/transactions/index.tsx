@@ -269,6 +269,13 @@ export function Transactions() {
     };
   }, [canViewArchived]);
 
+  // Load return items when transaction modal opens
+  useEffect(() => {
+    if (isModalOpen && selectedTransaction?.transactionCode) {
+      loadReturnItemsForTransaction(selectedTransaction.transactionCode);
+    }
+  }, [isModalOpen, selectedTransaction?.transactionCode]);
+
   // Click outside listeners for filters, action bar, and modal
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

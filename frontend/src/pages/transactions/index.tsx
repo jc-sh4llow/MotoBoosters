@@ -2259,8 +2259,13 @@ export function Transactions() {
                         )}
                         <div style={{ gridColumn: isMobile ? '1' : 'span 2' }}>
                           <div style={{ fontSize: '0.75rem', color: 'var(--field-label-text)' }}>Grand Total</div>
+                          {returnItemsData && Object.keys(returnItemsData).length > 0 && (
+                            <div style={{ textDecoration: 'line-through', color: 'black', fontSize: '1.125rem', fontWeight: 600 }}>
+                              ₱{selectedTransaction.grandTotal.toLocaleString()}
+                            </div>
+                          )}
                           <div style={{ fontSize: '1.125rem', fontWeight: 600, color: '#059669' }}>
-                            ₱{selectedTransaction.grandTotal.toLocaleString()}
+                            ₱{(selectedTransaction.grandTotal - (returnItemsData ? Object.values(returnItemsData).flat().reduce((sum: number, item: any) => sum + (item.lineRefund || 0), 0) : 0)).toLocaleString()}
                           </div>
                         </div>
                       </div>
@@ -2288,6 +2293,10 @@ export function Transactions() {
                                   adjustmentPerUnit > 0 &&
                                   specialUnits > 0;
 
+                                const returnedQty = returnItemsData ? Object.values(returnItemsData).flat().filter((ri: any) => ri.itemName === item.name).reduce((sum: number, ri: any) => sum + (ri.qtyReturned || 0), 0) : 0;
+                                const adjustedQty = item.quantity - returnedQty;
+                                const adjustedSubtotal = item.price * adjustedQty;
+
                                 return (
                                   <tr key={idx}>
                                     <td style={{ padding: '0.5rem' }}>
@@ -2299,10 +2308,22 @@ export function Transactions() {
                                         </div>
                                       )}
                                     </td>
-                                    <td style={{ padding: '0.5rem', textAlign: 'center' }}>{item.quantity}</td>
+                                    <td style={{ padding: '0.5rem', textAlign: 'center' }}>
+                                      {returnedQty > 0 && (
+                                        <div style={{ textDecoration: 'line-through', color: '#6b7280' }}>
+                                          {item.quantity}
+                                        </div>
+                                      )}
+                                      <div>{adjustedQty}</div>
+                                    </td>
                                     <td style={{ padding: '0.5rem', textAlign: 'right' }}>₱{item.price.toFixed(2)}</td>
                                     <td style={{ padding: '0.5rem', textAlign: 'right' }}>
-                                      ₱{item.subtotal.toFixed(2)}
+                                      {returnedQty > 0 && (
+                                        <div style={{ textDecoration: 'line-through', color: '#6b7280' }}>
+                                          ₱{item.subtotal.toFixed(2)}
+                                        </div>
+                                      )}
+                                      <div>₱{adjustedSubtotal.toFixed(2)}</div>
                                     </td>
                                   </tr>
                                 );

@@ -94,6 +94,10 @@ export function Transactions() {
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
 
+  // Return items state
+  const [returnItemsData, setReturnItemsData] = useState<any>(null);
+  const [isLoadingReturns, setIsLoadingReturns] = useState(false);
+
   // Calendar picker state
   const [showCalendarPicker, setShowCalendarPicker] = useState(false);
   const [calendarViewDate, setCalendarViewDate] = useState(new Date());
@@ -392,6 +396,35 @@ export function Transactions() {
     setPaymentReviewGcashRef('');
     setPaymentReviewError(null);
     setIsPaymentReviewProcessing(false);
+  };
+
+  const loadReturnItemsForTransaction = async (transactionCode: string) => {
+    setIsLoadingReturns(true);
+    try {
+      const returnItemsSnap = await getDocs(collection(db, 'returnItems'));
+      const groupedByReturn: Record<string, any[]> = {};
+      
+      returnItemsSnap.forEach(docSnap => {
+        const data = docSnap.data();
+        if (data.transactionCode === transactionCode) {
+          const returnId = data.returnId || '';
+          if (!groupedByReturn[returnId]) {
+            groupedByReturn[returnId] = [];
+          }
+          groupedByReturn[returnId].push({
+            id: docSnap.id,
+            ...data
+          });
+        }
+      });
+      
+      setReturnItemsData(groupedByReturn);
+    } catch (error) {
+      console.error('Error loading return items:', error);
+      setReturnItemsData({});
+    } finally {
+      setIsLoadingReturns(false);
+    }
   };
 
   const handleConfirmPaymentReview = async () => {

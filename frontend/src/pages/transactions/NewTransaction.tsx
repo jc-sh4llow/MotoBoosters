@@ -1411,6 +1411,8 @@ export function NewTransaction() {
                           return (
                             <>
                               <div style={{
+                                maxWidth: '100%',
+                                overflow: 'hidden',
                                 display: 'grid',
                                 gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)',
                                 gap: '0.75rem',
@@ -1510,6 +1512,8 @@ export function NewTransaction() {
                           return (
                             <>
                               <div style={{
+                                maxWidth: '100%',
+                                overflow: 'hidden',
                                 display: 'grid',
                                 gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)',
                                 gap: '0.75rem',

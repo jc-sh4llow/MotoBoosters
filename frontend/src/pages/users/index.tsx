@@ -27,6 +27,31 @@ async function hashPassword(raw: string): Promise<string> {
   }
 }
 
+function formatLastLogin(lastLogin: string): string {
+  if (!lastLogin || lastLogin === 'N/A' || lastLogin === 'Never') return 'N/A';
+  
+  try {
+    const date = new Date(lastLogin);
+    if (isNaN(date.getTime())) return 'N/A';
+    
+    // Format: "Dec 03, 2025 - 08:34 PHT"
+    const options: Intl.DateTimeFormatOptions = {
+      month: 'short',
+      day: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+      timeZone: 'Asia/Manila'
+    };
+    
+    const formatted = new Intl.DateTimeFormat('en-US', options).format(date);
+    return `${formatted} PHT`;
+  } catch {
+    return 'N/A';
+  }
+}
+
 type UserRow = {
   id: string; // Firestore document ID
   displayId: string; // Business user ID (e.g., ADM-MJ)
@@ -983,7 +1008,7 @@ export function Users() {
                       textAlign: 'left'
                     }}
                   >
-                    <span>User Account Details</span>
+                    <span>User Details</span>
                     <span
                       style={{
                         display: 'inline-flex',
@@ -2397,8 +2422,9 @@ export function Users() {
                                 fontSize: '0.875rem',
                                 color: '#4b5563',
                                 whiteSpace: 'nowrap'
-                              }}>
-                                {user.lastLogin}
+                              }}
+                              title="Using device time (Philippines timezone)">
+                                {formatLastLogin(user.lastLogin)}
                               </td>
                             )}
                             {showRowActions && (

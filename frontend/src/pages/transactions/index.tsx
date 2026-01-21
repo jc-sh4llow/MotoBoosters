@@ -33,6 +33,7 @@ type TransactionRow = {
   paymentType: string;
   status: 'Completed' | 'Pending' | 'Cancelled' | 'N/A';
   archived?: boolean;
+  handledBy?: string;
 };
 
 export function Transactions() {

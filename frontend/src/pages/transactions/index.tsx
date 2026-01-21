@@ -2188,6 +2188,12 @@ export function Transactions() {
                           <div style={{ fontSize: '0.875rem', fontWeight: 500 }}>{selectedTransaction.status}</div>
                         </div>
                         <div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--field-label-text)' }}>Handled By</div>
+                          <div style={{ fontSize: '0.875rem', fontWeight: 500 }}>
+                            {selectedTransaction?.handledBy || 'No staff assigned'}
+                          </div>
+                        </div>
+                        <div>
                           <div style={{ fontSize: '0.75rem', color: 'var(--field-label-text)' }}>Items</div>
                           <div style={{ fontSize: '0.875rem', fontWeight: 500 }}>{selectedTransaction.itemCount}</div>
                         </div>

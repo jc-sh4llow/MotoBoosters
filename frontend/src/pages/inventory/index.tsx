@@ -2055,7 +2055,9 @@ export function Inventory() {
                   transition: 'max-height 0.3s ease-out',
                   padding: isItemDetailsExpanded ? '1.5rem' : '0 1.5rem',
                   backgroundColor: 'var(--panel-bg)'
-                }}>
+                }}
+                  ref={itemDetailsRef}
+                >
                   <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: '1rem', order: isMobile ? 'initial' : 'unset' }}>
                     {/* Left Column */}
                     <div style={{ order: isMobile ? 0 : 'unset' }}>

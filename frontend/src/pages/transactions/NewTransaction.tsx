@@ -2790,10 +2790,12 @@ export function NewTransaction() {
           <div
             style={{
               backgroundColor: 'white',
-              borderRadius: '0.75rem',
-              padding: '1.5rem 2rem',
-              maxWidth: '480px',
+              borderRadius: isMobile ? '0.5rem' : '0.75rem',
+              padding: isMobile ? '1rem' : '1.5rem 2rem',
+              maxWidth: isMobile ? '95vw' : '480px',
               width: '100%',
+              maxHeight: isMobile ? '90vh' : '85vh',
+              overflowY: 'auto',
               boxShadow: '0 10px 30px rgba(0,0,0,0.25)',
             }}
           >
@@ -2802,12 +2804,14 @@ export function NewTransaction() {
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                marginBottom: '1rem',
+                marginBottom: isMobile ? '0.75rem' : '1rem',
+                paddingBottom: isMobile ? '0.75rem' : '0',
+                borderBottom: isMobile ? '1px solid #e5e7eb' : 'none',
               }}
             >
               <h2
                 style={{
-                  fontSize: '1.2rem',
+                  fontSize: isMobile ? '1.125rem' : '1.2rem',
                   fontWeight: 600,
                   margin: 0,
                   color: '#111827',
@@ -3323,11 +3327,11 @@ export function NewTransaction() {
           <div style={{
             backgroundColor: 'white',
             borderRadius: '0.75rem',
-            padding: '1.5rem 2rem',
-            maxWidth: '520px',
+            padding: isMobile ? '1rem' : '1.5rem 2rem',
+            maxWidth: isMobile ? '95vw' : '520px',
             width: '100%',
             boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
-            maxHeight: '80vh',
+            maxHeight: '90vh',
             overflowY: 'auto',
           }}>
             <h3 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0, marginBottom: '0.75rem', color: '#111827' }}>

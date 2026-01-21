@@ -427,7 +427,6 @@ export function Sales() {
     };
   }, [showFilters, isActionBarExpanded, isMobile]);
 
-  // Scroll detection for table indicators
   useEffect(() => {
     const checkScrollable = () => {
       if (tableContainerRef.current && isMobile) {
@@ -438,19 +437,18 @@ export function Sales() {
       }
     };
 
-    // Debounce search term for performance
-    useEffect(() => {
-      const timer = setTimeout(() => {
-        setDebouncedSearchTerm(searchTerm);
-      }, 300);
-
-      return () => clearTimeout(timer);
-    }, [searchTerm]);
-
     checkScrollable();
     window.addEventListener('resize', checkScrollable);
     return () => window.removeEventListener('resize', checkScrollable);
   }, [isMobile, filteredSales.length]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   const handleApplyFilter = () => {
     // Handle filter logic here
